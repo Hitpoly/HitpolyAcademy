@@ -5,6 +5,10 @@ import { useAuth } from '../../../../../context/AuthContext'; // Asegúrate de q
 const useCourseData = (refreshTrigger) => {
   const { user } = useAuth(); // Obtén el objeto 'user' del contexto de autenticación
 
+
+  console.log("USUARIO:", user);
+  
+
   const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

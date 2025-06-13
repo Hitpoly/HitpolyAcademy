@@ -23,7 +23,7 @@ const useCourseActions = () => {
 
     try {
       console.log("[useCourseActions] -> uploadImageToCloudinary: Llamando a la API de Cloudinary...");
-      const response = await fetch('https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php', {
+      const response = await fetch('https://apiacademy.hitpoly.com/ajax/cloudinary.php', {
         method: 'POST',
         body: formDataImage,
       });
@@ -103,14 +103,11 @@ const useCourseActions = () => {
       duracion_estimada_unidad: undefined, // Eliminar del objeto final
     };
 
-    // Convertir marca_plataforma a JSON string si es un array
-    if (Array.isArray(dataToSend.marca_plataforma) && dataToSend.marca_plataforma.length > 0) {
-      dataToSend.marca_plataforma = JSON.stringify(dataToSend.marca_plataforma);
-      console.log("[useCourseActions] -> submitCourse: marca_plataforma convertida a JSON string.");
-    } else {
-      dataToSend.marca_plataforma = "[]"; // Asegurar que siempre sea un JSON array vacío si no hay marcas
-      console.log("[useCourseActions] -> submitCourse: marca_plataforma establecida a '[]'.");
-    }
+    // Ya no hacer stringify manualmente sobre marca_plataforma
+if (!Array.isArray(dataToSend.marca_plataforma)) {
+  // Si no es un array, aseguramos que sea un array vacío
+  dataToSend.marca_plataforma = [];
+}
 
     let apiUrl = '';
 

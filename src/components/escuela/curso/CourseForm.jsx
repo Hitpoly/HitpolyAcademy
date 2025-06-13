@@ -44,7 +44,7 @@ const CourseForm = () => {
     tipo_clase: "",
     titulo_credencial: "",
     descripcion_credencial: "",
-    marca_plataforma: [], // Asegurarse de que sea un array vacío al inicio
+    marca_plataforma: [], 
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -96,6 +96,7 @@ const CourseForm = () => {
           }
         );
 
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
@@ -103,7 +104,8 @@ const CourseForm = () => {
           );
         }
 
-        const data = await response.json();
+        const data = await response.json();      
+        
         if (data.status === "success") {
           setCategorias(data.categorias);
         } else {
@@ -193,7 +195,7 @@ const CourseForm = () => {
       setBannerFile(null);
       console.log("[CourseForm] -> useEffect courseToEdit: Restableciendo a modo creación. formData:", formData);
     }
-  }, [courseToEdit, user]); // Añade 'formData' aquí para evitar errores de lint si lo usas en el else, aunque ya está cubierto por el initialFormData
+  }, [courseToEdit, user]); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -210,20 +212,22 @@ const CourseForm = () => {
     setResponseMessage({ type: "", message: "" });
     setFormData((prevData) => ({
       ...prevData,
-      url_banner: "", // Borrar URL existente al subir nuevo archivo
+      url_banner: "", 
     }));
     console.log("[CourseForm] -> handleFileChange: Archivo de banner seleccionado:", file);
   };
 
   const handleAddMarcaPlataforma = () => {
-    console.log("[CourseForm] -> handleAddMarcaPlataforma: newLogoText:", newLogoText, "newDescription:", newDescription);
-    console.log("[CourseForm] -> handleAddMarcaPlataforma: Current formData.marca_plataforma BEFORE add:", formData.marca_plataforma);
+    console.log("descripcion", newDescription);
+    console.log("logo text", newLogoText);
+    
+    console.log("marcaplataforma:", formData.marca_plataforma);
 
     if (newLogoText && newDescription) {
-      const newMarca = { logotext: newLogoText, description: newDescription };
+      const newMarca = { logoText: newLogoText, description: newDescription };
       setFormData((prevData) => {
         const updatedMarcas = [...prevData.marca_plataforma, newMarca];
-        console.log("[CourseForm] -> handleAddMarcaPlataforma: Updated formData.marca_plataforma AFTER add:", updatedMarcas);
+      
         return {
           ...prevData,
           marca_plataforma: updatedMarcas,
@@ -254,15 +258,16 @@ const CourseForm = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => { 
+    
     e.preventDefault();
 
     const dataToSend = {
       ...formData,
       profesor_id: isEditing ? formData.profesor_id : user ? user.id : null,
-    };
+      marca_plataforma: formData.marca_plataforma
 
-    console.log("[CourseForm] -> handleSubmit: Final formData.marca_plataforma before sending to useCourseActions:", dataToSend.marca_plataforma);
+    }; 
 
     const result = await submitCourse(dataToSend, bannerFile, isEditing);
 
@@ -297,6 +302,9 @@ const CourseForm = () => {
     handleForceRefresh();
     console.log("[CourseForm] -> handleBackToCreateMode: Volviendo a modo creación.");
   };
+
+ 
+  
 
   return (
     <Box
