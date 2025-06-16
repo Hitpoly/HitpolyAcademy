@@ -57,9 +57,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/exam/:examName" element={<ExamComponent />} />
             <Route path="/exam-results" element={<ExamResults />} />
-            <Route path="/datos-de-curso" element={<CourseForm />} />
-            <Route path="/categorias" element={<CategoryManager />} />
-            <Route path="/dashboard" element={<DashboardGestion />} />
+            <Route path="/datos-de-curso" element={<ProtectedRoute><CourseForm /></ProtectedRoute>} />
+            <Route path="/categorias" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardGestion /></ProtectedRoute>} />
             <Route path="/cursos/:courseId/modulos" element={<CourseModulesManager />} />
             <Route path="/datos-de-curso/:courseId/modulos/:moduleId/clases" element={<ModuleClassesManager />} />
           </Routes>
