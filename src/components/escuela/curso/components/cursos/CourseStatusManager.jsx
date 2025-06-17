@@ -38,6 +38,9 @@ const CourseStatusManager = ({
   useEffect(() => {
     let tempCourses = [...allCourses]; // Cursos completos obtenidos del hook
 
+    console.log("TODOS LOS CURSOS", allCourses);
+    
+
     if (selectedCategory) {
       tempCourses = tempCourses.filter(
         (

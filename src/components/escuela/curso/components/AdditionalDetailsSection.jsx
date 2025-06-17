@@ -13,6 +13,11 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'; 
 
 const AdditionalDetailsSection = ({ formData, handleChange, newLogoText, setNewLogoText, newDescription, setNewDescription, handleAddMarcaPlataforma, handleRemoveMarcaPlataforma }) => {
+
+  console.log("INFO QUE LLEGA", formData);
+
+
+  
   return (
     <>
       <Divider sx={{ my: 3 }} />
@@ -103,36 +108,35 @@ const AdditionalDetailsSection = ({ formData, handleChange, newLogoText, setNewL
       <Typography variant="h6" gutterBottom>Marcas de Plataforma</Typography>
       {/* Mapear las marcas de plataforma existentes */}
       {formData.marca_plataforma.map((marca, index) => (
-        <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: 'relative' }}>
-          <IconButton
-            onClick={() => handleRemoveMarcaPlataforma(index)}
-            color="error"
-            size="small"
-            sx={{ position: 'absolute', top: 8, right: 8 }}
-          >
-            <RemoveCircleOutlineIcon /> {/* Usamos el icono correctamente importado */}
-          </IconButton>
-          <TextField
-            label={`Nombre de Marca ${index + 1}`}
-            value={marca.logoText} // Usamos 'logoText' para el nombre de la marca
-            disabled
-            fullWidth
-            margin="normal"
-            size="small"
-            sx={{ mb: 1 }}
-          />
-          <TextField
-            label={`Descripción de Marca ${index + 1}`}
-            value={marca.description} // Usamos 'description' para la descripción
-            disabled
-            fullWidth
-            margin="normal"
-            multiline
-            rows={2}
-            size="small"
-          />
-        </Paper>
-      ))}
+  <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: 'relative' }}>
+    <IconButton
+      onClick={() => handleRemoveMarcaPlataforma(index)}
+      color="error"
+      size="small"
+      sx={{ position: 'absolute', top: 8, right: 8 }}
+    >
+      <RemoveCircleOutlineIcon />
+    </IconButton>
+    <TextField
+      label={`Nombre de Marca ${index + 1}`}
+      value={marca.logotext || ''}      
+      fullWidth
+      margin="normal"
+      size="small"
+      sx={{ mb: 1 }}
+    />
+    <TextField
+      label={`Descripción de Marca ${index + 1}`}
+      value={marca.description || ''}  
+      fullWidth
+      margin="normal"
+      multiline
+      rows={2}
+      size="small"
+    />
+  </Paper>
+))}
+
 
       {/* Campos para añadir una nueva marca de plataforma */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
