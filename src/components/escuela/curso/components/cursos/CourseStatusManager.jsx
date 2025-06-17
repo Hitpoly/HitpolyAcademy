@@ -37,6 +37,9 @@ const CourseStatusManager = ({ onEditCourse, refreshTrigger: propRefreshTrigger 
   useEffect(() => {
     let tempCourses = [...allCourses]; // Cursos completos obtenidos del hook
 
+    console.log("TODOS LOS CURSOS", allCourses);
+    
+
     if (selectedCategory) {
       tempCourses = tempCourses.filter(item => // 'item' es { curso: {...}, marcas: [...] }
         // Accedemos a item.curso.categoria_id
@@ -58,6 +61,9 @@ const CourseStatusManager = ({ onEditCourse, refreshTrigger: propRefreshTrigger 
   const handleEditClick = (course) => {
     onEditCourse(course);
   };
+
+  console.log("FILTERED CURSOS", filteredCourses);
+  
 
   // --- handleStatusChange con actualización optimista ---
   const handleStatusChange = async (courseId, newStatus) => {
@@ -222,6 +228,7 @@ const CourseStatusManager = ({ onEditCourse, refreshTrigger: propRefreshTrigger 
             {dynamicEstadosDisponibles.map((estado) => (
               <MenuItem key={estado.value} value={estado.value}>{estado.label}</MenuItem>
             ))}
+            
           </Select>
         </FormControl>
 
@@ -235,18 +242,19 @@ const CourseStatusManager = ({ onEditCourse, refreshTrigger: propRefreshTrigger 
           <Typography variant="h6">No hay cursos disponibles con los filtros seleccionados.</Typography>
         </Box>
       ) : (
-        <Grid container spacing={3} justifyContent="center">
-          {filteredCourses.map((item) => ( // Cambié 'course' a 'item' para evitar confusiones con item.curso
-            <Grid item key={item.curso.id} xs={12} sm={6} md={6} lg={4}>
-              <CourseCardEstado
-                course={item} // Pasamos el 'item' completo (que contiene 'curso' y 'marcas')
-                onStatusChange={handleStatusChange}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteCourse}
-              />
-            </Grid>
-          ))}
-        </Grid>
+     <Grid container spacing={3} justifyContent="center">
+  {filteredCourses.map((item) => (
+    <Grid item key={item.curso.id} xs={12} sm={6} md={6} lg={4}>
+      <CourseCardEstado
+        course={item} // <-- aquí pasás el objeto completo con curso y marcas
+        onStatusChange={handleStatusChange}
+        onEditClick={handleEditClick}
+        onDeleteClick={handleDeleteCourse}
+      />
+    </Grid>
+  ))}
+</Grid>
+
       )}
     </Box>
   );

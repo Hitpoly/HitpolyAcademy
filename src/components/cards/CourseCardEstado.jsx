@@ -23,6 +23,9 @@ const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }
   // Si 'course' es el objeto { curso: {...}, marcas: [...] }, entonces:
   const { curso, marcas } = course; // Obtenemos el objeto 'curso' y el array 'marcas'
 
+  console.log("COURSE EN ESTADO CARD", course);
+  
+
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -38,7 +41,7 @@ const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }
 
   const handleEditCourseClick = () => {
     // Cuando editas, a menudo necesitas pasar el objeto 'curso' completo, no el 'item' anidado
-    onEditClick(curso); // Pasamos solo el objeto 'curso' anidado
+    onEditClick(course); // Pasamos solo el objeto 'curso' anidado
     handleMenuClose();
   };
 

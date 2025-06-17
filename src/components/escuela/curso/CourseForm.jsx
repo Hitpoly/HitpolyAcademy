@@ -127,8 +127,10 @@ const CourseForm = () => {
   useEffect(() => {
     console.log("[CourseForm] -> useEffect courseToEdit: courseToEdit ha cambiado:", courseToEdit);
     if (courseToEdit) {
+      
       setIsEditing(true);
-
+  console.log("CURSO EDIT", courseToEdit);
+  
       const formatToDateInput = (dateString) => {
         if (!dateString) return "";
         const datePart = dateString.split(" ")[0];
@@ -136,49 +138,49 @@ const CourseForm = () => {
       };
 
       const parsedMarcaPlataforma =
-        typeof courseToEdit.marca_plataforma === "string"
-          ? JSON.parse(courseToEdit.marca_plataforma)
-          : courseToEdit.marca_plataforma || [];
+        typeof courseToEdit.marcas === "string"
+          ? JSON.parse(courseToEdit.marcas)
+          : courseToEdit.marcas || [];
 
-      console.log("[CourseForm] -> useEffect courseToEdit: raw marca_plataforma from courseToEdit:", courseToEdit.marca_plataforma);
+      console.log("[CourseForm] -> useEffect courseToEdit: raw marca_plataforma from courseToEdit:", courseToEdit.marcas);
       console.log("[CourseForm] -> useEffect courseToEdit: parsed marca_plataforma:", parsedMarcaPlataforma);
 
       const newFormData = {
         accion: "update",
-        id: courseToEdit.id,
-        titulo: courseToEdit.titulo || "",
-        subtitulo: courseToEdit.subtitulo || "",
-        descripcion_corta: courseToEdit.descripcion_corta || "",
-        descripcion_larga: courseToEdit.descripcion_larga || "",
-        url_banner: courseToEdit.url_banner || "",
-        url_video_introductorio: courseToEdit.url_video_introductorio || "",
-        precio: courseToEdit.precio ? parseFloat(courseToEdit.precio) : "",
-        moneda: courseToEdit.moneda || "USD",
-        nivel: courseToEdit.nivel || "",
-        duracion_estimada_valor: courseToEdit.duracion_estimada
-          ? String(courseToEdit.duracion_estimada).split(" ")[0]
+        id: courseToEdit.curso.id,
+        titulo: courseToEdit.curso.titulo || "",
+        subtitulo: courseToEdit.curso.subtitulo || "",
+        descripcion_corta: courseToEdit.curso.descripcion_corta || "",
+        descripcion_larga: courseToEdit.curso.descripcion_larga || "",
+        url_banner: courseToEdit.curso.url_banner || "",
+        url_video_introductorio: courseToEdit.curso.url_video_introductorio || "",
+        precio: courseToEdit.curso.precio ? parseFloat(courseToEdit.curso.precio) : "",
+        moneda: courseToEdit.curso.moneda || "USD",
+        nivel: courseToEdit.curso.nivel || "",
+        duracion_estimada_valor: courseToEdit.curso.duracion_estimada
+          ? String(courseToEdit.curso.duracion_estimada).split(" ")[0]
           : "",
-        duracion_estimada_unidad: courseToEdit.duracion_estimada
-          ? String(courseToEdit.duracion_estimada).split(" ")[1] || "dias"
+        duracion_estimada_unidad: courseToEdit.curso.duracion_estimada
+          ? String(courseToEdit.curso.duracion_estimada).split(" ")[1] || "dias"
           : "dias",
-        estado: courseToEdit.estado || "activo",
-        profesor_id: courseToEdit.profesor_id || (user ? user.id : null),
-        categoria_id: courseToEdit.categoria_id || "",
-        fecha_publicacion: formatToDateInput(courseToEdit.fecha_publicacion),
+        estado: courseToEdit.curso.estado || "activo",
+        profesor_id: courseToEdit.curso.profesor_id || (user ? user.id : null),
+        categoria_id: courseToEdit.curso.categoria_id || "",
+        fecha_publicacion: formatToDateInput(courseToEdit.curso.fecha_publicacion),
         fecha_actualizacion: formatToDateInput(
           new Date().toISOString().slice(0, 10)
         ),
-        horas_por_semana: courseToEdit.horas_por_semana || "",
+        horas_por_semana: courseToEdit.curso.horas_por_semana || "",
         fecha_inicio_clases: formatToDateInput(
-          courseToEdit.fecha_inicio_clases
+          courseToEdit.curso.fecha_inicio_clases
         ),
         fecha_limite_inscripcion: formatToDateInput(
-          courseToEdit.fecha_limite_inscripcion
+          courseToEdit.curso.fecha_limite_inscripcion
         ),
-        ritmo_aprendizaje: courseToEdit.ritmo_aprendizaje || "",
-        tipo_clase: courseToEdit.tipo_clase || "",
-        titulo_credencial: courseToEdit.titulo_credencial || "",
-        descripcion_credencial: courseToEdit.descripcion_credencial || "",
+        ritmo_aprendizaje: courseToEdit.curso.ritmo_aprendizaje || "",
+        tipo_clase: courseToEdit.curso.tipo_clase || "",
+        titulo_credencial: courseToEdit.curso.titulo_credencial || "",
+        descripcion_credencial: courseToEdit.curso.descripcion_credencial || "",
         marca_plataforma: parsedMarcaPlataforma, // Usar la versión parseada
       };
       setFormData(newFormData);
