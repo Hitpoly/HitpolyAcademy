@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import CursoCard from "../../../components/cards/CursoCard";
 
+
 const createSlug = (title) => {
   return title
     .toLowerCase()
@@ -55,6 +56,7 @@ const SectionCardGrid = () => {
         // --- Depuración de Categorías ---
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
+          
           throw new Error(
             `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`
           );
@@ -68,20 +70,27 @@ const SectionCardGrid = () => {
             categoriesData.message || "Datos de categorías inválidos."
           );
         }
-        
+
         // --- Depuración de Cursos ---
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
+        
           throw new Error(
             `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`
           );
         }
         const coursesData = await coursesResponse.json();
+        
+        // **ACTUALIZACIÓN CLAVE AQUÍ:** Verificar coursesData.cursos.cursos
         if (
           coursesData.status !== "success" ||
-          !Array.isArray(coursesData.cursos)
+          !coursesData.cursos || // Asegurarse de que 'cursos' exista como objeto
+          !Array.isArray(coursesData.cursos.cursos) // <-- CORRECCIÓN: Acceder a la propiedad anidada 'cursos'
         ) {
-          throw new Error(coursesData.message || "Datos de cursos inválidos.");
+          throw new Error(
+            coursesData.message ||
+              "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada."
+          );
         }
 
         const categoryMap = categoriesData.categorias.reduce((map, cat) => {
@@ -89,44 +98,43 @@ const SectionCardGrid = () => {
           return map;
         }, {});
 
-        const publishedCourses = coursesData.cursos.filter(
+        // **ACTUALIZACIÓN CLAVE AQUÍ:** Acceder a coursesData.cursos.cursos
+        const publishedCourses = coursesData.cursos.cursos.filter(
+          // <-- CORRECCIÓN: Acceder a la propiedad anidada 'cursos'
           (curso) => {
             const isPublished = curso.estado === "Publicado";
             return isPublished;
           }
         );
-        
+
         const organizedCourses = publishedCourses.reduce((acc, curso) => {
           const categoryName =
             categoryMap[curso.categoria_id] || "Sin Categoría";
-          
-          // Depuración: Verifica si la categoría está en el mapa
+
           if (!categoryMap[curso.categoria_id]) {
-              }
+          }
 
           if (!acc[categoryName]) {
             acc[categoryName] = [];
           }
-          // Crear el slug a partir del título del curso
           const courseSlug = createSlug(curso.titulo);
           acc[categoryName].push({
             id: curso.id,
             title: curso.titulo,
             subtitle: curso.subtitulo,
             banner: curso.url_banner,
-            // Construir el accessLink con el slug y el ID (para asegurar unicidad si hay títulos iguales)
-            accessLink: `/curso/${curso.id}`, // O /cursos/${curso.id} si prefieres
+            accessLink: `/curso/${curso.id}`,
           });
           return acc;
         }, {});
 
         setCoursesByCategory(organizedCourses);
+
         if (Object.keys(organizedCourses).length > 0) {
           const firstCategory = Object.keys(organizedCourses)[0];
           setActiveCategoryName(firstCategory);
-          } else {
-          }
-        
+        } else {
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -141,7 +149,7 @@ const SectionCardGrid = () => {
     () => Object.keys(coursesByCategory),
     [coursesByCategory]
   );
-  
+
   const currentCourses = useMemo(
     () =>
       activeCategoryName ? coursesByCategory[activeCategoryName] || [] : [],

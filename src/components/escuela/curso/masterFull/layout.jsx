@@ -3,7 +3,7 @@ import { Box, Typography, Button } from "@mui/material";
 import ProgressBar from "./components/progreso.jsx";
 import VideoPlayer from "./components/videoPlayer.jsx";
 import VideoList from "./components/VideoList.jsx";
-import Footer from "../../components/footer/pieDePagina.jsx";
+import Footer from "../../../footer/pieDePagina.jsx";
 import ProgressAccordion from "./components/ProgressAcordion";
 import Resources from "./components/resources.jsx";
 

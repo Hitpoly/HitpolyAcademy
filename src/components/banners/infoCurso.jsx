@@ -5,8 +5,6 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PersonIcon from "@mui/icons-material/Person";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
-
-
 const ProgrammeDetailsBanner = ({
   programmeName,
   description,
@@ -19,7 +17,7 @@ const ProgrammeDetailsBanner = ({
   credentialTitle,
   credentialDescription,
   instructorData,
-  brandingData,
+  brandingData, // ¡Ahora brandingData es un ARRAY!
 }) => {
   const infoBlocks = [
     {
@@ -155,31 +153,44 @@ const ProgrammeDetailsBanner = ({
 
       <Divider sx={{ my: 3 }} />
 
+      {/* *** CAMBIO CLAVE AQUÍ: Itera sobre brandingData para mostrar todas las marcas *** */}
       <Box
         sx={{
           pt: 2.5,
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
+          gap: 3, // Espacio entre cada bloque de marca
+          flexWrap: 'wrap', // Permite que las marcas se envuelvan a la siguiente línea si no hay espacio
           flexDirection: { xs: "column", sm: "row" },
           textAlign: { xs: "center", sm: "left" },
           justifyContent: { xs: "center", sm: "flex-start" },
         }}
       >
-        <Typography
-          variant="body2"
-          fontWeight="bold"
-          sx={{ color: "#333", fontSize: { xs: "0.9rem", md: "0.95rem" } }}
-        >
-          {brandingData.logoText}
-        </Typography>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontSize: { xs: "0.75rem", md: "0.8rem" } }}
-        >
-          {brandingData.description}
-        </Typography>
+        {brandingData && brandingData.length > 0 ? (
+          brandingData.map((brand, index) => (
+            <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              {/* Si tienes logos de imágenes en tu API, aquí iría un <img src={brand.logoUrl} /> */}
+              <Typography
+                variant="body2"
+                fontWeight="bold"
+                sx={{ color: "#333", fontSize: { xs: "0.9rem", md: "0.95rem" } }}
+              >
+                {brand.logoText}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.75rem", md: "0.8rem" } }}
+              >
+                {brand.description}
+              </Typography>
+            </Box>
+          ))
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            No hay marcas asociadas para mostrar.
+          </Typography>
+        )}
       </Box>
     </Box>
   );

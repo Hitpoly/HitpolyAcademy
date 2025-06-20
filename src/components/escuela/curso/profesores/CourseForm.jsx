@@ -9,11 +9,11 @@ import {
   useTheme,
 } from "@mui/material";
 
-import CourseDetailsSection from "./components/CourseDetailsSection";
-import AdditionalDetailsSection from "./components/AdditionalDetailsSection";
-import CourseStatusManager from "./components/cursos/CourseStatusManager";
-import useCourseActions from "./components/cursos/useCourseActions";
-import { useAuth } from "../../../context/AuthContext";
+import CourseDetailsSection from "./CourseDetailsSection";
+import AdditionalDetailsSection from "./AdditionalDetailsSection";
+import CourseStatusManager from "./cursosCardsProfesor/CourseStatusManager";
+import useCourseActions from "./cursosCardsProfesor/useCourseActions";
+import { useAuth } from "../../../../context/AuthContext";
 
 const CourseForm = () => {
   const { user } = useAuth();

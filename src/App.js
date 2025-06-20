@@ -2,20 +2,18 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"; // Im
 import React from "react"; // Necesario para la función del componente
 import Inicio from "./pages/inicio/home";
 import PaginaDeInformacion from "./components/paginasDeInformacion/PageInfo";
-import CourseVideo from "./components/paginasDeInformacion/components/CourseVideo";
 import LayoutConMenu from "./components/layout/LayoutConMenu";
-import PasosIniciales from "./pages/masterFull/primerosPasos";
+import PasosIniciales from "./components/escuela/curso/masterFull/primerosPasos";
 import Login from "./components/login/page";
 import Register from "./components/register/page";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import UserProfile from "./components/Profile/UserProfile";
 import ExamComponent from "./pages/examenes/ExamComponent";
 import ExamResults from "./pages/examenes/ExamResults";
-import CourseForm from "./components/escuela/curso/CourseForm";
+import CourseForm from "./components/escuela/curso/profesores/CourseForm";
 import CategoryManager from "./components/escuela/curso/components/categorias/CategoryManager";
-import DashboardGestion from "./components/escuela/curso/components/Dashboard"
-import CourseModulesManager from "./components/escuela/curso/components/modulos/CourseModulesManager"
-import ModuleClassesManager from "./components/escuela/curso/components/clases/ModuleClassesManager"
+import CourseModulesManager from "./components/escuela/curso/profesores/modulos/CourseModulesManager"
+import ModuleClassesManager from "./components/escuela/curso/profesores/clases/ModuleClassesManager"
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
@@ -35,8 +33,6 @@ function App() {
             <Route path="/" element={<Inicio />} />
             // Después:
             <Route path="/curso/:id" element={<PaginaDeInformacion />} />{" "}
-            {/* O /cursos/:id si usaste eso arriba */}
-            <Route path="/videos" element={<CourseVideo />} />
             <Route
               path="/master-full"
               element={
@@ -59,7 +55,6 @@ function App() {
             <Route path="/exam-results" element={<ExamResults />} />
             <Route path="/datos-de-curso" element={<ProtectedRoute><CourseForm /></ProtectedRoute>} />
             <Route path="/categorias" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardGestion /></ProtectedRoute>} />
             <Route path="/cursos/:courseId/modulos" element={<CourseModulesManager />} />
             <Route path="/datos-de-curso/:courseId/modulos/:moduleId/clases" element={<ModuleClassesManager />} />
           </Routes>

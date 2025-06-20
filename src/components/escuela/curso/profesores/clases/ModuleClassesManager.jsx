@@ -7,16 +7,13 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Grid, // Mantener Grid para la estructura
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
+  Grid,
+  // Dialog, DialogTitle, DialogContent, DialogActions, IconButton, // Estas ya no son necesarias aquí
 } from '@mui/material';
-import CloseIcon from "@mui/icons-material/Close";
-import ClassCard from './ClassCard'; // Asumimos que ClassCard se ajustará
+// import CloseIcon from "@mui/icons-material/Close"; // Ya no es necesaria aquí
+import ClassCard from './ClassCard';
 import ClassForm from './ClassForm';
+import VideoPreviewModal from './VideoPreviewModal'; // ¡Importación del nuevo componente!
 
 // Recibe la prop onBack para volver a la página anterior
 const ModuleClassesManager = ({ onBack }) => {
@@ -206,45 +203,19 @@ const ModuleClassesManager = ({ onBack }) => {
                 onEdit={handleEditClass}
                 onDelete={handleDeleteClass}
                 onPreview={handleClassPreview}
-                // Aquí podrías pasar un prop para el alto si ClassCard lo necesita
-                // Por ejemplo: cardHeight="120px"
               />
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Modal de Previsualización */}
-      <Dialog open={showPreviewModal} onClose={handleClosePreviewModal} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{previewTitle}</Typography>
-            <IconButton onClick={handleClosePreviewModal}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {previewUrl && (
-            <Box sx={{ width: '100%', height: 0, pb: '56.25%', position: 'relative' }}>
-              <iframe
-                src={previewUrl}
-                title={previewTitle}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-              ></iframe>
-            </Box>
-          )}
-          {!previewUrl && (
-            <Alert severity="warning">No se pudo cargar el contenido de previsualización.</Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClosePreviewModal}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Renderiza el Modal de Previsualización separado */}
+      <VideoPreviewModal
+        open={showPreviewModal}
+        onClose={handleClosePreviewModal}
+        videoUrl={previewUrl}
+        videoTitle={previewTitle}
+      />
     </Box>
   );
 };

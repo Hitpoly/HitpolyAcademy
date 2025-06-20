@@ -27,7 +27,7 @@ const EnrollmentForm = () => {
         gutterBottom
         sx={{ mb: 2, color: "text.primary" }}
       >
-        Descarga el prospecto
+        ¡Registrate para empezar el programa!
       </Typography>
 
       <TextField

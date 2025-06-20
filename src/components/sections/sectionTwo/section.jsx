@@ -15,11 +15,11 @@ const createSlug = (title) => {
   return title
     .toLowerCase()
     .replace(/ /g, "-")
-    .replace(/[^\w-]+/g, ""); 
+    .replace(/[^\w-]+/g, "");
 };
 
 const parseDurationToDays = (durationString) => {
-  if (!durationString) return null; 
+  if (!durationString) return null;
 
   const parts = durationString.toLowerCase().match(/(\d+)\s*(dia|dias|mes|meses|hora|horas)/);
   if (!parts) return null;
@@ -38,7 +38,7 @@ const parseDurationToDays = (durationString) => {
       return value / 24;
     case 'mes':
     case 'meses':
-      return value * 30;
+      return value * 30; // Considerando un mes de 30 días para simplificar
     default:
       return null;
   }
@@ -102,11 +102,14 @@ const SectionTwo = () => {
           );
         }
         const coursesData = await coursesResponse.json();
+        
+        // **CORRECCIÓN CLAVE AQUÍ:** Validar la estructura anidada de `cursos`
         if (
           coursesData.status !== "success" ||
-          !Array.isArray(coursesData.cursos)
+          !coursesData.cursos || // Asegura que la propiedad 'cursos' exista como objeto
+          !Array.isArray(coursesData.cursos.cursos) // Accede a la propiedad anidada 'cursos' que contiene el array
         ) {
-          throw new Error(coursesData.message || "Datos de cursos inválidos.");
+          throw new Error(coursesData.message || "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada.");
         }
 
         const categoryMap = categoriesData.categorias.reduce((map, cat) => {
@@ -114,7 +117,8 @@ const SectionTwo = () => {
           return map;
         }, {});
 
-        const publishedShortCourses = coursesData.cursos.filter(
+        // **CORRECCIÓN CLAVE AQUÍ:** Filtrar el array anidado `cursos`
+        const publishedShortCourses = coursesData.cursos.cursos.filter( // Accede a la propiedad anidada 'cursos'
           (curso) => {
             const isPublished = curso.estado === "Publicado";
             const durationInDays = parseDurationToDays(curso.duracion_estimada);
