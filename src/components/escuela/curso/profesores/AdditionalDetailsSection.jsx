@@ -38,31 +38,22 @@ const AdditionalDetailsSection = ({
   const [currentEditingTemaTitle, setCurrentEditingTemaTitle] = useState("");
 
   const handleStartEditingTema = (index, title) => {
-    console.log("[AdditionalDetails] Iniciando edición de tema en índice:", index, "Título:", title);
     setEditingTemaIndex(index);
     setCurrentEditingTemaTitle(title);
   };
 
   const handleSaveEditingTema = (index) => {
-    console.log("[AdditionalDetails] Guardando edición de tema en índice:", index, "Nuevo título:", currentEditingTemaTitle);
     if (currentEditingTemaTitle.trim()) {
       handleEditTema(index, currentEditingTemaTitle);
       setEditingTemaIndex(null);
       setCurrentEditingTemaTitle("");
-    } else {
-      console.warn("[AdditionalDetails] Intento de guardar tema con título vacío.");
     }
   };
 
   const handleCancelEditingTema = () => {
-    console.log("[AdditionalDetails] Cancelando edición de tema.");
     setEditingTemaIndex(null);
     setCurrentEditingTemaTitle("");
   };
-
-  // Depuración para marca_plataforma:
-  console.log("[AdditionalDetails] formData.marca_plataforma:", formData.marca_plataforma);
-
 
   return (
     <>
@@ -161,7 +152,6 @@ const AdditionalDetailsSection = ({
         <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
           <IconButton
             onClick={() => {
-              console.log("[AdditionalDetails] Clic en eliminar marca en índice:", index);
               handleRemoveMarcaPlataforma(index);
             }}
             color="error"
@@ -172,7 +162,7 @@ const AdditionalDetailsSection = ({
           </IconButton>
           <TextField
             label={`Nombre de Marca ${index + 1}`}
-            value={marca.logotext || ""} // Asegúrate que la clave es 'logotext' aquí también
+            value={marca.logotext || ""}
             fullWidth
             margin="normal"
             size="small"
@@ -217,10 +207,7 @@ const AdditionalDetailsSection = ({
           }
         />
         <Button
-          onClick={() => {
-            console.log("[AdditionalDetails] Clic en añadir marca. newLogoText:", newLogoText, "newDescription:", newDescription);
-            handleAddMarcaPlataforma();
-          }}
+          onClick={handleAddMarcaPlataforma}
           variant="outlined"
           startIcon={<AddCircleOutlineIcon />}
           sx={{ alignSelf: "flex-end", mt: 1 }}

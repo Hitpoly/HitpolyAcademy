@@ -1,6 +1,6 @@
 // src/components/modulos/CourseModulesManager.jsx
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Asegúrate de importar useNavigate
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -11,11 +11,10 @@ import {
 } from "@mui/material";
 import ModuleCard from "./ModuleCard";
 import ModuleForm from "./ModuleForm";
-// import ModuleClassesManager from "../clases/ModuleClassesManager"; // Ya no lo importamos aquí directamente para renderizarlo
 
 const CourseModulesManager = () => {
   const { courseId } = useParams();
-  const navigate = useNavigate(); // Hook para la navegación
+  const navigate = useNavigate();
 
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +22,6 @@ const CourseModulesManager = () => {
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [moduleToEdit, setModuleToEdit] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  // const [selectedModule, setSelectedModule] = useState(null); // Ya no lo necesitamos aquí para renderizar la gestión de clases
   const [courseTitle, setCourseTitle] = useState("");
 
   console.log("CourseModulesManager renderizado.");
@@ -32,7 +30,6 @@ const CourseModulesManager = () => {
   console.log("Estado actual - error:", error);
   console.log("Estado actual - modules.length:", modules.length);
   console.log("Estado actual - courseTitle:", courseTitle);
-  // console.log("Estado actual - selectedModule:", selectedModule); // Ya no necesitamos este log
 
   const fetchModulesAndCourseTitle = async () => {
     console.log("Iniciando fetchModulesAndCourseTitle...");
@@ -50,6 +47,9 @@ const CourseModulesManager = () => {
     try {
       // 1. Obtener los detalles del curso (incluido el título)
       console.log(`Intentando obtener detalles del curso con ID: ${courseId}`);
+      console.log("URL de la petición de curso:", "https://apiacademy.hitpoly.com/ajax/traerCursosController.php");
+      console.log("Cuerpo de la petición de curso:", JSON.stringify({ accion: "getCursos", id: courseId }));
+
       const courseResponse = await fetch(
         "https://apiacademy.hitpoly.com/ajax/traerCursosController.php",
         {
@@ -58,23 +58,50 @@ const CourseModulesManager = () => {
           body: JSON.stringify({ accion: "getCursos", id: courseId }),
         }
       );
-      const courseData = await courseResponse.json();
-      console.log("Respuesta de la API de cursos:", courseData);
 
-      if (courseData.status === "success" && Array.isArray(courseData.cursos)) {
-        const foundCourse = courseData.cursos.find(
+      console.log("Respuesta HTTP cruda del curso:", courseResponse);
+      if (!courseResponse.ok) {
+        const errorText = await courseResponse.text();
+        console.error(`Error HTTP al cargar el curso: ${courseResponse.status} - ${errorText}`);
+        throw new Error(`Error HTTP: ${courseResponse.status} - ${errorText}`);
+      }
+
+      const courseData = await courseResponse.json();
+      console.log("Respuesta de la API de cursos (JSON parseado):", courseData);
+
+      // --- CAMBIO CLAVE AQUÍ ---
+      if (courseData.status === "success" && courseData.cursos) {
+        let actualCoursesArray = [];
+        // Detectar la estructura de la respuesta
+        if (Array.isArray(courseData.cursos)) {
+          // Caso 1: courseData.cursos es directamente un array de cursos
+          console.log("courseData.cursos es un array directamente.");
+          actualCoursesArray = courseData.cursos;
+        } else if (typeof courseData.cursos === 'object' && courseData.cursos !== null && Array.isArray(courseData.cursos.cursos)) {
+          // Caso 2: courseData.cursos es un objeto que contiene un array 'cursos' anidado
+          console.log("courseData.cursos es un objeto con un array 'cursos' anidado.");
+          actualCoursesArray = courseData.cursos.cursos;
+        } else {
+            console.error("Formato inesperado para 'cursos' en la respuesta:", courseData.cursos);
+            setCourseTitle("Curso no encontrado");
+            setError("No se pudo cargar la información del curso. Formato de datos inesperado.");
+            setLoading(false);
+            return;
+        }
+
+        const foundCourse = actualCoursesArray.find(
           (c) => String(c.id) === String(courseId)
         );
-
+        
         if (foundCourse) {
           setCourseTitle(foundCourse.titulo);
           console.log("Título del curso establecido:", foundCourse.titulo);
         } else {
           setCourseTitle("Curso no encontrado");
-          setError(`No se encontró el curso con ID ${courseId}.`);
+          setError(`No se encontró el curso con ID ${courseId} en la respuesta de la API. Puede que el ID no exista o los datos sean incorrectos.`);
           setLoading(false);
           console.error(
-            `Error: Curso con ID ${courseId} no encontrado en la respuesta.`
+            `Error: Curso con ID ${courseId} no encontrado en el array final de cursos. Contenido del array:`, actualCoursesArray
           );
           return;
         }
@@ -82,7 +109,7 @@ const CourseModulesManager = () => {
         setCourseTitle("Curso no encontrado");
         setError(
           courseData.message ||
-            "No se pudo cargar la información del curso o formato inesperado."
+            "No se pudo cargar la información del curso o el formato de datos es inesperado."
         );
         setLoading(false);
         console.error(
@@ -91,42 +118,46 @@ const CourseModulesManager = () => {
         );
         return;
       }
+      // --- FIN CAMBIO CLAVE ---
 
-      // 2. Cargar los módulos del curso
-      console.log(`Intentando obtener módulos para el curso ID: ${courseId}`);
+
+      // 2. Cargar los módulos del curso usando el endpoint específico
+      console.log(`Intentando obtener módulos para el curso ID: ${courseId} usando el nuevo endpoint.`);
+      console.log("URL de la petición de módulos:", "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php");
+      console.log("Cuerpo de la petición de módulos:", JSON.stringify({ accion: "getModulosCurso", id: courseId }));
+
       const response = await fetch(
-        "https://apiacademy.hitpoly.com/ajax/getModulosController.php",
+        "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php", // <-- Endpoint correcto
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accion: "getModulos", curso_id: courseId }),
+          body: JSON.stringify({ accion: "getModulosCurso", id: courseId }), // <-- Parámetros correctos
         }
       );
 
+      console.log("Respuesta HTTP cruda de módulos:", response);
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Error HTTP al cargar módulos: ${response.status} - ${errorText}`);
         throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log("Respuesta de la API de módulos:", data);
+      console.log("Respuesta de la API de módulos (JSON parseado):", data);
 
       if (data.status === "success" && Array.isArray(data.modulos)) {
-        const filtered = data.modulos.filter(
-          (mod) => String(mod.curso_id) === String(courseId)
-        );
-        filtered.sort((a, b) => a.orden - b.orden);
-        setModules(filtered);
-        console.log("Módulos cargados y filtrados:", filtered);
+        data.modulos.sort((a, b) => a.orden - b.orden);
+        setModules(data.modulos);
+        console.log("Módulos cargados y ordenados:", data.modulos);
       } else {
         setError(
           data.message ||
-            "Error al cargar los módulos o formato de datos inesperado."
+            "Error al cargar los módulos o formato de datos inesperado en la respuesta."
         );
         setModules([]);
         console.error(
           "Error o formato inesperado en la carga de módulos:",
-          data.message
+          data.message || data
         );
       }
     } catch (err) {
@@ -150,14 +181,14 @@ const CourseModulesManager = () => {
 
   const handleAddModule = () => {
     console.log("handleAddModule: Abriendo formulario para nuevo módulo.");
-    setModuleToEdit(null); // Asegura que el formulario esté en modo "crear"
-    setShowModuleForm(true); // Abre el modal
+    setModuleToEdit(null);
+    setShowModuleForm(true);
   };
 
   const handleEditModule = (module) => {
     console.log("handleEditModule: Abriendo formulario para editar módulo:", module.id);
-    setModuleToEdit(module); // Pasa el módulo a editar al formulario
-    setShowModuleForm(true); // Abre el modal
+    setModuleToEdit(module);
+    setShowModuleForm(true);
   };
 
   const handleDeleteModule = async (moduleId) => {
@@ -182,12 +213,13 @@ const CourseModulesManager = () => {
         }
       );
 
+      console.log("Respuesta HTTP cruda de eliminación de módulo:", response);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
       }
       const data = await response.json();
-      console.log("Respuesta de eliminación de módulo:", data);
+      console.log("Respuesta de eliminación de módulo (JSON parseado):", data);
 
       if (data.status === "success") {
         alert("Módulo eliminado exitosamente.");
@@ -195,7 +227,7 @@ const CourseModulesManager = () => {
         console.log("Módulo eliminado con éxito. Refrescando lista.");
       } else {
         setError(data.message || "Error al eliminar el módulo.");
-        console.error("Error al eliminar módulo:", data.message);
+        console.error("Error al eliminar módulo:", data.message || data);
       }
     } catch (err) {
       setError(`No se pudo eliminar el módulo: ${err.message}`);
@@ -207,15 +239,13 @@ const CourseModulesManager = () => {
 
   const handleModuleFormClose = () => {
     console.log("handleModuleFormClose: Cerrando formulario de módulo. Refrescando lista.");
-    setShowModuleForm(false); // Cierra el modal
-    setModuleToEdit(null); // Resetea el módulo a editar
-    setRefreshTrigger((prev) => prev + 1); // Fuerza un refresco de la lista de módulos
+    setShowModuleForm(false);
+    setModuleToEdit(null);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
-  // MODIFICACIÓN CLAVE AQUÍ: Navegar a una nueva ruta
   const handleViewClasses = (module) => {
     console.log("handleViewClasses: Navegando a la gestión de clases para el módulo:", module.id);
-    // Usamos navigate para ir a una nueva URL, pasando el id del módulo
     navigate(`/datos-de-curso/${courseId}/modulos/${module.id}/clases`, {
       state: { moduleTitle: module.titulo, moduleId: module.id, courseTitle: courseTitle }
     });
@@ -225,14 +255,6 @@ const CourseModulesManager = () => {
     console.log("handleBackToCourses: Navegando a la lista de cursos.");
     navigate("/datos-de-curso");
   };
-
-  // Esta sección se ELIMINA, ya que ModuleClassesManager se renderizará en su propia ruta
-  // if (selectedModule) {
-  //   console.log("Renderizando ModuleClassesManager para módulo:", selectedModule.id);
-  //   return (
-  //     <ModuleClassesManager module={selectedModule} onBack={handleBackToModules} />
-  //   );
-  // }
 
   if (loading) {
     console.log("Renderizando estado de carga...");
