@@ -13,7 +13,9 @@ import {
   Chip,
 } from "@mui/material";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline"; // Ícono para el temario (lo que aprenderás)
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks"; // Nuevo ícono para Módulos
+import ClassIcon from "@mui/icons-material/Class"; // Nuevo ícono para Clases (dentro de módulos)
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PersonIcon from "@mui/icons-material/Person";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
@@ -22,12 +24,31 @@ import VideoPlayerWithControls from "../../videos/VideoPlayerWithControls";
 import CountdownBanner from "../../cronometro/CountdownBanner";
 
 const CourseDetailPage = ({ course, countdownTargetDate }) => {
-  const [visibleModules, setVisibleModules] = useState(2);
-  const totalModules = course.modules?.length || 0;
+  // Cantidad inicial de elementos visibles para el temario
+  const [visibleLearningOutcomes, setVisibleLearningOutcomes] = useState(3); // Cambiado a 3 para una demostración más clara
+  // Cantidad inicial de elementos visibles para los módulos
+  const [visibleModules, setVisibleModules] = useState(2); // Cambiado a 2 para una demostración más clara
+
+  // Longitud total del temario (learningOutcomes)
+  const totalLearningOutcomes = course.learningOutcomes?.length || 0;
+  // Longitud total de los módulos (course.modules)
+  const totalCourseModules = course.modules?.length || 0;
+
+  const handleToggleLearningOutcomes = () => {
+    setVisibleLearningOutcomes(
+      visibleLearningOutcomes === 3 ? totalLearningOutcomes : 3
+    ); // Usa 3 como límite inicial
+  };
 
   const handleToggleModules = () => {
-    setVisibleModules(visibleModules === 2 ? totalModules : 2);
+    setVisibleModules(visibleModules === 2 ? totalCourseModules : 2); // Usa 2 como límite inicial
   };
+
+  // console.log para depurar y verificar las longitudes y estados
+  console.log("Total Learning Outcomes:", totalLearningOutcomes);
+  console.log("Visible Learning Outcomes:", visibleLearningOutcomes);
+  console.log("Total Modules:", totalCourseModules);
+  console.log("Visible Modules:", visibleModules);
 
   if (!course) {
     return (
@@ -62,17 +83,14 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             gap: 4,
-            height: "100%", // Asegura que el contenedor flex tome la altura completa si es necesario
+            height: "100%",
           }}
         >
-          {/* Columna izquierda: Video, Chips de información y Resultados de aprendizaje */}
-          <Box sx={{ flex: 1 }}> {/* flex: 1 permite que ocupe el espacio disponible */}
-            {/* Contenedor del reproductor de video */}
+          {/* Columna izquierda (Video e Chips de información) */}
+          <Box sx={{ flex: 1 }}>
             <Box sx={{ paddingBottom: { xs: "20px", md: "30px 0px" } }}>
               <VideoPlayerWithControls videoUrl={course.inductionVideoUrl} />
             </Box>
-
-            {/* Chips de información del curso */}
             <Box
               sx={{
                 display: "flex",
@@ -99,12 +117,12 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
                       size="small"
                       sx={{
                         padding: "20px",
-                        width: '100%', // Asegura que el chip ocupe el 100% del Box que lo envuelve
-                        justifyContent: 'center',
-                        '& .MuiChip-label': {
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                        width: "100%",
+                        justifyContent: "center",
+                        "& .MuiChip-label": {
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         },
                       }}
                     />
@@ -112,72 +130,98 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
                 ))}
               </Box>
             </Box>
+          </Box>
+        </Box>
 
-            {/* Sección "¿Qué aprenderás en este curso?" y CountdownBanner */}
+        <Divider sx={{ my: 3 }} />
+
+        {/* Sección de Temario del Curso (learningOutcomes) y CountdownBanner */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            width: "100%",
+            gap: 4,
+            mb: 5,
+          }}
+        >
+          {/* Columna para el Temario (learningOutcomes) */}
+          <Box sx={{ width: { xs: "100%", md: "60%" } }}>
+            <Typography variant="h6" gutterBottom>
+              ¿Qué aprenderás en este curso?
+            </Typography>
+            {course.learningOutcomes && course.learningOutcomes.length > 0 ? (
+              <>
+                <List>
+                  {course.learningOutcomes
+                    ?.slice(0, visibleLearningOutcomes)
+                    .map((item, index) => (
+                      <Paper key={index} elevation={2} sx={{ mb: 2, p: 2, borderRadius: 1 }}>
+                        <ListItem disablePadding>
+                          <ListItemIcon>
+                            <CheckCircleOutlineIcon color="primary" />{" "}
+                            {/* Ícono para el temario */}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={item}
+                            sx={{ wordWrap: "break-word" }}
+                          />
+                        </ListItem>
+                      </Paper>
+                    ))}
+                </List>
+                {totalLearningOutcomes > 3 && ( // Si hay más de 3 elementos, muestra el botón
+                  <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
+                    <Button
+                      onClick={handleToggleLearningOutcomes}
+                      variant="text"
+                      color="primary"
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: "normal",
+                        p: 0,
+                        "&:hover": {
+                          backgroundColor: "transparent",
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      {visibleLearningOutcomes === 3
+                        ? "Ver más temas"
+                        : "Ocultar temas"}
+                    </Button>
+                  </Box>
+                )}
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No hay temas de aprendizaje definidos para este curso.
+              </Typography>
+            )}
+          </Box>
+
+          {/* Columna para el CountdownBanner */}
+          <Box
+            sx={{
+              width: { xs: "100%", md: "40%" },
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+            }}
+          >
             <Box
               sx={{
+                width: "100%",
                 display: "flex",
-                flexDirection: "column", // Se mantiene como columna para centrar el texto
-                alignItems: "center", // Centra el contenido horizontalmente
               }}
             >
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  ¿Qué aprenderás en este curso?
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", md: "row" }, // Aquí se define el layout de dos columnas
-                  width: "100%", // Asegura que este contenedor ocupe todo el ancho disponible para sus columnas internas
-                  gap: 4, // Espacio entre las dos columnas
-                }}
-              >
-                {/* Columna para los resultados de aprendizaje (60% en MD, 100% en XS) */}
-                <Box sx={{ width: { xs: "100%", md: "60%" } }}>
-                  <List>
-                    {course.learningOutcomes?.map((outcome, index) => (
-                      <ListItem key={index} disablePadding>
-                        <ListItemIcon>
-                          <CheckCircleOutlineIcon color="primary" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={outcome}
-                          sx={{ wordWrap: "break-word" }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-
-                {/* Columna para el CountdownBanner (40% en MD, 100% en XS) */}
-                <Box
-                  sx={{
-                    width: { xs: "100%", md: "40%" }, // Este Box define el 40% del ancho para el banner en MD
-                    // backgroundColor: "red", // Puedes quitarlo, era para depurar
-                    display: "flex", // Asegura que el contenido interno (el Box negro) respete el ancho
-                    justifyContent: "center", // Opcional: Centra el banner si es más pequeño que el 40%
-                    alignItems: "flex-start", // Alinea el banner al inicio verticalmente si hay espacio extra
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: "100%", // Este Box interno se asegura de ocupar el 100% del Box padre (el del 40%)
-                      // backgroundColor: "black", // Puedes quitarlo, era para depurar
-                      display: "flex", // Añadido para asegurar que CountdownBanner ocupe el 100% del Box
-                    }}
-                  >
-                    <CountdownBanner
-                      title="¡Gran Venta de Verano!"
-                      subtitle="No te pierdas descuentos exclusivos. ¡El tiempo se acaba!"
-                      targetDate={countdownTargetDate}
-                      ctaText="Explorar Ofertas Ahora"
-                      ctaLink="https://www.ejemplo.com/ofertas"
-                    />
-                  </Box>
-                </Box>
-              </Box>
+              <CountdownBanner
+                title="¡Gran Venta de Verano!"
+                subtitle="No te pierdas descuentos exclusivos. ¡El tiempo se acaba!"
+                targetDate={countdownTargetDate}
+                ctaText="Explorar Ofertas Ahora"
+                ctaLink="https://www.ejemplo.com/ofertas"
+              />
             </Box>
           </Box>
         </Box>
@@ -185,56 +229,67 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
         <Divider sx={{ my: 3 }} />
 
         {/* Sección de Contenido del Curso (Módulos) */}
-        <Typography variant="h6" gutterBottom>
-          Contenido del Curso
-        </Typography>
-        <Box>
-          {course.modules?.slice(0, visibleModules).map((module, index) => (
-            <Paper
-              key={index}
-              elevation={2}
-              sx={{ mb: 2, p: 2, borderRadius: 1 }}
-            >
-              <Typography variant="subtitle1" gutterBottom>
-                Módulo {index + 1}: {module.title}
-              </Typography>
-              <List dense>
-                {module.topics?.map((topic, topicIndex) => (
-                  <ListItem key={topicIndex} disablePadding>
-                    <ListItemIcon>
-                      <PlayCircleOutlineIcon color="secondary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={topic}
-                      sx={{ wordWrap: "break-word" }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
-          ))}
-
-          {totalModules > 2 && (
-            <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
-              <Button
-                onClick={handleToggleModules}
-                variant="text"
-                color="primary"
-                sx={{
-                  textTransform: "none",
-                  fontWeight: "normal",
-                  p: 0,
-                  "&:hover": {
-                    backgroundColor: "transparent",
-                    textDecoration: "underline",
-                  },
-                }}
+        {course.modules && course.modules.length > 0 && (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Contenido del Curso (Módulos)
+            </Typography>
+            {course.modules.slice(0, visibleModules).map((module, index) => (
+              <Paper
+                key={index}
+                elevation={2}
+                sx={{ mb: 2, p: 2, borderRadius: 1 }}
               >
-                {visibleModules === 2 ? "Ver más" : "Ocultar"}
-              </Button>
-            </Box>
-          )}
-        </Box>
+                <ListItem disablePadding sx={{ mb: 1 }}>
+                  {" "}
+                  {/* Añadido ListItem para el ícono del módulo */}
+                  <ListItemIcon>
+                    <LibraryBooksIcon color="action" /> {/* Ícono para el Módulo */}
+                  </ListItemIcon>
+                  <Typography variant="subtitle1" component="span" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    Módulo {index + 1}: {module.title}
+                  </Typography>
+                </ListItem>
+                <List dense sx={{ pl: 2 }}>
+                  {" "}
+                  {/* Añadido pl para indentar las clases */}
+                  {module.topics?.map((topic, topicIndex) => (
+                    <ListItem key={topicIndex} disablePadding>
+                      <ListItemIcon>
+                        <ClassIcon color="secondary" /> {/* Ícono para la Clase */}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={topic}
+                        sx={{ wordWrap: "break-word" }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            ))}
+
+            {totalCourseModules > 2 && ( // Si hay más de 2 módulos, muestra el botón
+              <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
+                <Button
+                  onClick={handleToggleModules}
+                  variant="text"
+                  color="primary"
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: "normal",
+                    p: 0,
+                    "&:hover": {
+                      backgroundColor: "transparent",
+                      textDecoration: "underline",
+                    },
+                  }}
+                >
+                  {visibleModules === 2 ? "Ver más módulos" : "Ocultar módulos"}
+                </Button>
+              </Box>
+            )}
+          </Box>
+        )}
       </Paper>
     </Container>
   );

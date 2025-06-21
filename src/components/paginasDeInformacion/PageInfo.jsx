@@ -19,22 +19,7 @@ function PaginaDeInformacion() {
 
   const { id: courseIdFromUrl } = useParams();
 
-  // console.log para depuración, puedes eliminarlos después de confirmar la solución
-  // console.log("-----------------------------------------");
-  // console.log("Renderizando PaginaDeInformacion...");
-  // console.log("Estado actual - courseIdFromUrl:", courseIdFromUrl);
-  // console.log("Estado actual - apiData:", apiData ? apiData.titulo : "Cargando/No disponible");
-  // console.log("Estado actual - courseModules (antes de useEffect):", courseModules);
-  // console.log("Estado actual - loading:", loading);
-  // console.log("Estado actual - error:", error);
-  // console.log("-----------------------------------------");
-
-
   useEffect(() => {
-    // console.log(">>> useEffect DISPARADO <<<");
-    // console.log("Dependencies:", { courseIdFromUrl, courseModules }); // Si dejas este, verás que courseModules no cambia después del primer set
-
-
     const fetchCourseAndContentData = async () => {
       if (!courseIdFromUrl) {
         setError("ID del curso no proporcionado en la URL.");
@@ -62,9 +47,7 @@ function PaginaDeInformacion() {
         }
 
         const courseData = await courseResponse.json();
-        // console.log("API CALL 1: Datos de la API de cursos recibidos (courseData):", courseData);
-        // console.log("API CALL 1: Estructura de courseData.cursos:", courseData.cursos);
-
+        console.log("PaginaDeInformacion: Datos completos de la API de cursos (courseData):", courseData);
 
         let foundCourse = null;
 
@@ -75,7 +58,6 @@ function PaginaDeInformacion() {
 
           if (foundCourse) {
             setApiData(foundCourse);
-            // console.log("Curso encontrado (foundCourse):", foundCourse);
           } else {
             setError(`Curso con ID ${courseIdFromUrl} no encontrado en la lista de cursos.`);
             setLoading(false);
@@ -87,7 +69,7 @@ function PaginaDeInformacion() {
           return;
         }
 
-        // 2. Obtener módulos específicos del curso
+        // 2. Obtener módulos específicos del curso (mantengo la llamada, pero puedes decidir si la necesitas)
         const modulesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php",
           {
@@ -103,22 +85,19 @@ function PaginaDeInformacion() {
         }
 
         const modulesData = await modulesResponse.json();
-        // console.log("API CALL 2: Datos de la API de módulos recibidos (modulesData):", modulesData);
-        // console.log("API CALL 2: Contenido de modulesData.modulos:", modulesData.modulos);
+        console.log("PaginaDeInformacion: Datos de módulos por curso (modulesData):", modulesData);
 
         let fetchedModules = [];
 
         if (modulesData.status === "success" && Array.isArray(modulesData.modulos)) {
           fetchedModules = modulesData.modulos;
           setCourseModules(fetchedModules);
-          // console.log("Módulos establecidos:", fetchedModules);
         } else {
-          // Si no hay módulos o el formato es incorrecto, establecer a un array vacío
-          // console.warn("No se encontraron módulos para el curso o formato inesperado:", modulesData.message || "La propiedad 'modulos' no es un array. Estableciendo modules a []");
-          setCourseModules([]); // Esto se llamará solo una vez por courseIdFromUrl ahora.
+          console.warn("PaginaDeInformacion: No se encontraron módulos para el curso o formato inesperado. Mensaje:", modulesData.message);
+          setCourseModules([]);
         }
 
-        // 3. Obtener todas las clases
+        // 3. Obtener todas las clases (mantengo la llamada, pero puedes decidir si la necesitas)
         const classesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/traerTodasClasesController.php",
           {
@@ -134,9 +113,7 @@ function PaginaDeInformacion() {
         }
 
         const classesData = await classesResponse.json();
-        // console.log("API CALL 3: Datos de la API de clases recibidos (classesData):", classesData);
-        // console.log("API CALL 3: Contenido de classesData.clases:", classesData.clases);
-
+        console.log("PaginaDeInformacion: Datos de todas las clases (classesData):", classesData);
 
         if (classesData.status === "success" && Array.isArray(classesData.clases)) {
           const relevantModuleIds = new Set(fetchedModules.map(m => String(m.id)));
@@ -144,14 +121,14 @@ function PaginaDeInformacion() {
             relevantModuleIds.has(String(clase.modulo_id))
           );
           setCourseClasses(filteredClasses);
-          // console.log("Clases filtradas:", filteredClasses);
+          console.log("PaginaDeInformacion: Clases filtradas para este curso:", filteredClasses);
         } else {
+          console.warn("PaginaDeInformacion: No se encontraron clases o formato inesperado. Mensaje:", classesData.message);
           setCourseClasses([]);
-          // console.warn("No se encontraron clases o formato inesperado:", classesData.message || "La propiedad 'clases' no es un array. Estableciendo classes a []");
         }
 
       } catch (err) {
-        console.error("Error general en fetchCourseAndContentData:", err);
+        console.error("PaginaDeInformacion: Error general en fetchCourseAndContentData:", err);
         setError("No se pudo conectar con el servidor o hubo un error al obtener los datos. Por favor, inténtalo de nuevo más tarde.");
       } finally {
         setLoading(false);
@@ -161,7 +138,7 @@ function PaginaDeInformacion() {
     if (courseIdFromUrl) {
       fetchCourseAndContentData();
     }
-  }, [courseIdFromUrl]); // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! SOLO courseIdFromUrl
+  }, [courseIdFromUrl]);
 
   // Renderizado Condicional: Loading, Error, No Data
   if (loading) {
@@ -189,7 +166,7 @@ function PaginaDeInformacion() {
     );
   }
 
-  // Desestructuración y asignación de valores predeterminados para evitar `undefined`
+  // Desestructuración y asignación de valores predeterminados
   const {
     titulo = "Título no disponible",
     descripcion_larga = "Descripción no disponible",
@@ -197,7 +174,7 @@ function PaginaDeInformacion() {
     duracion_estimada = "Duración no disponible",
     horas_por_semana = "N/A",
     fecha_inicio_clases = "Próximamente",
-    fecha_limite_inscripcion = "Abiertas",
+    fecha_limite_inscripcion = "Abiertas", // <-- ¡Esta es la fecha que necesitamos!
     ritmo_aprendizaje = "Flexible",
     tipo_clase = "Online",
     titulo_credencial = "Certificado",
@@ -210,7 +187,13 @@ function PaginaDeInformacion() {
     url_banner,
     resultados_aprendizaje = [],
     callToActionData,
+    temario, // Desestructuramos el 'temario' directamente de apiData
   } = apiData;
+
+  // Prepara el temario para pasarlo a `CourseDetailPage`
+  const temarioForDisplay = temario && Array.isArray(temario)
+    ? temario.map(item => item.titulo || "Tema sin título")
+    : [];
 
   const classesByModule = courseClasses.reduce((acc, clase) => {
     const moduleId = String(clase.modulo_id);
@@ -242,10 +225,16 @@ function PaginaDeInformacion() {
     price: precio,
     inductionVideoUrl: url_video_introductorio,
     modules: modulesWithClasses,
-    learningOutcomes: resultados_aprendizaje,
+    learningOutcomes: temarioForDisplay, // Aquí pasamos tu temario
   };
 
-  const countdownTarget = "2025-06-29T23:59:59";
+  // --- CAMBIO CLAVE AQUÍ: Usar fecha_limite_inscripcion para countdownTarget ---
+  // La API te da 'fecha_limite_inscripcion' como "AAAA-MM-DD".
+  // Para un Date object y un countdown preciso, es mejor agregar una hora.
+  const countdownTarget = fecha_limite_inscripcion && fecha_limite_inscripcion !== "Abiertas"
+    ? `${fecha_limite_inscripcion}T23:59:59`
+    : null;
+
 
   const programmeDetailsForBanner = {
     programmeName: titulo,
@@ -329,7 +318,7 @@ function PaginaDeInformacion() {
       {apiData && (
         <CourseDetailPage
           course={courseDataForDetailPage}
-          countdownTargetDate={countdownTarget}
+          countdownTargetDate={countdownTarget} // <-- Aquí se pasa la fecha dinámica de la API
         />
       )}
 

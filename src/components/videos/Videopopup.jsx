@@ -1,28 +1,33 @@
 // Videopopup.jsx
-import React from 'react';
-import { Box } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, IconButton } from '@mui/material'; 
 import YouTube from 'react-youtube';
+import YouTubeIcon from '@mui/icons-material/YouTube'; 
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 
 const getYouTubeVideoId = (url) => {
-  const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/]\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\s&]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
   const match = url?.match(regExp);
   return match && match[1] ? match[1] : null;
 };
 
-const Videopopup = ({ videoUrl, onPlayerReady }) => {
+const Videopopup = ({ videoUrl, onPlayerReady, isPlaying, onPlayPause, hasStartedPlaying }) => {
+  const [isHovering, setIsHovering] = useState(false); 
+
   if (!videoUrl) return null;
 
   const youtubeVideoId = getYouTubeVideoId(videoUrl);
-
+  const isYouTubeVideo = !!youtubeVideoId;
+  
   const youtubeOpts = {
     playerVars: {
       autoplay: 0,
-      controls: 0,         // IMPRESCINDIBLE: OCULTA LOS CONTROLES NATIVOS DE YOUTUBE
+      controls: 0,         
       modestbranding: 1,
       rel: 0,
       disablekb: 1,
       fs: 0,
-      // showinfo: 0,      // Este parámetro está obsoleto y no tiene efecto
     },
   };
 
@@ -49,13 +54,11 @@ const Videopopup = ({ videoUrl, onPlayerReady }) => {
         backgroundColor: '#000',
         borderRadius: 1,
         overflow: 'hidden',
-        // Asegura que cualquier iframe dentro se ajuste correctamente
         '& iframe': {
           ...fillParentStyles,
         },
       }}
-      // El onContextMenu aquí es menos necesario ya que la capa superior lo manejará
-      // onContextMenu={(e) => e.preventDefault()} 
+      onContextMenu={(e) => e.preventDefault()}
     >
       {youtubeVideoId ? (
         <YouTube
@@ -67,31 +70,62 @@ const Videopopup = ({ videoUrl, onPlayerReady }) => {
         />
       ) : (
         <video
-          // Para videos locales, también deberías quitar 'controls' si quieres controles externos
-          // y añadir el onContextMenu al video si no hay una capa superior.
-          // controls
           src={videoUrl}
           style={{ ...fillParentStyles, objectFit: 'contain' }}
           title="Video del curso"
         />
       )}
 
-      {/* --- NUEVA CAPA TRANSPARENTE ENCIMA DEL VIDEO --- */}
       <Box
         sx={{
-          ...fillParentStyles, // Ocupa todo el espacio del padre
-          zIndex: 1,           // Asegura que esté por encima del video (iframe/video)
-          backgroundColor: 'transparent', // Totalmente transparente
-          cursor: 'default',   // Cambia el cursor para no indicar interactividad
-          // Intercepta eventos de ratón para evitar que lleguen al iframe
-          pointerEvents: 'auto', // Asegura que reciba eventos de puntero
+          ...fillParentStyles, 
+          zIndex: 1,           
+          backgroundColor: 'transparent', 
+          cursor: 'pointer',   
+          pointerEvents: 'auto', 
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          opacity: (!hasStartedPlaying || !isPlaying || isHovering) ? 1 : 0, 
+          transition: 'opacity 0.3s ease-in-out', 
         }}
-        onContextMenu={(e) => e.preventDefault()} // Deshabilita el clic derecho en esta capa
-        // Puedes añadir más manejadores aquí si necesitas interceptar clics, etc.
-        onClick={(e) => e.preventDefault()} // Opcional: intercepta clics normales
-        onDoubleClick={(e) => e.preventDefault()} // Opcional: intercepta doble clics
-      />
-      {/* --- FIN NUEVA CAPA TRANSPARENTE --- */}
+        onContextMenu={(e) => e.preventDefault()} 
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onClick={onPlayPause} 
+      >
+        {isYouTubeVideo && !hasStartedPlaying ? (
+          <Box
+            sx={{
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              borderRadius: '50%',
+              padding: 1, 
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: { xs: 80, sm: 100 }, 
+              height: { xs: 80, sm: 100 }, 
+            }}
+          >
+            <YouTubeIcon sx={{ fontSize: { xs: 70, sm: 82 }, color: 'white' }} />
+          </Box>
+        ) : (
+          <IconButton 
+            sx={{ 
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+              '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' },
+              padding: { xs: '12px', sm: '16px' } 
+            }}
+            aria-label={isPlaying ? "Pausar video" : "Reproducir video"}
+          >
+            {isPlaying ? 
+              <PauseIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} /> 
+              : 
+              <PlayArrowIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} />
+            }
+          </IconButton>
+        )}
+      </Box>
     </Box>
   );
 };
