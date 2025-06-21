@@ -1,3 +1,4 @@
+// CourseForm.jsx
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -44,7 +45,8 @@ const CourseForm = () => {
     tipo_clase: "",
     titulo_credencial: "",
     descripcion_credencial: "",
-    marca_plataforma: [], 
+    marca_plataforma: [],
+    temario: [], // Inicializamos el temario como un array vacío
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -54,6 +56,7 @@ const CourseForm = () => {
 
   const [newLogoText, setNewLogoText] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newTemaTitle, setNewTemaTitle] = useState(""); // Nuevo estado para el título del tema
   const [bannerFile, setBannerFile] = useState(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -72,11 +75,13 @@ const CourseForm = () => {
   } = useCourseActions();
 
   const handleForceRefresh = () => {
+    console.log("[CourseForm] Forzando refresco de lista de cursos.");
     setForceRefreshCourseList((prev) => prev + 1);
   };
 
   useEffect(() => {
     if (responseMessage.message) {
+      console.log("[CourseForm] Mensaje de respuesta actualizado:", responseMessage);
       const timer = setTimeout(() => {
         setResponseMessage({ type: "", message: "" });
       }, 5000);
@@ -85,6 +90,7 @@ const CourseForm = () => {
   }, [responseMessage, setResponseMessage]);
 
   useEffect(() => {
+    console.log("[CourseForm] useEffect para cargar categorías.");
     const fetchCategorias = async () => {
       try {
         const response = await fetch(
@@ -96,7 +102,6 @@ const CourseForm = () => {
           }
         );
 
-
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
@@ -104,8 +109,9 @@ const CourseForm = () => {
           );
         }
 
-        const data = await response.json();      
-        
+        const data = await response.json();
+        console.log("[CourseForm] Categorías recibidas:", data);
+
         if (data.status === "success") {
           setCategorias(data.categorias);
         } else {
@@ -117,6 +123,7 @@ const CourseForm = () => {
         setCategoryErrorMessage(
           "No se pudo conectar con el servidor para obtener las categorías o hubo un error de red."
         );
+        console.error("[CourseForm] Error al cargar categorías:", error);
       } finally {
         setLoadingCategories(false);
       }
@@ -125,25 +132,31 @@ const CourseForm = () => {
   }, []);
 
   useEffect(() => {
-    console.log("[CourseForm] -> useEffect courseToEdit: courseToEdit ha cambiado:", courseToEdit);
+    console.log("[CourseForm] courseToEdit cambió:", courseToEdit);
     if (courseToEdit) {
-      
       setIsEditing(true);
-  console.log("CURSO EDIT", courseToEdit);
-  
+
       const formatToDateInput = (dateString) => {
         if (!dateString) return "";
         const datePart = dateString.split(" ")[0];
         return datePart;
       };
 
+      // Depuración de marca_plataforma:
+      console.log("[CourseForm] Original courseToEdit.marcas (JSON string o array):", courseToEdit.marcas);
       const parsedMarcaPlataforma =
         typeof courseToEdit.marcas === "string"
           ? JSON.parse(courseToEdit.marcas)
           : courseToEdit.marcas || [];
+      console.log("[CourseForm] parsedMarcaPlataforma después de parseo:", parsedMarcaPlataforma);
 
-      console.log("[CourseForm] -> useEffect courseToEdit: raw marca_plataforma from courseToEdit:", courseToEdit.marcas);
-      console.log("[CourseForm] -> useEffect courseToEdit: parsed marca_plataforma:", parsedMarcaPlataforma);
+
+      const parsedTemario =
+        typeof courseToEdit.curso.temario === "string"
+          ? JSON.parse(courseToEdit.curso.temario)
+          : courseToEdit.curso.temario || [];
+      console.log("[CourseForm] parsedTemario después de parseo:", parsedTemario);
+
 
       const newFormData = {
         accion: "update",
@@ -153,8 +166,11 @@ const CourseForm = () => {
         descripcion_corta: courseToEdit.curso.descripcion_corta || "",
         descripcion_larga: courseToEdit.curso.descripcion_larga || "",
         url_banner: courseToEdit.curso.url_banner || "",
-        url_video_introductorio: courseToEdit.curso.url_video_introductorio || "",
-        precio: courseToEdit.curso.precio ? parseFloat(courseToEdit.curso.precio) : "",
+        url_video_introductorio:
+          courseToEdit.curso.url_video_introductorio || "",
+        precio: courseToEdit.curso.precio
+          ? parseFloat(courseToEdit.curso.precio)
+          : "",
         moneda: courseToEdit.curso.moneda || "USD",
         nivel: courseToEdit.curso.nivel || "",
         duracion_estimada_valor: courseToEdit.curso.duracion_estimada
@@ -166,7 +182,9 @@ const CourseForm = () => {
         estado: courseToEdit.curso.estado || "activo",
         profesor_id: courseToEdit.curso.profesor_id || (user ? user.id : null),
         categoria_id: courseToEdit.curso.categoria_id || "",
-        fecha_publicacion: formatToDateInput(courseToEdit.curso.fecha_publicacion),
+        fecha_publicacion: formatToDateInput(
+          courseToEdit.curso.fecha_publicacion
+        ),
         fecha_actualizacion: formatToDateInput(
           new Date().toISOString().slice(0, 10)
         ),
@@ -182,11 +200,13 @@ const CourseForm = () => {
         titulo_credencial: courseToEdit.curso.titulo_credencial || "",
         descripcion_credencial: courseToEdit.curso.descripcion_credencial || "",
         marca_plataforma: parsedMarcaPlataforma, // Usar la versión parseada
+        temario: parsedTemario, // Usar la versión parseada del temario
       };
+      console.log("[CourseForm] newFormData al cargar para edición:", newFormData);
       setFormData(newFormData);
       setBannerFile(null);
-      console.log("[CourseForm] -> useEffect courseToEdit: newFormData aplicado:", newFormData);
     } else {
+      console.log("[CourseForm] Reiniciando a modo creación.");
       setIsEditing(false);
       setFormData({
         ...initialFormData,
@@ -195,85 +215,134 @@ const CourseForm = () => {
         fecha_actualizacion: new Date().toISOString().slice(0, 10),
       });
       setBannerFile(null);
-      console.log("[CourseForm] -> useEffect courseToEdit: Restableciendo a modo creación. formData:", formData);
     }
-  }, [courseToEdit, user]); 
+  }, [courseToEdit, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    console.log(`[CourseForm] -> handleChange: ${name}: ${value}`);
+    setFormData((prevData) => {
+      const updatedData = {
+        ...prevData,
+        [name]: value,
+      };
+      console.log(`[CourseForm] handleChange: Campo '${name}' a '${value}'. formData actualizado:`, updatedData);
+      return updatedData;
+    });
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files.length > 0 ? e.target.files?.[0] : null;
+    console.log("[CourseForm] Archivo de banner seleccionado:", file);
     setBannerFile(file);
     setResponseMessage({ type: "", message: "" });
     setFormData((prevData) => ({
       ...prevData,
-      url_banner: "", 
+      url_banner: "", // Limpiamos la URL existente para que el hook intente subir la nueva
     }));
-    console.log("[CourseForm] -> handleFileChange: Archivo de banner seleccionado:", file);
   };
 
   const handleAddMarcaPlataforma = () => {
-    console.log("descripcion", newDescription);
-    console.log("logo text", newLogoText);
-    
-    console.log("marcaplataforma:", formData.marca_plataforma);
-
     if (newLogoText && newDescription) {
-      const newMarca = { logoText: newLogoText, description: newDescription };
+      const newMarca = { logotext: newLogoText, description: newDescription }; // Asegúrate que la clave es 'logotext'
       setFormData((prevData) => {
-        const updatedMarcas = [...prevData.marca_plataforma, newMarca];
-      
+        const updatedMarcaPlataforma = [...prevData.marca_plataforma, newMarca];
+        console.log("[CourseForm] Añadiendo nueva marca. marca_plataforma actualizado:", updatedMarcaPlataforma);
         return {
           ...prevData,
-          marca_plataforma: updatedMarcas,
+          marca_plataforma: updatedMarcaPlataforma,
         };
       });
       setNewLogoText("");
       setNewDescription("");
+      setResponseMessage({ type: "", message: "" }); // Limpiar mensaje de error
     } else {
       setResponseMessage({
         type: "error",
         message:
           "Por favor, rellena el texto del logo y la descripción para añadir una marca de plataforma.",
       });
+      console.warn("[CourseForm] Intento de añadir marca sin campos completos.");
     }
   };
 
   const handleRemoveMarcaPlataforma = (indexToRemove) => {
-    console.log("[CourseForm] -> handleRemoveMarcaPlataforma: Index to remove:", indexToRemove);
     setFormData((prevData) => {
-      const filteredMarcas = prevData.marca_plataforma.filter(
+      const updatedMarcaPlataforma = prevData.marca_plataforma.filter(
         (_, index) => index !== indexToRemove
       );
-      console.log("[CourseForm] -> handleRemoveMarcaPlataforma: Updated formData.marca_plataforma AFTER remove:", filteredMarcas);
+      console.log("[CourseForm] Eliminando marca en índice", indexToRemove, ". marca_plataforma actualizado:", updatedMarcaPlataforma);
       return {
         ...prevData,
-        marca_plataforma: filteredMarcas,
+        marca_plataforma: updatedMarcaPlataforma,
       };
     });
   };
 
-  const handleSubmit = async (e) => { 
-    
+  // Función para añadir un tema
+  const handleAddTema = () => {
+    if (newTemaTitle) {
+      const newTema = { titulo: newTemaTitle };
+      setFormData((prevData) => {
+        const updatedTemario = [...prevData.temario, newTema];
+        console.log("[CourseForm] Añadiendo nuevo tema. Temario actualizado:", updatedTemario);
+        return {
+          ...prevData,
+          temario: updatedTemario,
+        };
+      });
+      setNewTemaTitle(""); // Limpiar el campo de entrada del nuevo tema
+      setResponseMessage({ type: "", message: "" }); // Limpiar cualquier mensaje de error
+    } else {
+      setResponseMessage({
+        type: "error",
+        message: "Por favor, ingresa un título para el tema.",
+      });
+      console.warn("[CourseForm] Intento de añadir tema sin título.");
+    }
+  };
+
+  // Función para eliminar un tema
+  const handleRemoveTema = (indexToRemove) => {
+    setFormData((prevData) => {
+      const updatedTemario = prevData.temario.filter((_, index) => index !== indexToRemove);
+      console.log("[CourseForm] Eliminando tema en índice", indexToRemove, ". Temario actualizado:", updatedTemario);
+      return {
+        ...prevData,
+        temario: updatedTemario,
+      };
+    });
+  };
+
+  // **NUEVA FUNCIÓN: handleEditTema**
+  const handleEditTema = (indexToEdit, newTitle) => {
+    setFormData((prevData) => {
+      const updatedTemario = prevData.temario.map((tema, index) =>
+        index === indexToEdit ? { ...tema, titulo: newTitle } : tema
+      );
+      console.log("[CourseForm] Editando tema en índice", indexToEdit, "a nuevo título:", newTitle, ". Temario actualizado:", updatedTemario);
+      return {
+        ...prevData,
+        temario: updatedTemario,
+      };
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("[CourseForm] handleSubmit iniciado.");
+    console.log("[CourseForm] formData ANTES de enviar a submitCourse:", formData);
+    console.log("[CourseForm] bannerFile ANTES de enviar a submitCourse:", bannerFile);
+    console.log("[CourseForm] isEditing ANTES de enviar a submitCourse:", isEditing);
 
-    const dataToSend = {
-      ...formData,
-      profesor_id: isEditing ? formData.profesor_id : user ? user.id : null,
-      marca_plataforma: formData.marca_plataforma
 
-    }; 
+    // No se necesita `dataToSend` aquí, ya que `submitCourse` usará directamente `formData`
+    // y maneja la lógica de `profesor_id`, `marca_plataforma`, y `temario`.
+    const result = await submitCourse(formData, bannerFile, isEditing);
 
-    const result = await submitCourse(dataToSend, bannerFile, isEditing);
+    console.log("[CourseForm] Resultado de submitCourse:", result);
 
     if (result.success) {
+      console.log("[CourseForm] Envío exitoso. Reiniciando formulario.");
       setFormData({
         ...initialFormData,
         profesor_id: user ? user.id : null,
@@ -283,14 +352,17 @@ const CourseForm = () => {
       setBannerFile(null);
       setNewLogoText("");
       setNewDescription("");
+      setNewTemaTitle(""); // Limpiar también el input del temario
       setIsEditing(false);
       setCourseToEdit(null);
-      handleForceRefresh();
-      console.log("[CourseForm] -> handleSubmit: Formulario reiniciado.");
+      handleForceRefresh(); // Forzar el refresco de la lista de cursos
+    } else {
+      console.error("[CourseForm] Envío fallido:", result.message);
     }
   };
 
   const handleBackToCreateMode = () => {
+    console.log("[CourseForm] Volviendo a modo creación.");
     setIsEditing(false);
     setCourseToEdit(null);
     setFormData({
@@ -301,12 +373,11 @@ const CourseForm = () => {
     });
     setBannerFile(null);
     setResponseMessage({ type: "", message: "" });
-    handleForceRefresh();
-    console.log("[CourseForm] -> handleBackToCreateMode: Volviendo a modo creación.");
+    setNewLogoText(""); // Limpiar también el input de marca
+    setNewDescription(""); // Limpiar también el input de marca
+    setNewTemaTitle(""); // Limpiar también el input del temario
+    handleForceRefresh(); // Forzar el refresco de la lista de cursos
   };
-
- 
-  
 
   return (
     <Box
@@ -390,6 +461,13 @@ const CourseForm = () => {
                 setNewDescription={setNewDescription}
                 handleAddMarcaPlataforma={handleAddMarcaPlataforma}
                 handleRemoveMarcaPlataforma={handleRemoveMarcaPlataforma}
+                // Pasar props para el temario
+                newTemaTitle={newTemaTitle}
+                setNewTemaTitle={setNewTemaTitle}
+                handleAddTema={handleAddTema}
+                handleRemoveTema={handleRemoveTema}
+                // **NUEVA PROP: handleEditTema**
+                handleEditTema={handleEditTema}
               />
             </Box>
           </Box>
@@ -437,6 +515,7 @@ const CourseForm = () => {
         </Typography>
         <CourseStatusManager
           onEditCourse={(cursoRecibido) => {
+            console.log("[CourseForm] Curso recibido para edición:", cursoRecibido);
             setCourseToEdit(cursoRecibido);
           }}
           refreshTrigger={forceRefreshCourseList}

@@ -38,9 +38,6 @@ const CourseStatusManager = ({
   useEffect(() => {
     let tempCourses = [...allCourses]; // Cursos completos obtenidos del hook
 
-    console.log("TODOS LOS CURSOS", allCourses);
-    
-
     if (selectedCategory) {
       tempCourses = tempCourses.filter(
         (
@@ -200,7 +197,7 @@ const CourseStatusManager = ({
           height: "100%",
         }}
       >
-       <CircularProgress />
+        <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
           Cargando categorías...
         </Typography>
@@ -247,7 +244,6 @@ const CourseStatusManager = ({
         p: 2,
       }}
     >
-
       <Box
         sx={{
           display: "flex",
@@ -258,9 +254,7 @@ const CourseStatusManager = ({
           flexWrap: "wrap",
         }}
       >
-
         <FormControl sx={{ minWidth: 200 }}>
-
           <InputLabel id="category-filter-label">Categoría</InputLabel>
           <Select
             labelId="category-filter-label"
@@ -269,20 +263,16 @@ const CourseStatusManager = ({
             label="Categoría"
             onChange={handleCategoryChange}
           >
-
             {categorias.map((cat) => (
               <MenuItem key={cat.id} value={cat.id}>
                 {cat.nombre}
               </MenuItem>
             ))}
-
           </Select>
-
         </FormControl>
 
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel id="status-filter-label">Estado</InputLabel>
-
           <Select
             labelId="status-filter-label"
             id="status-filter-select"
@@ -290,15 +280,12 @@ const CourseStatusManager = ({
             label="Estado"
             onChange={handleStatusFilterChange}
           >
-
             {dynamicEstadosDisponibles.map((estado) => (
               <MenuItem key={estado.value} value={estado.value}>
                 {estado.label}
               </MenuItem>
             ))}
-
           </Select>
-
         </FormControl>
 
         <Button onClick={handleRefresh} variant="outlined">

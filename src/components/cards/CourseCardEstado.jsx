@@ -13,7 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useNavigate } from 'react-router-dom'; // ¡Importa useNavigate!
+import { useNavigate } from 'react-router-dom';
 
 const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -22,9 +22,6 @@ const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }
   // Desestructuramos el objeto 'course' para acceder a 'curso' y 'marcas'
   // Si 'course' es el objeto { curso: {...}, marcas: [...] }, entonces:
   const { curso, marcas } = course; // Obtenemos el objeto 'curso' y el array 'marcas'
-
-  console.log("COURSE EN ESTADO CARD", course);
-  
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -67,7 +64,6 @@ const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }
 
   // Verificación para asegurar que 'curso' existe antes de renderizar
   if (!curso) {
-    console.warn("CourseCardEstado recibió un objeto 'course' sin la propiedad 'curso' anidada.");
     return null; // O un componente de placeholder si prefieres
   }
 

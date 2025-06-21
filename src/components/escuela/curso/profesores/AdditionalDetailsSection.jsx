@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from "react"; // Importa useState
 import {
   Box,
   TextField,
@@ -6,22 +6,70 @@ import {
   MenuItem,
   Divider,
   IconButton,
-  Paper, 
-  Button 
-} from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'; 
+  Paper,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckIcon from "@mui/icons-material/Check";
 
-const AdditionalDetailsSection = ({ formData, handleChange, newLogoText, setNewLogoText, newDescription, setNewDescription, handleAddMarcaPlataforma, handleRemoveMarcaPlataforma }) => {
+const AdditionalDetailsSection = ({
+  formData,
+  handleChange,
+  newLogoText,
+  setNewLogoText,
+  newDescription,
+  setNewDescription,
+  handleAddMarcaPlataforma,
+  handleRemoveMarcaPlataforma,
+  newTemaTitle,
+  setNewTemaTitle,
+  handleAddTema,
+  handleRemoveTema,
+  handleEditTema,
+}) => {
+  // Nuevo estado local para saber qué tema se está editando
+  const [editingTemaIndex, setEditingTemaIndex] = useState(null);
+  const [currentEditingTemaTitle, setCurrentEditingTemaTitle] = useState("");
 
-  console.log("INFO QUE LLEGA", formData);
+  const handleStartEditingTema = (index, title) => {
+    console.log("[AdditionalDetails] Iniciando edición de tema en índice:", index, "Título:", title);
+    setEditingTemaIndex(index);
+    setCurrentEditingTemaTitle(title);
+  };
+
+  const handleSaveEditingTema = (index) => {
+    console.log("[AdditionalDetails] Guardando edición de tema en índice:", index, "Nuevo título:", currentEditingTemaTitle);
+    if (currentEditingTemaTitle.trim()) {
+      handleEditTema(index, currentEditingTemaTitle);
+      setEditingTemaIndex(null);
+      setCurrentEditingTemaTitle("");
+    } else {
+      console.warn("[AdditionalDetails] Intento de guardar tema con título vacío.");
+    }
+  };
+
+  const handleCancelEditingTema = () => {
+    console.log("[AdditionalDetails] Cancelando edición de tema.");
+    setEditingTemaIndex(null);
+    setCurrentEditingTemaTitle("");
+  };
+
+  // Depuración para marca_plataforma:
+  console.log("[AdditionalDetails] formData.marca_plataforma:", formData.marca_plataforma);
 
 
-  
   return (
     <>
       <Divider sx={{ my: 3 }} />
-      <Typography variant="h6" gutterBottom>Detalles Adicionales</Typography>
+      <Typography variant="h6" gutterBottom>
+        Detalles Adicionales
+      </Typography>
 
       <TextField
         label="Horas por Semana"
@@ -105,49 +153,56 @@ const AdditionalDetailsSection = ({ formData, handleChange, newLogoText, setNewL
       />
 
       <Divider sx={{ my: 3 }} />
-      <Typography variant="h6" gutterBottom>Marcas de Plataforma</Typography>
+      <Typography variant="h6" gutterBottom>
+        Marcas de Plataforma
+      </Typography>
       {/* Mapear las marcas de plataforma existentes */}
       {formData.marca_plataforma.map((marca, index) => (
-  <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: 'relative' }}>
-    <IconButton
-      onClick={() => handleRemoveMarcaPlataforma(index)}
-      color="error"
-      size="small"
-      sx={{ position: 'absolute', top: 8, right: 8 }}
-    >
-      <RemoveCircleOutlineIcon />
-    </IconButton>
-    <TextField
-      label={`Nombre de Marca ${index + 1}`}
-      value={marca.logotext || ''}      
-      fullWidth
-      margin="normal"
-      size="small"
-      sx={{ mb: 1 }}
-    />
-    <TextField
-      label={`Descripción de Marca ${index + 1}`}
-      value={marca.description || ''}  
-      fullWidth
-      margin="normal"
-      multiline
-      rows={2}
-      size="small"
-    />
-  </Paper>
-))}
-
+        <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
+          <IconButton
+            onClick={() => {
+              console.log("[AdditionalDetails] Clic en eliminar marca en índice:", index);
+              handleRemoveMarcaPlataforma(index);
+            }}
+            color="error"
+            size="small"
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
+            <RemoveCircleOutlineIcon />
+          </IconButton>
+          <TextField
+            label={`Nombre de Marca ${index + 1}`}
+            value={marca.logotext || ""} // Asegúrate que la clave es 'logotext' aquí también
+            fullWidth
+            margin="normal"
+            size="small"
+            sx={{ mb: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <TextField
+            label={`Descripción de Marca ${index + 1}`}
+            value={marca.description || ""}
+            fullWidth
+            margin="normal"
+            multiline
+            rows={2}
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+        </Paper>
+      ))}
 
       {/* Campos para añadir una nueva marca de plataforma */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
         <TextField
           label="Nuevo Nombre de Marca"
           value={newLogoText}
           onChange={(e) => setNewLogoText(e.target.value)}
           fullWidth
           size="small"
-          // La lógica de 'required' puede ajustarse, por ejemplo, si solo uno de los dos está lleno
-          required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0} 
+          required={
+            !newLogoText && !newDescription && formData.marca_plataforma.length === 0
+          }
         />
         <TextField
           label="Nueva Descripción de Marca"
@@ -157,18 +212,126 @@ const AdditionalDetailsSection = ({ formData, handleChange, newLogoText, setNewL
           multiline
           rows={2}
           size="small"
-          // La lógica de 'required' puede ajustarse
-          required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0} 
+          required={
+            !newLogoText && !newDescription && formData.marca_plataforma.length === 0
+          }
         />
         <Button
-          onClick={handleAddMarcaPlataforma}
+          onClick={() => {
+            console.log("[AdditionalDetails] Clic en añadir marca. newLogoText:", newLogoText, "newDescription:", newDescription);
+            handleAddMarcaPlataforma();
+          }}
           variant="outlined"
           startIcon={<AddCircleOutlineIcon />}
-          sx={{ alignSelf: 'flex-end', mt: 1 }}
+          sx={{ alignSelf: "flex-end", mt: 1 }}
         >
           Añadir Marca
         </Button>
       </Box>
+
+      {/* --- NUEVA SECCIÓN: TEMARIO --- */}
+      <Divider sx={{ my: 3 }} />
+      <Typography variant="h6" gutterBottom>
+        Temario del Curso
+      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+        <TextField
+          label="Título del Nuevo Tema"
+          variant="outlined"
+          fullWidth
+          value={newTemaTitle}
+          onChange={(e) => setNewTemaTitle(e.target.value)}
+          size="small"
+        />
+        <Button
+          onClick={handleAddTema}
+          variant="outlined"
+          startIcon={<AddCircleOutlineIcon />}
+          sx={{ alignSelf: "flex-end", mt: 1 }}
+        >
+          Añadir Tema
+        </Button>
+      </Box>
+
+      {formData.temario.length > 0 && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+            Temas Añadidos:
+          </Typography>
+          <List dense>
+            {formData.temario.map((tema, index) => (
+              <ListItem
+                key={index}
+                secondaryAction={
+                  <>
+                    {editingTemaIndex === index ? (
+                      <>
+                        <IconButton
+                          edge="end"
+                          aria-label="save"
+                          onClick={() => handleSaveEditingTema(index)}
+                          color="primary"
+                          sx={{ mr: 1 }}
+                        >
+                          <CheckIcon />
+                        </IconButton>
+                        <IconButton
+                          edge="end"
+                          aria-label="cancel"
+                          onClick={handleCancelEditingTema}
+                          color="warning"
+                        >
+                          <RemoveCircleOutlineIcon />
+                        </IconButton>
+                      </>
+                    ) : (
+                      <IconButton
+                        edge="end"
+                        aria-label="edit"
+                        onClick={() => handleStartEditingTema(index, tema.titulo)}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleRemoveTema(index)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </>
+                }
+              >
+                {editingTemaIndex === index ? (
+                  <TextField
+                    variant="standard"
+                    value={currentEditingTemaTitle}
+                    onChange={(e) => setCurrentEditingTemaTitle(e.target.value)}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-input": {
+                        padding: "4px 0",
+                      },
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <ListItemText primary={`${index + 1}. ${tema.titulo}`} />
+                )}
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      )}
+      {formData.temario.length === 0 && (
+        <Typography variant="body2" color="textSecondary">
+          Aún no hay temas añadidos.
+        </Typography>
+      )}
+      {/* --- FIN NUEVA SECCIÓN: TEMARIO --- */}
     </>
   );
 };

@@ -5,10 +5,6 @@ import { useAuth } from '../../../../../context/AuthContext'; // Asegúrate de q
 const useCourseData = (refreshTrigger) => {
   const { user } = useAuth(); // Obtén el objeto 'user' del contexto de autenticación
 
-
-  console.log("USUARIO:", user);
-  
-
   const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,15 +75,10 @@ const useCourseData = (refreshTrigger) => {
 
         const data = await response.json();
 
-      
-        
-
         // --- CAMBIO CLAVE AQUÍ: Acceder a data.cursos.cursos ---
         // Verificamos que 'data.cursos' sea un objeto y que dentro tenga la propiedad 'cursos' que sea un array
         if (data.status === 'success' && data.cursos && Array.isArray(data.cursos.cursos)) {
           const coursesArray = data.cursos.cursos; // ¡Accedemos al array real!
-          console.log("COUSE ARRAY",  coursesArray);
-          
 
           setAllCourses(coursesArray);
 
