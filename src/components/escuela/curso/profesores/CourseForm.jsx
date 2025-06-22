@@ -11,7 +11,7 @@ import {
 
 import CourseDetailsSection from "./CourseDetailsSection";
 import AdditionalDetailsSection from "./AdditionalDetailsSection";
-import useCourseFormLogic from "./logic/useCourseFormLogic";
+import useCourseFormLogic from "./logic/useCourseFormLogic"; // Asegúrate de que la ruta sea correcta
 
 const CourseForm = () => {
   const {
@@ -34,6 +34,7 @@ const CourseForm = () => {
     handleFileChange,
     handleAddMarcaPlataforma,
     handleRemoveMarcaPlataforma,
+    handleEditMarcaPlataforma, // <--- ¡YA LA ESTÁS EXTRayENDO AQUÍ!
     handleAddTema,
     handleRemoveTema,
     handleEditTema,
@@ -88,9 +89,8 @@ const CourseForm = () => {
         >
           <Box
             sx={{
-              flex: 1, 
+              flex: 1,
               minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" },
-            
             }}
           >
             <Typography variant="h6" gutterBottom>
@@ -130,6 +130,7 @@ const CourseForm = () => {
                   setNewDescription={setNewDescription}
                   handleAddMarcaPlataforma={handleAddMarcaPlataforma}
                   handleRemoveMarcaPlataforma={handleRemoveMarcaPlataforma}
+                  handleEditMarcaPlataforma={handleEditMarcaPlataforma}
                   newTemaTitle={newTemaTitle}
                   setNewTemaTitle={setNewTemaTitle}
                   handleAddTema={handleAddTema}

@@ -32,10 +32,17 @@ const AdditionalDetailsSection = ({
   handleAddTema,
   handleRemoveTema,
   handleEditTema,
+  // Nueva prop para editar marcas de plataforma
+  handleEditMarcaPlataforma,
 }) => {
-  // Nuevo estado local para saber qué tema se está editando
+  // Estado local para la edición de temas
   const [editingTemaIndex, setEditingTemaIndex] = useState(null);
   const [currentEditingTemaTitle, setCurrentEditingTemaTitle] = useState("");
+
+  // NUEVOS estados locales para la edición de marcas de plataforma
+  const [editingMarcaIndex, setEditingMarcaIndex] = useState(null);
+  const [currentEditingLogoText, setCurrentEditingLogoText] = useState("");
+  const [currentEditingDescription, setCurrentEditingDescription] = useState("");
 
   const handleStartEditingTema = (index, title) => {
     setEditingTemaIndex(index);
@@ -55,11 +62,37 @@ const AdditionalDetailsSection = ({
     setCurrentEditingTemaTitle("");
   };
 
+  // NUEVAS funciones para la edición de marcas de plataforma
+  const handleStartEditingMarca = (index, logoText, description) => {
+    setEditingMarcaIndex(index);
+    setCurrentEditingLogoText(logoText);
+    setCurrentEditingDescription(description);
+  };
+
+  const handleSaveEditingMarca = (index) => {
+    if (currentEditingLogoText.trim() || currentEditingDescription.trim()) {
+      handleEditMarcaPlataforma(
+        index,
+        currentEditingLogoText.trim(),
+        currentEditingDescription.trim()
+      );
+      setEditingMarcaIndex(null);
+      setCurrentEditingLogoText("");
+      setCurrentEditingDescription("");
+    }
+  };
+
+  const handleCancelEditingMarca = () => {
+    setEditingMarcaIndex(null);
+    setCurrentEditingLogoText("");
+    setCurrentEditingDescription("");
+  };
+
   return (
     <>
       {/* --- SECCIÓN: TEMARIO DEL CURSO (PRIMERO) --- */}
       {/* Línea divisoria visible solo en móviles, oculta en desktop */}
-      <Divider sx={{ my: 3, display: { xs: 'block', sm: 'none' } }} />
+      <Divider sx={{ my: 3, display: { xs: "block", sm: "none" } }} />
       <Typography variant="h6" gutterBottom>
         Temario del Curso
       </Typography>
@@ -168,8 +201,8 @@ const AdditionalDetailsSection = ({
       </Typography>
 
       {/* Agrupación de 3 en 3 con Box y flexbox usando width porcentual */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2%', justifyContent: 'space-between' }}>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: "2%", justifyContent: "space-between" }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Horas por Semana"
             name="horas_por_semana"
@@ -180,7 +213,7 @@ const AdditionalDetailsSection = ({
             helperText="Ej: 6 horas"
           />
         </Box>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Fecha Límite Inscripción"
             name="fecha_limite_inscripcion"
@@ -192,7 +225,7 @@ const AdditionalDetailsSection = ({
             required
           />
         </Box>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Fecha Inicio Clases"
             name="fecha_inicio_clases"
@@ -205,7 +238,7 @@ const AdditionalDetailsSection = ({
           />
         </Box>
 
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Ritmo de Aprendizaje"
             name="ritmo_aprendizaje"
@@ -219,7 +252,7 @@ const AdditionalDetailsSection = ({
             <MenuItem value="Fijo">Fijo</MenuItem>
           </TextField>
         </Box>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Tipo de Clase"
             name="tipo_clase"
@@ -234,7 +267,7 @@ const AdditionalDetailsSection = ({
             <MenuItem value="Presencial">Presencial</MenuItem>
           </TextField>
         </Box>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
             label="Título Credencial"
             name="titulo_credencial"
@@ -247,7 +280,7 @@ const AdditionalDetailsSection = ({
         </Box>
 
         {/* Último campo, ocupa el ancho completo */}
-        <Box sx={{ width: '100%' }}>
+        <Box sx={{ width: "100%" }}>
           <TextField
             label="Descripción Credencial"
             name="descripcion_credencial"
@@ -269,37 +302,93 @@ const AdditionalDetailsSection = ({
       {/* Mapear las marcas de plataforma existentes */}
       {formData.marca_plataforma.map((marca, index) => (
         <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
-          <IconButton
-            onClick={() => {
-              handleRemoveMarcaPlataforma(index);
-            }}
-            color="error"
-            size="small"
-            sx={{ position: "absolute", top: 8, right: 8 }}
-          >
-            <RemoveCircleOutlineIcon />
-          </IconButton>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label={`Nombre de Marca ${index + 1}`}
-              value={marca.logotext || ""} // Mantengo 'logotext' aquí como estaba en tu último código.
-              fullWidth
-              size="small"
-              sx={{ mb: 1 }}
-              InputProps={{ readOnly: true }}
-            />
-            <TextField
-              label={`Descripción de Marca ${index + 1}`}
-              value={marca.description || ""} // Mantengo 'description' aquí como estaba en tu último código.
-              fullWidth
-              multiline
-              rows={2}
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
+            {editingMarcaIndex === index ? (
+              <>
+                <TextField
+                  label="Nombre de Marca"
+                  value={currentEditingLogoText}
+                  onChange={(e) => setCurrentEditingLogoText(e.target.value)}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  label="Descripción de Marca"
+                  value={currentEditingDescription}
+                  onChange={(e) => setCurrentEditingDescription(e.target.value)}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  size="small"
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                  <IconButton
+                    aria-label="save"
+                    onClick={() => handleSaveEditingMarca(index)}
+                    color="primary"
+                  >
+                    <CheckIcon />
+                  </IconButton>
+                  <IconButton
+                    aria-label="cancel"
+                    onClick={handleCancelEditingMarca}
+                    color="warning"
+                  >
+                    <RemoveCircleOutlineIcon />
+                  </IconButton>
+                </Box>
+              </>
+            ) : (
+              <>
+                <TextField
+                  label={`Nombre de Marca ${index + 1}`}
+                  value={marca.logotext || ""}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 1 }}
+                  InputProps={{ readOnly: true }}
+                />
+                <TextField
+                  label={`Descripción de Marca ${index + 1}`}
+                  value={marca.description || ""}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  size="small"
+                  InputProps={{ readOnly: true }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                  <IconButton
+                    aria-label="edit"
+                    onClick={() =>
+                      handleStartEditingMarca(index, marca.logotext, marca.description)
+                    }
+                    sx={{ mr: 1 }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    aria-label="delete"
+                    onClick={() => {
+                      handleRemoveMarcaPlataforma(index);
+                    }}
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              </>
+            )}
           </Box>
         </Paper>
       ))}
+
+      {formData.marca_plataforma.length === 0 && (
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          Aún no hay marcas de plataforma añadidas.
+        </Typography>
+      )}
 
       {/* Campos para añadir una nueva marca de plataforma */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
@@ -309,9 +398,7 @@ const AdditionalDetailsSection = ({
           onChange={(e) => setNewLogoText(e.target.value)}
           fullWidth
           size="small"
-          required={
-            !newLogoText && !newDescription && formData.marca_plataforma.length === 0
-          }
+          required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <TextField
           label="Nueva Descripción de Marca"
@@ -321,9 +408,7 @@ const AdditionalDetailsSection = ({
           multiline
           rows={2}
           size="small"
-          required={
-            !newLogoText && !newDescription && formData.marca_plataforma.length === 0
-          }
+          required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <Button
           onClick={handleAddMarcaPlataforma}

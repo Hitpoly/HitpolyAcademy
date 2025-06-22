@@ -1,23 +1,22 @@
 // components/escuela/curso/profesores/useCourseFormLogic.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../context/AuthContext";
 import useCourseActions from "../cursosCardsProfesor/useCourseActions";
-import { useTheme, useMediaQuery } from "@mui/material"; // ¡Importa estos hooks aquí!
+import { useTheme, useMediaQuery } from "@mui/material";
 
 const useCourseFormLogic = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Definir theme y isMobile aquí dentro del hook
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const courseToEdit = location.state?.courseToEdit || null;
 
   const initialFormData = {
-    accion: "curso",
+    accion: "curso", // O "insert" para crear
     id: null,
     titulo: "",
     subtitulo: "",
@@ -125,19 +124,33 @@ const useCourseFormLogic = () => {
         return datePart;
       };
 
-      const parsedMarcaPlataforma =
-        typeof courseToEdit.marcas === "string"
-          ? JSON.parse(courseToEdit.marcas)
-          : courseToEdit.marcas || [];
+      let parsedMarcaPlataforma = [];
+      try {
+        if (typeof courseToEdit.marcas === "string") {
+          parsedMarcaPlataforma = JSON.parse(courseToEdit.marcas);
+        } else if (Array.isArray(courseToEdit.marcas)) {
+          parsedMarcaPlataforma = courseToEdit.marcas;
+        }
+      } catch (e) {
+        console.error("🐛 Error al parsear marcas de plataforma:", e);
+        parsedMarcaPlataforma = [];
+      }
 
-      const parsedTemario =
-        typeof courseToEdit.curso.temario === "string"
-          ? JSON.parse(courseToEdit.curso.temario)
-          : courseToEdit.curso.temario || [];
+      let parsedTemario = [];
+      try {
+        if (typeof courseToEdit.curso.temario === "string") {
+          parsedTemario = JSON.parse(courseToEdit.curso.temario);
+        } else if (Array.isArray(courseToEdit.curso.temario)) {
+          parsedTemario = courseToEdit.curso.temario;
+        }
+      } catch (e) {
+        console.error("🐛 Error al parsear temario:", e);
+        parsedTemario = [];
+      }
 
       const newFormData = {
-        accion: "update",
-        id: courseToEdit.curso.id,
+        accion: "update", // <-- ¡Asegúrate de que la acción sea 'update' al editar!
+        id: courseToEdit.curso.id, // <-- ¡VERIFICA QUE EL ID SE CARGUE AQUÍ!
         titulo: courseToEdit.curso.titulo || "",
         subtitulo: courseToEdit.curso.subtitulo || "",
         descripcion_corta: courseToEdit.curso.descripcion_corta || "",
@@ -182,6 +195,9 @@ const useCourseFormLogic = () => {
       };
       setFormData(newFormData);
       setBannerFile(null);
+      console.log("🐛 CourseFormLogic: Curso cargado para edición:", newFormData);
+      console.log("🐛 CourseFormLogic: ID del curso cargado:", newFormData.id);
+      console.log("🐛 CourseFormLogic: Marcas de plataforma cargadas:", newFormData.marca_plataforma);
     } else {
       setIsEditing(false);
       setResponseMessage({ type: "", message: "" });
@@ -195,6 +211,7 @@ const useCourseFormLogic = () => {
       setNewLogoText("");
       setNewDescription("");
       setNewTemaTitle("");
+      console.log("🐛 CourseFormLogic: Formulario inicializado para nuevo curso.");
     }
   }, [location.state, user]);
 
@@ -220,10 +237,14 @@ const useCourseFormLogic = () => {
   const handleAddMarcaPlataforma = () => {
     if (newLogoText && newDescription) {
       const newMarca = { logotext: newLogoText, description: newDescription };
-      setFormData((prevData) => ({
-        ...prevData,
-        marca_plataforma: [...prevData.marca_plataforma, newMarca],
-      }));
+      setFormData((prevData) => {
+        const updatedMarcas = [...prevData.marca_plataforma, newMarca];
+        console.log("🐛 CourseFormLogic: Marcas después de añadir:", updatedMarcas);
+        return {
+          ...prevData,
+          marca_plataforma: updatedMarcas,
+        };
+      });
       setNewLogoText("");
       setNewDescription("");
       setResponseMessage({ type: "", message: "" });
@@ -237,13 +258,32 @@ const useCourseFormLogic = () => {
   };
 
   const handleRemoveMarcaPlataforma = (indexToRemove) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      marca_plataforma: prevData.marca_plataforma.filter(
+    setFormData((prevData) => {
+      const updatedMarcas = prevData.marca_plataforma.filter(
         (_, index) => index !== indexToRemove
-      ),
-    }));
+      );
+      console.log("🐛 CourseFormLogic: Marcas después de eliminar:", updatedMarcas);
+      return {
+        ...prevData,
+        marca_plataforma: updatedMarcas,
+      };
+    });
   };
+
+  const handleEditMarcaPlataforma = useCallback(
+    (indexToEdit, updatedLogoText, updatedDescription) => {
+      setFormData((prevData) => {
+        const updatedMarcas = prevData.marca_plataforma.map((marca, index) =>
+          index === indexToEdit
+            ? { ...marca, logotext: updatedLogoText, description: updatedDescription }
+            : marca
+        );
+        console.log("🐛 CourseFormLogic: Marcas después de editar:", updatedMarcas);
+        return { ...prevData, marca_plataforma: updatedMarcas };
+      });
+    },
+    []
+  );
 
   const handleAddTema = () => {
     if (newTemaTitle) {
@@ -280,6 +320,8 @@ const useCourseFormLogic = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🐛 CourseFormLogic: FormData FINAL antes de llamar a submitCourse:", formData);
+    console.log("🐛 CourseFormLogic: ID del curso a enviar desde FormData FINAL:", formData.id); // Nuevo console.log
     const result = await submitCourse(formData, bannerFile, isEditing);
     if (result.success) {
       navigate("/mis-cursos", { state: { shouldRefresh: true } });
@@ -313,19 +355,13 @@ const useCourseFormLogic = () => {
     handleFileChange,
     handleAddMarcaPlataforma,
     handleRemoveMarcaPlataforma,
+    handleEditMarcaPlataforma,
     handleAddTema,
     handleRemoveTema,
     handleEditTema,
     handleSubmit,
     handleNavigateToMyCourses,
-    // Ahora puedes decidir si necesitas exponer theme y isMobile
-    // Si CourseDetailsSection o AdditionalDetailsSection los necesitan
-    // los puedes pasar como props o que ellos mismos usen los hooks.
-    // Para este caso, como CourseForm.jsx ya no los usa directamente,
-    // no es necesario retornarlos, a menos que un subcomponente los requiera
-    // y no pueda usar los hooks directamente.
-    // theme,
-    // isMobile,
+    isMobile,
   };
 };
 
