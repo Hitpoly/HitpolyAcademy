@@ -49,7 +49,6 @@ const CourseForm = () => {
         boxShadow: 3,
         p: { xs: 2, md: 4 },
         mx: "auto",
-        my: 4,
       }}
     >
       <Typography
@@ -84,22 +83,17 @@ const CourseForm = () => {
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             gap: 3,
-            // Asegura que los ítems flex se estiren para llenar la altura del contenedor
-            alignItems: "flex-start", // Alinea los elementos al inicio, pero no fuerza la altura si no es necesario
-            // Si quieres que ambas columnas tengan exactamente la misma altura
-            // y sus fondos se extiendan, podrías usar:
-            // alignItems: "stretch",
+            alignItems: "flex-start",
           }}
         >
-          {/* Columna Izquierda (se adapta al 50% de ancho) */}
           <Box
             sx={{
-              flex: 1, // Permite que la caja crezca y ocupe el espacio disponible
-              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" }, // 50% menos la mitad del gap
-              // Ajusta el minWidth para evitar que se haga demasiado pequeña en pantallas medianas
+              flex: 1, 
+              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" },
+            
             }}
           >
-            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
               Datos Principales del Curso
             </Typography>
             <Grid container spacing={2}>
@@ -122,8 +116,7 @@ const CourseForm = () => {
           {/* Columna Derecha (se adapta al 50% de ancho) */}
           <Box
             sx={{
-              flex: 1, // Permite que la caja crezca y ocupe el espacio disponible
-              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" }, // 50% menos la mitad del gap
+              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" },
             }}
           >
             <Grid container spacing={2}>

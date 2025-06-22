@@ -1,5 +1,4 @@
-// src/components/CourseCardEstado.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,92 +10,150 @@ import {
   Menu,
   MenuItem,
   Divider,
-} from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useNavigate } from 'react-router-dom';
+} from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { useNavigate } from "react-router-dom";
 
-const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }) => {
+const CourseCardEstado = ({
+  course,
+  onStatusChange,
+  onEditClick,
+  onDeleteClick,
+}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
-  // Desestructuramos el objeto 'course' para acceder a 'curso' y 'marcas'
-  // Si 'course' es el objeto { curso: {...}, marcas: [...] }, entonces:
-  const { curso, marcas } = course; // Obtenemos el objeto 'curso' y el array 'marcas'
+  const { curso, marcas } = course;
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const handleMenuClick = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
 
   const handleStatusChangeClick = (newStatus) => {
-    onStatusChange(curso.id, newStatus); // Usamos curso.id para el ID
+    onStatusChange(curso.id, newStatus);
     handleMenuClose();
   };
 
   const handleEditCourseClick = () => {
-    // Cuando editas, a menudo necesitas pasar el objeto 'curso' completo, no el 'item' anidado
-    onEditClick(course); // Pasamos solo el objeto 'curso' anidado
+    onEditClick(course);
     handleMenuClose();
   };
 
   const handleDeleteCourseClick = () => {
-    onDeleteClick(curso.id); // Usamos curso.id para el ID
+    onDeleteClick(curso.id);
     handleMenuClose();
   };
 
   const handleManageModules = () => {
-    // La ruta es /admin/cursos/:courseId/modulos (ver App.jsx)
-    navigate(`/cursos/${curso.id}/modulos`); // Usamos curso.id para la navegación
+    navigate(`/cursos/${curso.id}/modulos`);
     handleMenuClose();
   };
 
   const getStatusColor = (status) => {
-    switch (String(status).trim().toLowerCase()) { // Normaliza el estado para la comparación
-      case 'publicado': return 'success';
-      case 'borrador': return 'info';
-      case 'archivado': return 'error';
-      default: return 'default';
+    switch (String(status).trim().toLowerCase()) {
+      case "publicado":
+        return "success";
+      case "borrador":
+        return "info";
+      case "archivado":
+        return "error";
+      default:
+        return "default";
     }
   };
 
-  // Verificación para asegurar que 'curso' existe antes de renderizar
-  if (!curso) {
-    return null; // O un componente de placeholder si prefieres
-  }
+  if (!curso) return null;
 
   return (
-    <Card sx={{ maxWidth: 345, margin: 'auto', position: 'relative' }}>
-      <CardMedia
-        component="img"
-        height="140"
-        image={curso.url_banner || 'https://via.placeholder.com/345x140?text=No+Image'} // Accede a curso.url_banner
-        alt={curso.titulo} // Accede a curso.titulo
-      />
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Chip label={curso.nivel} color="secondary" size="small" /> {/* Accede a curso.nivel */}
-          <Chip label={curso.estado} color={getStatusColor(curso.estado)} size="small" /> {/* Accede a curso.estado */}
+    <Card
+      sx={{
+        width: 370,
+        margin: "auto",
+        position: "relative",
+        display: "flex",
+        height: 550,
+        flexDirection: "column",
+      }}
+    >
+      <Box sx={{ height: "40%", width: "100%", overflow: "hidden" }}>
+        <CardMedia
+          component="img"
+          image={
+            curso.url_banner ||
+            "https://via.placeholder.com/345x180?text=No+Image"
+          }
+          alt={curso.titulo}
+          sx={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover", // Recorta y adapta
+          }}
+        />
+      </Box>
+
+      <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
+          <Chip label={curso.nivel} color="secondary" size="small" />
+          <Chip label={curso.estado} color={getStatusColor(curso.estado)} size="small" />
         </Box>
-        <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          {curso.titulo} {/* Accede a curso.titulo */}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {curso.subtitulo} {/* Accede a curso.subtitulo */}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          **Duración:** {curso.duracion_estimada} {/* Accede a curso.duracion_estimada */}
-        </Typography>
-        <Typography variant="body1" color="primary" sx={{ mt: 1, fontWeight: 'bold' }}>
-          {curso.precio} {curso.moneda} {/* Accede a curso.precio y curso.moneda */}
-        </Typography>
-        <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-          Publicado: {new Date(curso.fecha_publicacion).toLocaleDateString()} {/* Accede a curso.fecha_publicacion */}
+
+        <Typography
+          gutterBottom
+          variant="h6"
+          component="div"
+          sx={{
+            fontWeight: "bold",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            mb: 1,
+          }}
+        >
+          {curso.titulo}
         </Typography>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            flexGrow: 1,
+            display: "-webkit-box",
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            mb: 1,
+          }}
+        >
+          {curso.subtitulo}
+        </Typography>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Duración: {curso.duracion_estimada}
+        </Typography>
+        <Typography variant="body1" color="primary" sx={{ mt: 1, fontWeight: "bold" }}>
+          {curso.precio} {curso.moneda}
+        </Typography>
+        <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+          Publicado: {new Date(curso.fecha_publicacion).toLocaleDateString()}
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
+          }}
+        >
           <Button
             variant="contained"
             color="primary"
@@ -116,29 +173,32 @@ const CourseCardEstado = ({ course, onStatusChange, onEditClick, onDeleteClick }
           >
             Más
           </Button>
+
           <Menu
             id="course-menu"
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
-            MenuListProps={{
-              'aria-labelledby': 'basic-button',
-            }}
+            MenuListProps={{ "aria-labelledby": "basic-button" }}
           >
-            {curso.estado !== 'publicado' && ( // Accede a curso.estado
-              <MenuItem onClick={() => handleStatusChangeClick('publicado')}>Publicar</MenuItem>
+            {curso.estado !== "publicado" && (
+              <MenuItem onClick={() => handleStatusChangeClick("publicado")}>
+                Publicar
+              </MenuItem>
             )}
-            {curso.estado !== 'borrador' && ( // Accede a curso.estado
-              <MenuItem onClick={() => handleStatusChangeClick('borrador')}>Convertir a Borrador</MenuItem>
+            {curso.estado !== "borrador" && (
+              <MenuItem onClick={() => handleStatusChangeClick("borrador")}>
+                Convertir a Borrador
+              </MenuItem>
             )}
-            {curso.estado !== 'archivado' && ( // Accede a curso.estado
-              <MenuItem onClick={() => handleStatusChangeClick('archivado')}>Archivar</MenuItem>
+            {curso.estado !== "archivado" && (
+              <MenuItem onClick={() => handleStatusChangeClick("archivado")}>
+                Archivar
+              </MenuItem>
             )}
             <Divider />
-            <MenuItem onClick={handleEditCourseClick}>
-              Editar Curso
-            </MenuItem>
-            <MenuItem onClick={handleDeleteCourseClick} sx={{ color: 'error.main' }}>
+            <MenuItem onClick={handleEditCourseClick}>Editar Curso</MenuItem>
+            <MenuItem onClick={handleDeleteCourseClick} sx={{ color: "error.main" }}>
               Eliminar Curso
             </MenuItem>
           </Menu>

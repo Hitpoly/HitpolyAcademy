@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Importa useState
+import React, { useState } from "react";
 import {
   Box,
   TextField,
@@ -58,11 +58,12 @@ const AdditionalDetailsSection = ({
   return (
     <>
       {/* --- SECCIÓN: TEMARIO DEL CURSO (PRIMERO) --- */}
-      <Divider sx={{ my: 3 }} />
+      {/* Línea divisoria visible solo en móviles, oculta en desktop */}
+      <Divider sx={{ my: 3, display: { xs: 'block', sm: 'none' } }} />
       <Typography variant="h6" gutterBottom>
         Temario del Curso
       </Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 3 }}>
         <TextField
           label="Título del Nuevo Tema"
           variant="outlined"
@@ -161,14 +162,14 @@ const AdditionalDetailsSection = ({
       )}
 
       {/* --- SECCIÓN: DETALLES ADICIONALES (SEGUNDO) --- */}
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: 3 }} /> {/* Este Divider siempre es visible */}
       <Typography variant="h6" gutterBottom>
         Detalles Adicionales
       </Typography>
 
       {/* Agrupación de 3 en 3 con Box y flexbox usando width porcentual */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2%', justifyContent: 'space-between' }}>
-        <Box sx={{ width: { xs: '100%', sm: '32%' } }}> {/* 32% para 3 columnas con un 2% de gap entre ellas */}
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
           <TextField
             label="Horas por Semana"
             name="horas_por_semana"
@@ -261,7 +262,7 @@ const AdditionalDetailsSection = ({
       </Box>
 
       {/* --- SECCIÓN: MARCAS DE PLATAFORMA (TERCERO Y ÚLTIMO) --- */}
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: 3 }} /> {/* Este Divider siempre es visible */}
       <Typography variant="h6" gutterBottom>
         Marcas de Plataforma
       </Typography>
@@ -281,7 +282,7 @@ const AdditionalDetailsSection = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               label={`Nombre de Marca ${index + 1}`}
-              value={marca.logotext || ""}
+              value={marca.logotext || ""} // Mantengo 'logotext' aquí como estaba en tu último código.
               fullWidth
               size="small"
               sx={{ mb: 1 }}
@@ -289,7 +290,7 @@ const AdditionalDetailsSection = ({
             />
             <TextField
               label={`Descripción de Marca ${index + 1}`}
-              value={marca.description || ""}
+              value={marca.description || ""} // Mantengo 'description' aquí como estaba en tu último código.
               fullWidth
               multiline
               rows={2}

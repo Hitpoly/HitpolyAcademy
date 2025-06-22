@@ -42,9 +42,7 @@ const CourseListManager = () => {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        maxWidth: "900px",
         mx: "auto",
-        my: 4,
       }}
     >
       <Typography
