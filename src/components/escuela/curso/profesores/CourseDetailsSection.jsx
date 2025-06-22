@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   TextField,
@@ -6,10 +6,19 @@ import {
   MenuItem,
   CircularProgress,
   InputAdornment,
-  Grid // Necesario para mantener la estructura de Grid
-} from '@mui/material';
+  Grid, // Necesario para mantener la estructura de Grid
+} from "@mui/material";
 
-const CourseDetailsSection = ({ formData, handleChange, bannerFile, handleFileChange, uploadingBanner, categorias, loadingCategories, categoryErrorMessage }) => {
+const CourseDetailsSection = ({
+  formData,
+  handleChange,
+  bannerFile,
+  handleFileChange,
+  uploadingBanner,
+  categorias,
+  loadingCategories,
+  categoryErrorMessage,
+}) => {
   return (
     <>
       <TextField
@@ -72,7 +81,7 @@ const CourseDetailsSection = ({ formData, handleChange, bannerFile, handleFileCh
         </Typography>
       )}
       {uploadingBanner && (
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
           <CircularProgress size={20} sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
             Subiendo imagen...
@@ -80,105 +89,116 @@ const CourseDetailsSection = ({ formData, handleChange, bannerFile, handleFileCh
         </Box>
       )}
 
-      <TextField
-        label="URL Video Introductorio"
-        name="url_video_introductorio"
-        value={formData.url_video_introductorio}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        type="url"
-        required
-      />
+      <Box sx={{ width: "100%", display: "flex", gap: 2 }}>
+        <Box sx={{ width: "50%" }}>
+          <TextField
+            label="URL Video Introductorio"
+            name="url_video_introductorio"
+            value={formData.url_video_introductorio}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            type="url"
+            required
+          />
+        </Box>
 
-      <TextField
-        label="Precio"
-        name="precio"
-        value={formData.precio}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        type="number"
-        inputProps={{ step: "0.01" }}
-        required
-        helperText="Ej: 99.99 (en USD, sin símbolo)"
-      />
+        <Box sx={{ width: "50%" }}>
+          <TextField
+            label="Precio"
+            name="precio"
+            value={formData.precio}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            type="number"
+            inputProps={{ step: "0.01" }}
+            required
+            helperText="Ej: 99.99 (en USD, sin símbolo)"
+          />
+        </Box>
+      </Box>
 
-      <TextField
-        label="Nivel"
-        name="nivel"
-        value={formData.nivel}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        select
-        required
-      >
-        <MenuItem value="Principiante">Principiante</MenuItem>
-        <MenuItem value="Intermedio">Intermedio</MenuItem>
-        <MenuItem value="Avanzado">Avanzado</MenuItem>
-      </TextField>
+      <Box sx={{ width: "100%", display: {xs: "block", md: "flex"}, gap: 2 }}>
+        <TextField
+          label="Nivel"
+          name="nivel"
+          value={formData.nivel}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          select
+          required
+        >
+          <MenuItem value="Principiante">Principiante</MenuItem>
+          <MenuItem value="Intermedio">Intermedio</MenuItem>
+          <MenuItem value="Avanzado">Avanzado</MenuItem>
+        </TextField>
 
-      <TextField
-        label="Categoría"
-        name="categoria_id"
-        value={formData.categoria_id}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        select
-        required
-        disabled={loadingCategories}
-        helperText={categoryErrorMessage || (loadingCategories ? "Cargando categorías..." : "")}
-        error={!!categoryErrorMessage}
-      >
-        <MenuItem value="">
-          <em>Selecciona una categoría</em>
-        </MenuItem>
-        {loadingCategories ? (
-          <MenuItem disabled>
-            <CircularProgress size={20} /> Cargando...
+        <TextField
+          label="Categoría"
+          name="categoria_id"
+          value={formData.categoria_id}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          select
+          required
+          disabled={loadingCategories}
+          helperText={
+            categoryErrorMessage ||
+            (loadingCategories ? "Cargando categorías..." : "")
+          }
+          error={!!categoryErrorMessage}
+        >
+          <MenuItem value="">
+            <em>Selecciona una categoría</em>
           </MenuItem>
-        ) : categoryErrorMessage ? (
-          <MenuItem disabled>Error al cargar</MenuItem>
-        ) : (
-          categorias.map((categoria) => (
-            <MenuItem key={categoria.id} value={categoria.id}>
-              {categoria.nombre}
+          {loadingCategories ? (
+            <MenuItem disabled>
+              <CircularProgress size={20} /> Cargando...
             </MenuItem>
-          ))
-        )}
-      </TextField>
+          ) : categoryErrorMessage ? (
+            <MenuItem disabled>Error al cargar</MenuItem>
+          ) : (
+            categorias.map((categoria) => (
+              <MenuItem key={categoria.id} value={categoria.id}>
+                {categoria.nombre}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
 
-      <TextField
-        label="Duración Estimada"
-        name="duracion_estimada_valor"
-        value={formData.duracion_estimada_valor}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        type="number"
-        required
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <TextField
-                select
-                name="duracion_estimada_unidad"
-                value={formData.duracion_estimada_unidad}
-                onChange={handleChange}
-                variant="standard"
-                sx={{ minWidth: 90, ml: 1 }}
-              >
-                <MenuItem value="dias">Días</MenuItem>
-                <MenuItem value="semanas">Semanas</MenuItem>
-                <MenuItem value="meses">Meses</MenuItem>
-                <MenuItem value="años">Años</MenuItem>
-              </TextField>
-            </InputAdornment>
-          ),
-        }}
-      />
+        <TextField
+          label="Duración Estimada"
+          name="duracion_estimada_valor"
+          value={formData.duracion_estimada_valor}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          type="number"
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <TextField
+                  select
+                  name="duracion_estimada_unidad"
+                  value={formData.duracion_estimada_unidad}
+                  onChange={handleChange}
+                  variant="standard"
+                  sx={{ minWidth: 90, ml: 1 }}
+                >
+                  <MenuItem value="dias">Días</MenuItem>
+                  <MenuItem value="semanas">Semanas</MenuItem>
+                  <MenuItem value="meses">Meses</MenuItem>
+                  <MenuItem value="años">Años</MenuItem>
+                </TextField>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
     </>
   );
 };

@@ -166,86 +166,99 @@ const AdditionalDetailsSection = ({
         Detalles Adicionales
       </Typography>
 
-      <TextField
-        label="Horas por Semana"
-        name="horas_por_semana"
-        value={formData.horas_por_semana}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        helperText="Ej: 6 horas"
-      />
-      <TextField
-        label="Fecha Límite Inscripción"
-        name="fecha_limite_inscripcion"
-        type="date"
-        value={formData.fecha_limite_inscripcion}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        InputLabelProps={{ shrink: true }}
-        required
-      />
-      <TextField
-        label="Fecha Inicio Clases"
-        name="fecha_inicio_clases"
-        type="date"
-        value={formData.fecha_inicio_clases}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        InputLabelProps={{ shrink: true }}
-        required
-      />
-      <TextField
-        label="Ritmo de Aprendizaje"
-        name="ritmo_aprendizaje"
-        value={formData.ritmo_aprendizaje}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        select
-        required
-      >
-        <MenuItem value="Flexible">Flexible</MenuItem>
-        <MenuItem value="Fijo">Fijo</MenuItem>
-      </TextField>
-      <TextField
-        label="Tipo de Clase"
-        name="tipo_clase"
-        value={formData.tipo_clase}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        select
-        required
-      >
-        <MenuItem value="Online en vivo">Online en vivo</MenuItem>
-        <MenuItem value="Grabadas">Grabadas</MenuItem>
-        <MenuItem value="Presencial">Presencial</MenuItem>
-      </TextField>
-      <TextField
-        label="Título Credencial"
-        name="titulo_credencial"
-        value={formData.titulo_credencial}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        helperText="Recurso de la credencial"
-      />
-      <TextField
-        label="Descripción Credencial"
-        name="descripcion_credencial"
-        value={formData.descripcion_credencial}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        multiline
-        rows={2}
-        required
-      />
+      {/* Agrupación de 3 en 3 con Box y flexbox usando width porcentual */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2%', justifyContent: 'space-between' }}>
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}> {/* 32% para 3 columnas con un 2% de gap entre ellas */}
+          <TextField
+            label="Horas por Semana"
+            name="horas_por_semana"
+            value={formData.horas_por_semana}
+            onChange={handleChange}
+            fullWidth
+            required
+            helperText="Ej: 6 horas"
+          />
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+          <TextField
+            label="Fecha Límite Inscripción"
+            name="fecha_limite_inscripcion"
+            type="date"
+            value={formData.fecha_limite_inscripcion}
+            onChange={handleChange}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            required
+          />
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+          <TextField
+            label="Fecha Inicio Clases"
+            name="fecha_inicio_clases"
+            type="date"
+            value={formData.fecha_inicio_clases}
+            onChange={handleChange}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            required
+          />
+        </Box>
+
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+          <TextField
+            label="Ritmo de Aprendizaje"
+            name="ritmo_aprendizaje"
+            value={formData.ritmo_aprendizaje}
+            onChange={handleChange}
+            fullWidth
+            select
+            required
+          >
+            <MenuItem value="Flexible">Flexible</MenuItem>
+            <MenuItem value="Fijo">Fijo</MenuItem>
+          </TextField>
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+          <TextField
+            label="Tipo de Clase"
+            name="tipo_clase"
+            value={formData.tipo_clase}
+            onChange={handleChange}
+            fullWidth
+            select
+            required
+          >
+            <MenuItem value="Online en vivo">Online en vivo</MenuItem>
+            <MenuItem value="Grabadas">Grabadas</MenuItem>
+            <MenuItem value="Presencial">Presencial</MenuItem>
+          </TextField>
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: '32%' } }}>
+          <TextField
+            label="Título Credencial"
+            name="titulo_credencial"
+            value={formData.titulo_credencial}
+            onChange={handleChange}
+            fullWidth
+            required
+            helperText="Recurso de la credencial"
+          />
+        </Box>
+
+        {/* Último campo, ocupa el ancho completo */}
+        <Box sx={{ width: '100%' }}>
+          <TextField
+            label="Descripción Credencial"
+            name="descripcion_credencial"
+            value={formData.descripcion_credencial}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            rows={2}
+            required
+          />
+        </Box>
+      </Box>
 
       {/* --- SECCIÓN: MARCAS DE PLATAFORMA (TERCERO Y ÚLTIMO) --- */}
       <Divider sx={{ my: 3 }} />
@@ -265,25 +278,25 @@ const AdditionalDetailsSection = ({
           >
             <RemoveCircleOutlineIcon />
           </IconButton>
-          <TextField
-            label={`Nombre de Marca ${index + 1}`}
-            value={marca.logotext || ""}
-            fullWidth
-            margin="normal"
-            size="small"
-            sx={{ mb: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <TextField
-            label={`Descripción de Marca ${index + 1}`}
-            value={marca.description || ""}
-            fullWidth
-            margin="normal"
-            multiline
-            rows={2}
-            size="small"
-            InputProps={{ readOnly: true }}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label={`Nombre de Marca ${index + 1}`}
+              value={marca.logotext || ""}
+              fullWidth
+              size="small"
+              sx={{ mb: 1 }}
+              InputProps={{ readOnly: true }}
+            />
+            <TextField
+              label={`Descripción de Marca ${index + 1}`}
+              value={marca.description || ""}
+              fullWidth
+              multiline
+              rows={2}
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
         </Paper>
       ))}
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, CircularProgress, Alert, Typography } from "@mui/material";
-import { useParams } from 'react-router-dom';
+import { useParams } from "react-router-dom";
 
 import ProgrammeDetailsBanner from "../banners/infoCurso";
 import EnrollmentForm from "../forms/EnrollmentForm";
@@ -8,12 +8,13 @@ import FactsAndCertificate from "./components/baner/FactsAndCertificate";
 import Footer from "../footer/pieDePagina";
 import CenteredCallToAction from "../banners/llamadoALaAccion";
 import FaqSection from "./components/FaqSection";
-import CourseDetailPage from './components/CourseDetailPage';
+import CourseDetailPage from "./components/CourseDetailPage";
 
 function PaginaDeInformacion() {
   const [apiData, setApiData] = useState(null);
   const [courseModules, setCourseModules] = useState([]);
   const [courseClasses, setCourseClasses] = useState([]);
+  const [professorDetails, setProfessorDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -28,10 +29,9 @@ function PaginaDeInformacion() {
       }
 
       setLoading(true);
-      setError(null); // Limpiar errores previos
+      setError(null);
 
       try {
-        // 1. Obtener datos del curso
         const courseResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/traerCursosController.php",
           {
@@ -43,61 +43,137 @@ function PaginaDeInformacion() {
 
         if (!courseResponse.ok) {
           const errorText = await courseResponse.text();
-          throw new Error(`Error HTTP al obtener datos de los cursos: ${courseResponse.status}, mensaje: ${errorText}`);
+          throw new Error(
+            `Error HTTP al obtener datos de los cursos: ${courseResponse.status}, mensaje: ${errorText}`
+          );
         }
 
         const courseData = await courseResponse.json();
-        console.log("PaginaDeInformacion: Datos completos de la API de cursos (courseData):", courseData);
+        console.log(
+          "PaginaDeInformacion: Datos completos de la API de cursos (courseData):",
+          courseData
+        );
 
         let foundCourse = null;
 
-        if (courseData.status === "success" && courseData.cursos && Array.isArray(courseData.cursos.cursos)) {
+        if (
+          courseData.status === "success" &&
+          courseData.cursos &&
+          Array.isArray(courseData.cursos.cursos)
+        ) {
           foundCourse = courseData.cursos.cursos.find(
             (curso) => String(curso.id) === String(courseIdFromUrl)
           );
 
           if (foundCourse) {
             setApiData(foundCourse);
+
+            if (foundCourse.profesor_id) {
+              try {
+                const professorResponse = await fetch(
+                  "https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      accion: "getAlumnoProfesor",
+                      id: foundCourse.profesor_id,
+                    }),
+                  }
+                );
+
+                if (!professorResponse.ok) {
+                  const errorText = await professorResponse.text();
+                  throw new Error(
+                    `Error HTTP al obtener datos del profesor: ${professorResponse.status}, mensaje: ${errorText}`
+                  );
+                }
+
+                const professorData = await professorResponse.json();
+                console.log(
+                  "PaginaDeInformacion: Datos del profesor:",
+                  professorData
+                );
+
+                if (
+                  professorData.status === "success" &&
+                  professorData.usuario
+                ) {
+                  setProfessorDetails(professorData.usuario);
+                } else {
+                  console.warn(
+                    "PaginaDeInformacion: No se encontraron detalles del profesor o formato inesperado. Mensaje:",
+                    professorData.message
+                  );
+                  setProfessorDetails(null);
+                }
+              } catch (profError) {
+                console.error(
+                  "PaginaDeInformacion: Error al obtener datos del profesor:",
+                  profError
+                );
+                setProfessorDetails(null);
+              }
+            } else {
+              setProfessorDetails(null);
+            }
           } else {
-            setError(`Curso con ID ${courseIdFromUrl} no encontrado en la lista de cursos.`);
+            setError(
+              `Curso con ID ${courseIdFromUrl} no encontrado en la lista de cursos.`
+            );
             setLoading(false);
             return;
           }
         } else {
-          setError(courseData.message || "Error al obtener datos de los cursos: Formato inesperado o la propiedad 'cursos' no es un array anidado.");
+          setError(
+            courseData.message ||
+              "Error al obtener datos de los cursos: Formato inesperado o la propiedad 'cursos' no es un array anidado."
+          );
           setLoading(false);
           return;
         }
 
-        // 2. Obtener módulos específicos del curso (mantengo la llamada, pero puedes decidir si la necesitas)
         const modulesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ accion: "getModulosCurso", id: courseIdFromUrl }),
+            body: JSON.stringify({
+              accion: "getModulosCurso",
+              id: courseIdFromUrl,
+            }),
           }
         );
 
         if (!modulesResponse.ok) {
           const errorText = await modulesResponse.text();
-          throw new Error(`Error HTTP al obtener módulos por curso: ${modulesResponse.status}, mensaje: ${errorText}`);
+          throw new Error(
+            `Error HTTP al obtener módulos por curso: ${modulesResponse.status}, mensaje: ${errorText}`
+          );
         }
 
         const modulesData = await modulesResponse.json();
-        console.log("PaginaDeInformacion: Datos de módulos por curso (modulesData):", modulesData);
+        console.log(
+          "PaginaDeInformacion: Datos de módulos por curso (modulesData):",
+          modulesData
+        );
 
         let fetchedModules = [];
 
-        if (modulesData.status === "success" && Array.isArray(modulesData.modulos)) {
+        if (
+          modulesData.status === "success" &&
+          Array.isArray(modulesData.modulos)
+        ) {
           fetchedModules = modulesData.modulos;
           setCourseModules(fetchedModules);
         } else {
-          console.warn("PaginaDeInformacion: No se encontraron módulos para el curso o formato inesperado. Mensaje:", modulesData.message);
+          console.warn(
+            "PaginaDeInformacion: No se encontraron módulos para el curso o formato inesperado. Mensaje:",
+            modulesData.message
+          );
           setCourseModules([]);
         }
 
-        // 3. Obtener todas las clases (mantengo la llamada, pero puedes decidir si la necesitas)
         const classesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/traerTodasClasesController.php",
           {
@@ -109,27 +185,47 @@ function PaginaDeInformacion() {
 
         if (!classesResponse.ok) {
           const errorText = await classesResponse.text();
-          throw new Error(`Error HTTP al obtener clases: ${classesResponse.status}, mensaje: ${errorText}`);
+          throw new Error(
+            `Error HTTP al obtener clases: ${classesResponse.status}, mensaje: ${errorText}`
+          );
         }
 
         const classesData = await classesResponse.json();
-        console.log("PaginaDeInformacion: Datos de todas las clases (classesData):", classesData);
+        console.log(
+          "PaginaDeInformacion: Datos de todas las clases (classesData):",
+          classesData
+        );
 
-        if (classesData.status === "success" && Array.isArray(classesData.clases)) {
-          const relevantModuleIds = new Set(fetchedModules.map(m => String(m.id)));
-          const filteredClasses = classesData.clases.filter(clase =>
+        if (
+          classesData.status === "success" &&
+          Array.isArray(classesData.clases)
+        ) {
+          const relevantModuleIds = new Set(
+            fetchedModules.map((m) => String(m.id))
+          );
+          const filteredClasses = classesData.clases.filter((clase) =>
             relevantModuleIds.has(String(clase.modulo_id))
           );
           setCourseClasses(filteredClasses);
-          console.log("PaginaDeInformacion: Clases filtradas para este curso:", filteredClasses);
+          console.log(
+            "PaginaDeInformacion: Clases filtradas para este curso:",
+            filteredClasses
+          );
         } else {
-          console.warn("PaginaDeInformacion: No se encontraron clases o formato inesperado. Mensaje:", classesData.message);
+          console.warn(
+            "PaginaDeInformacion: No se encontraron clases o formato inesperado. Mensaje:",
+            classesData.message
+          );
           setCourseClasses([]);
         }
-
       } catch (err) {
-        console.error("PaginaDeInformacion: Error general en fetchCourseAndContentData:", err);
-        setError("No se pudo conectar con el servidor o hubo un error al obtener los datos. Por favor, inténtalo de nuevo más tarde.");
+        console.error(
+          "PaginaDeInformacion: Error general en fetchCourseAndContentData:",
+          err
+        );
+        setError(
+          "No se pudo conectar con el servidor o hubo un error al obtener los datos. Por favor, inténtalo de nuevo más tarde."
+        );
       } finally {
         setLoading(false);
       }
@@ -140,28 +236,56 @@ function PaginaDeInformacion() {
     }
   }, [courseIdFromUrl]);
 
-  // Renderizado Condicional: Loading, Error, No Data
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", flexDirection: "column" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          flexDirection: "column",
+        }}
+      >
         <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>Cargando información del curso...</Typography>
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Cargando información del curso...
+        </Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Alert severity="error" sx={{ m: 2 }}>
+          {error}
+        </Alert>
       </Box>
     );
   }
 
   if (!apiData) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <Alert severity="warning">No se pudo cargar la información del curso. Esto puede ocurrir si el ID no es válido o si el curso no existe.</Alert>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Alert severity="warning">
+          No se pudo cargar la información del curso. Esto puede ocurrir si el
+          ID no es válido o si el curso no existe.
+        </Alert>
       </Box>
     );
   }
@@ -172,9 +296,10 @@ function PaginaDeInformacion() {
     descripcion_larga = "Descripción no disponible",
     descripcion_corta = "Descripción no disponible",
     duracion_estimada = "Duración no disponible",
-    horas_por_semana = "N/A",
+    subtitulo,
+    horas_por_semana, // Mantener el original aquí para la lógica de abajo
     fecha_inicio_clases = "Próximamente",
-    fecha_limite_inscripcion = "Abiertas", // <-- ¡Esta es la fecha que necesitamos!
+    fecha_limite_inscripcion = "Abiertas",
     ritmo_aprendizaje = "Flexible",
     tipo_clase = "Online",
     titulo_credencial = "Certificado",
@@ -182,22 +307,25 @@ function PaginaDeInformacion() {
     profesor_id,
     nivel = "N/A",
     precio = "N/A",
+    moneda = "USD", // Asegúrate de tener un valor por defecto para moneda
     url_video_introductorio,
     marcaAsociada = [],
     url_banner,
+    // eslint-disable-next-line no-unused-vars
     resultados_aprendizaje = [],
     callToActionData,
-    temario, // Desestructuramos el 'temario' directamente de apiData
+    temario,
   } = apiData;
 
   // Prepara el temario para pasarlo a `CourseDetailPage`
-  const temarioForDisplay = temario && Array.isArray(temario)
-    ? temario.map(item => item.titulo || "Tema sin título")
-    : [];
+  const temarioForDisplay =
+    temario && Array.isArray(temario)
+      ? temario.map((item) => item.titulo || "Tema sin título")
+      : [];
 
   const classesByModule = courseClasses.reduce((acc, clase) => {
     const moduleId = String(clase.modulo_id);
-    if (moduleId && moduleId !== 'undefined' && moduleId !== 'null') {
+    if (moduleId && moduleId !== "undefined" && moduleId !== "null") {
       if (!acc[moduleId]) {
         acc[moduleId] = [];
       }
@@ -206,7 +334,7 @@ function PaginaDeInformacion() {
     return acc;
   }, {});
 
-  const modulesWithClasses = courseModules.map(module => {
+  const modulesWithClasses = courseModules.map((module) => {
     const moduleId = String(module.id);
     const moduleClasses = classesByModule[moduleId] || [];
     return {
@@ -216,25 +344,32 @@ function PaginaDeInformacion() {
     };
   });
 
+  const instructorName = professorDetails
+    ? `${professorDetails.nombre || ""} ${
+        professorDetails.apellido || ""
+      }`.trim() || "Instructor no especificado"
+    : "Instructor no especificado";
+
+  const instructorBio = professorDetails?.biografia || "Experto en el área.";
+  const instructorAvatar =
+    professorDetails?.url_foto_perfil || "/images/default-avatar.png";
+
   const courseDataForDetailPage = {
     title: titulo,
     description: descripcion_larga,
-    instructor: profesor_id ? `Profesor ID: ${profesor_id}` : "Instructor no especificado",
+    instructor: instructorName,
     duration: duracion_estimada,
     level: nivel,
     price: precio,
     inductionVideoUrl: url_video_introductorio,
     modules: modulesWithClasses,
-    learningOutcomes: temarioForDisplay, // Aquí pasamos tu temario
+    learningOutcomes: temarioForDisplay,
   };
 
-  // --- CAMBIO CLAVE AQUÍ: Usar fecha_limite_inscripcion para countdownTarget ---
-  // La API te da 'fecha_limite_inscripcion' como "AAAA-MM-DD".
-  // Para un Date object y un countdown preciso, es mejor agregar una hora.
-  const countdownTarget = fecha_limite_inscripcion && fecha_limite_inscripcion !== "Abiertas"
-    ? `${fecha_limite_inscripcion}T23:59:59`
-    : null;
-
+  const countdownTarget =
+    fecha_limite_inscripcion && fecha_limite_inscripcion !== "Abiertas"
+      ? `${fecha_limite_inscripcion}T23:59:59`
+      : null;
 
   const programmeDetailsForBanner = {
     programmeName: titulo,
@@ -249,27 +384,57 @@ function PaginaDeInformacion() {
     credentialTitle: titulo_credencial,
     credentialDescription: descripcion_credencial,
     instructorData: {
-      name: profesor_id ? `Profesor ID: ${profesor_id}` : "Instructor por determinar",
-      avatar: "/images/default-avatar.png",
-      description: "Experto en el área.",
+      name: instructorName,
+      avatar: instructorAvatar,
+      description: instructorBio,
     },
     brandingData: marcaAsociada,
   };
 
-  const certificateData = {
-    title: titulo_credencial,
-    paragraphs: [descripcion_credencial],
-    note: "Este certificado es reconocido por las marcas asociadas (si aplica).",
-  };
+  // Prepara el valor de horas_por_semana para mostrar, si el de la API es null
+  const displayHorasPorSemana = horas_por_semana !== null ? horas_por_semana : "No especificado";
+
+  // Formatea las fechas para una mejor visualización si no son los valores por defecto
+  const formattedFechaInicio = fecha_inicio_clases !== "Próximamente" 
+    ? new Date(fecha_inicio_clases).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+    : fecha_inicio_clases;
+
+  const formattedFechaInscripcion = fecha_limite_inscripcion !== "Abiertas" 
+    ? new Date(fecha_limite_inscripcion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+    : fecha_limite_inscripcion;
+
 
   const factsData = {
     title: "Datos Clave del Curso",
     items: [
-      { value: duracion_estimada, description: "Duración estimada", source: "" },
-      { value: horas_por_semana, description: "Horas por semana", source: "" },
+      {
+        value: duracion_estimada,
+        description: "Duración estimada",
+        source: "",
+      },
+      { value: displayHorasPorSemana, description: "Horas por semana", source: "" }, // Usamos el valor formateado
       { value: nivel, description: "Nivel del curso", source: "" },
-      { value: ritmo_aprendizaje, description: "Ritmo de aprendizaje", source: "" },
+      {
+        value: ritmo_aprendizaje,
+        description: "Ritmo de aprendizaje",
+        source: "",
+      },
       { value: tipo_clase, description: "Tipo de clase", source: "" },
+      { 
+        value: `${precio} ${moneda}`, 
+        description: "Precio", 
+        source: "" 
+      },
+      { 
+        value: formattedFechaInicio, 
+        description: "Inicio de clases", 
+        source: "" 
+      },
+      { 
+        value: formattedFechaInscripcion, 
+        description: "Cierre de inscripciones", 
+        source: "" 
+      },
     ],
   };
 
@@ -278,7 +443,7 @@ function PaginaDeInformacion() {
       <Box
         sx={{
           height: { xs: "100%", md: "100%" },
-          backgroundImage: `url(${url_banner || 'images/fondoCursos.jpg'})`,
+          backgroundImage: `url(${url_banner || "images/fondoCursos.jpg"})`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
@@ -318,13 +483,14 @@ function PaginaDeInformacion() {
       {apiData && (
         <CourseDetailPage
           course={courseDataForDetailPage}
-          countdownTargetDate={countdownTarget} // <-- Aquí se pasa la fecha dinámica de la API
+          countdownTargetDate={countdownTarget}
         />
       )}
 
       {/* FactsAndCertificate */}
       <FactsAndCertificate
-        certificate={certificateData}
+        certificateSubtitle={subtitulo}
+        certificateLongDescription={descripcion_larga}
         facts={factsData}
         brandingData={programmeDetailsForBanner.brandingData}
       />
@@ -332,7 +498,7 @@ function PaginaDeInformacion() {
       {/* FaqSection */}
       <Box sx={{ padding: { xs: "20px", md: "0px 170px" } }}>
         <FaqSection
-          faqs={[]} // Revisa si tienes FAQs en tu API para pasarlas aquí
+          faqs={[]} // Si la API tiene datos de FAQs, pásalos aquí.
           initialVisibleCount={3}
           sectionTitle="Preguntas Frecuentes sobre el Curso"
         />

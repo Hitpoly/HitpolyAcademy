@@ -1,0 +1,332 @@
+// components/escuela/curso/profesores/useCourseFormLogic.js
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../../../context/AuthContext";
+import useCourseActions from "../cursosCardsProfesor/useCourseActions";
+import { useTheme, useMediaQuery } from "@mui/material"; // ¡Importa estos hooks aquí!
+
+const useCourseFormLogic = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Definir theme y isMobile aquí dentro del hook
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const courseToEdit = location.state?.courseToEdit || null;
+
+  const initialFormData = {
+    accion: "curso",
+    id: null,
+    titulo: "",
+    subtitulo: "",
+    descripcion_corta: "",
+    descripcion_larga: "",
+    url_banner: "",
+    url_video_introductorio: "",
+    precio: "",
+    moneda: "USD",
+    nivel: "",
+    duracion_estimada_valor: "",
+    duracion_estimada_unidad: "dias",
+    estado: "activo",
+    profesor_id: user ? user.id : null,
+    categoria_id: "",
+    fecha_publicacion: new Date().toISOString().slice(0, 10),
+    fecha_actualizacion: new Date().toISOString().slice(0, 10),
+    horas_por_semana: "",
+    fecha_inicio_clases: "",
+    fecha_limite_inscripcion: "",
+    ritmo_aprendizaje: "",
+    tipo_clase: "",
+    titulo_credencial: "",
+    descripcion_credencial: "",
+    marca_plataforma: [],
+    temario: [],
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
+  const [categorias, setCategorias] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoryErrorMessage, setCategoryErrorMessage] = useState("");
+
+  const [newLogoText, setNewLogoText] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newTemaTitle, setNewTemaTitle] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const {
+    loading,
+    uploadingBanner,
+    responseMessage,
+    setResponseMessage,
+    submitCourse,
+  } = useCourseActions();
+
+  useEffect(() => {
+    if (responseMessage.message) {
+      const timer = setTimeout(() => {
+        setResponseMessage({ type: "", message: "" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [responseMessage, setResponseMessage]);
+
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const response = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "getcategorias" }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Error HTTP al cargar categorías: ${response.status}, mensaje: ${errorText}`
+          );
+        }
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setCategorias(data.categorias);
+        } else {
+          setCategoryErrorMessage(
+            data.message || "Error al cargar las categorías desde la API."
+          );
+        }
+      } catch (error) {
+        setCategoryErrorMessage(
+          "No se pudo conectar con el servidor para obtener las categorías o hubo un error de red."
+        );
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategorias();
+  }, []);
+
+  useEffect(() => {
+    if (courseToEdit) {
+      setIsEditing(true);
+      setResponseMessage({ type: "", message: "" });
+
+      const formatToDateInput = (dateString) => {
+        if (!dateString) return "";
+        const datePart = dateString.split(" ")[0];
+        return datePart;
+      };
+
+      const parsedMarcaPlataforma =
+        typeof courseToEdit.marcas === "string"
+          ? JSON.parse(courseToEdit.marcas)
+          : courseToEdit.marcas || [];
+
+      const parsedTemario =
+        typeof courseToEdit.curso.temario === "string"
+          ? JSON.parse(courseToEdit.curso.temario)
+          : courseToEdit.curso.temario || [];
+
+      const newFormData = {
+        accion: "update",
+        id: courseToEdit.curso.id,
+        titulo: courseToEdit.curso.titulo || "",
+        subtitulo: courseToEdit.curso.subtitulo || "",
+        descripcion_corta: courseToEdit.curso.descripcion_corta || "",
+        descripcion_larga: courseToEdit.curso.descripcion_larga || "",
+        url_banner: courseToEdit.curso.url_banner || "",
+        url_video_introductorio:
+          courseToEdit.curso.url_video_introductorio || "",
+        precio: courseToEdit.curso.precio
+          ? parseFloat(courseToEdit.curso.precio)
+          : "",
+        moneda: courseToEdit.curso.moneda || "USD",
+        nivel: courseToEdit.curso.nivel || "",
+        duracion_estimada_valor: courseToEdit.curso.duracion_estimada
+          ? String(courseToEdit.curso.duracion_estimada).split(" ")[0]
+          : "",
+        duracion_estimada_unidad: courseToEdit.curso.duracion_estimada
+          ? String(courseToEdit.curso.duracion_estimada).split(" ")[1] || "dias"
+          : "dias",
+        estado: courseToEdit.curso.estado || "activo",
+        profesor_id: courseToEdit.curso.profesor_id || (user ? user.id : null),
+        categoria_id: courseToEdit.curso.categoria_id || "",
+        fecha_publicacion: formatToDateInput(
+          courseToEdit.curso.fecha_publicacion
+        ),
+        fecha_actualizacion: formatToDateInput(
+          new Date().toISOString().slice(0, 10)
+        ),
+        horas_por_semana: courseToEdit.curso.horas_por_semana || "",
+        fecha_inicio_clases: formatToDateInput(
+          courseToEdit.curso.fecha_inicio_clases
+        ),
+        fecha_limite_inscripcion: formatToDateInput(
+          courseToEdit.curso.fecha_limite_inscripcion
+        ),
+        ritmo_aprendizaje: courseToEdit.curso.ritmo_aprendizaje || "",
+        tipo_clase: courseToEdit.curso.tipo_clase || "",
+        titulo_credencial: courseToEdit.curso.titulo_credencial || "",
+        descripcion_credencial:
+          courseToEdit.curso.descripcion_credencial || "",
+        marca_plataforma: parsedMarcaPlataforma,
+        temario: parsedTemario,
+      };
+      setFormData(newFormData);
+      setBannerFile(null);
+    } else {
+      setIsEditing(false);
+      setResponseMessage({ type: "", message: "" });
+      setFormData({
+        ...initialFormData,
+        profesor_id: user ? user.id : null,
+        fecha_publicacion: new Date().toISOString().slice(0, 10),
+        fecha_actualizacion: new Date().toISOString().slice(0, 10),
+      });
+      setBannerFile(null);
+      setNewLogoText("");
+      setNewDescription("");
+      setNewTemaTitle("");
+    }
+  }, [location.state, user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file =
+      e.target.files && e.target.files.length > 0 ? e.target.files?.[0] : null;
+    setBannerFile(file);
+    setResponseMessage({ type: "", message: "" });
+    setFormData((prevData) => ({
+      ...prevData,
+      url_banner: "",
+    }));
+  };
+
+  const handleAddMarcaPlataforma = () => {
+    if (newLogoText && newDescription) {
+      const newMarca = { logotext: newLogoText, description: newDescription };
+      setFormData((prevData) => ({
+        ...prevData,
+        marca_plataforma: [...prevData.marca_plataforma, newMarca],
+      }));
+      setNewLogoText("");
+      setNewDescription("");
+      setResponseMessage({ type: "", message: "" });
+    } else {
+      setResponseMessage({
+        type: "error",
+        message:
+          "Por favor, rellena el texto del logo y la descripción para añadir una marca de plataforma.",
+      });
+    }
+  };
+
+  const handleRemoveMarcaPlataforma = (indexToRemove) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      marca_plataforma: prevData.marca_plataforma.filter(
+        (_, index) => index !== indexToRemove
+      ),
+    }));
+  };
+
+  const handleAddTema = () => {
+    if (newTemaTitle) {
+      const newTema = { titulo: newTemaTitle };
+      setFormData((prevData) => ({
+        ...prevData,
+        temario: [...prevData.temario, newTema],
+      }));
+      setNewTemaTitle("");
+      setResponseMessage({ type: "", message: "" });
+    } else {
+      setResponseMessage({
+        type: "error",
+        message: "Por favor, ingresa un título para el tema.",
+      });
+    }
+  };
+
+  const handleRemoveTema = (indexToRemove) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      temario: prevData.temario.filter((_, index) => index !== indexToRemove),
+    }));
+  };
+
+  const handleEditTema = (indexToEdit, newTitle) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      temario: prevData.temario.map((tema, index) =>
+        index === indexToEdit ? { ...tema, titulo: newTitle } : tema
+      ),
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await submitCourse(formData, bannerFile, isEditing);
+    if (result.success) {
+      navigate("/mis-cursos", { state: { shouldRefresh: true } });
+    }
+  };
+
+  const handleNavigateToMyCourses = () => {
+    navigate("/mis-cursos");
+  };
+
+  return {
+    formData,
+    setFormData,
+    categorias,
+    loadingCategories,
+    categoryErrorMessage,
+    newLogoText,
+    setNewLogoText,
+    newDescription,
+    setNewDescription,
+    newTemaTitle,
+    setNewTemaTitle,
+    bannerFile,
+    setBannerFile,
+    isEditing,
+    loading,
+    uploadingBanner,
+    responseMessage,
+    setResponseMessage,
+    handleChange,
+    handleFileChange,
+    handleAddMarcaPlataforma,
+    handleRemoveMarcaPlataforma,
+    handleAddTema,
+    handleRemoveTema,
+    handleEditTema,
+    handleSubmit,
+    handleNavigateToMyCourses,
+    // Ahora puedes decidir si necesitas exponer theme y isMobile
+    // Si CourseDetailsSection o AdditionalDetailsSection los necesitan
+    // los puedes pasar como props o que ellos mismos usen los hooks.
+    // Para este caso, como CourseForm.jsx ya no los usa directamente,
+    // no es necesario retornarlos, a menos que un subcomponente los requiera
+    // y no pueda usar los hooks directamente.
+    // theme,
+    // isMobile,
+  };
+};
+
+export default useCourseFormLogic;
