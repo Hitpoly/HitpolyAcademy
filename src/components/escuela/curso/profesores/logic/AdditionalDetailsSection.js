@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // Asegúrate de importar useState
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -24,17 +24,22 @@ const AdditionalDetailsSection = ({
   setNewDescription,
   handleAddMarcaPlataforma,
   handleRemoveMarcaPlataforma,
-  // Props para el temario
   newTopicText,
   setNewTopicText,
   handleAddTopic,
   handleRemoveTopic,
-  handleEditTopic, // Nuevo prop para editar temas
+  handleEditTopic,
 }) => {
-  // Estado para la edición de temas
+  // Estado para edición de temas
   const [editingTopicIndex, setEditingTopicIndex] = useState(null);
   const [currentEditingTopicText, setCurrentEditingTopicText] = useState('');
 
+  // Estado para edición de marcas
+  const [editingMarcaIndex, setEditingMarcaIndex] = useState(null);
+  const [editingLogoText, setEditingLogoText] = useState('');
+  const [editingDescription, setEditingDescription] = useState('');
+
+  // Funciones de edición para temas
   const startEditingTopic = (index, text) => {
     setEditingTopicIndex(index);
     setCurrentEditingTopicText(text);
@@ -53,13 +58,47 @@ const AdditionalDetailsSection = ({
     setCurrentEditingTopicText('');
   };
 
+  // Funciones de edición para marcas
+  const startEditingMarca = (index, marca) => {
+    setEditingMarcaIndex(index);
+    setEditingLogoText(marca.logoText);
+    setEditingDescription(marca.description);
+  };
+
+  const saveEditedMarca = () => {
+    if (editingLogoText.trim() && editingDescription.trim()) {
+      const updated = [...formData.marca_plataforma];
+           
+      updated[editingMarcaIndex] = {
+        logoText: editingLogoText.trim(),
+        description: editingDescription.trim(),
+      };
+      handleChange({
+        target: { name: 'marca_plataforma', value: updated },
+      });
+      setEditingMarcaIndex(null);
+      setEditingLogoText('');
+      setEditingDescription('');
+    }
+  };
+
+  const cancelEditingMarca = () => {
+    setEditingMarcaIndex(null);
+    setEditingLogoText('');
+    setEditingDescription('');
+  };
+
+  
+ 
+  
+
   return (
     <Box sx={{ mt: 4, p: 3, border: '1px solid #ddd', borderRadius: '8px' }}>
       <Typography variant="h6" gutterBottom>
         Detalles Adicionales del Curso
       </Typography>
 
-      {/* Sección de Marcas de Plataforma */}
+      {/* Marcas de Plataforma */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="subtitle1" gutterBottom>
           Marcas de Plataforma Asociadas
@@ -90,26 +129,50 @@ const AdditionalDetailsSection = ({
           <List dense>
             {formData.marca_plataforma.map((marca, index) => (
               <ListItem key={index} sx={{ borderBottom: '1px dashed #eee' }}>
-                <ListItemText
-                  primary={`Logo: ${marca.logoText}`}
-                  secondary={`Descripción: ${marca.description}`}
-                />
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    aria-label="delete"
-                    onClick={() => handleRemoveMarcaPlataforma(index)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
+                {editingMarcaIndex === index ? (
+                  <>
+                    <TextField
+                      label="Logo"
+                      value={editingLogoText}
+                      onChange={(e) => setEditingLogoText(e.target.value)}
+                      sx={{ mr: 1 }}
+                    />
+                    <TextField
+                      label="Descripción"
+                      value={editingDescription}
+                      onChange={(e) => setEditingDescription(e.target.value)}
+                      sx={{ mr: 1 }}
+                    />
+                    <IconButton onClick={saveEditedMarca}>
+                      <SaveIcon />
+                    </IconButton>
+                    <IconButton onClick={cancelEditingMarca}>
+                      <CancelIcon />
+                    </IconButton>
+                  </>
+                ) : (
+                  <>
+                    <ListItemText
+                      primary={`Logo: ${marca.logoText}`}
+                      secondary={`Descripción: ${marca.description}`}
+                    />
+                    <ListItemSecondaryAction>
+                      <IconButton onClick={() => startEditingMarca(index, marca)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleRemoveMarcaPlataforma(index)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </>
+                )}
               </ListItem>
             ))}
           </List>
         )}
       </Box>
 
-      {/* Sección de Temario del Curso */}
+      {/* Temario */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="subtitle1" gutterBottom>
           Temario del Curso
@@ -122,7 +185,7 @@ const AdditionalDetailsSection = ({
           onChange={(e) => setNewTopicText(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              e.preventDefault(); // Previene el envío del formulario
+              e.preventDefault();
               handleAddTopic();
             }
           }}
@@ -189,7 +252,7 @@ const AdditionalDetailsSection = ({
         )}
       </Box>
 
-      {/* Campos existentes de AdditionalDetailsSection */}
+      {/* Otros Campos */}
       <TextField
         label="Horas por Semana"
         name="horas_por_semana"

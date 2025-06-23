@@ -20,8 +20,12 @@ const CourseListManager = () => {
     }
   }, [location.state, navigate, location.pathname]);
 
+
+
   // Manejador para el botón de editar en CourseStatusManager
   const handleEditCourseFromList = (cursoRecibido) => {
+    console.log("CURSO RECIBIDO", cursoRecibido);
+    
     // Navegar a la misma ruta del formulario, pero pasando el curso como estado de la navegación
     navigate("/datos-de-curso", { state: { courseToEdit: cursoRecibido } });
   };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   TextField,
@@ -87,6 +87,8 @@ const AdditionalDetailsSection = ({
     setCurrentEditingLogoText("");
     setCurrentEditingDescription("");
   };
+console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
+
 
   return (
     <>

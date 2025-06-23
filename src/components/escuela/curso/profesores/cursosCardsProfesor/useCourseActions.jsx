@@ -118,9 +118,10 @@ const useCourseActions = () => {
       console.log("🔄 CourseActions: Modo: INSERTAR curso. URL:", apiUrl);
     } else {
       // --- Lógica para ACTUALIZAR Curso ---
-      dataToSend.accion = 'update'; // Acción para actualización
-      // dataToSend.id ya debería venir del formData de useCourseFormLogic
-      apiUrl = 'https://apiacademy.hitpoly.com/ajax/editarCursoController.php';
+      dataToSend.accion = 'update';
+      console.log("DATOS A ENVIDAR PARA EDICION", dataToSend);
+      
+       apiUrl = 'https://apiacademy.hitpoly.com/ajax/editarCursoController.php';
       console.log("🔄 CourseActions: Modo: ACTUALIZAR curso. URL:", apiUrl);
     }
 

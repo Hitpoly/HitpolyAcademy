@@ -127,8 +127,10 @@ const useCourseFormLogic = () => {
       let parsedMarcaPlataforma = [];
       try {
         if (typeof courseToEdit.marcas === "string") {
+          
           parsedMarcaPlataforma = JSON.parse(courseToEdit.marcas);
         } else if (Array.isArray(courseToEdit.marcas)) {
+          
           parsedMarcaPlataforma = courseToEdit.marcas;
         }
       } catch (e) {

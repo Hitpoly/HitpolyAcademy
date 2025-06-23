@@ -74,6 +74,8 @@ const useCourseData = (refreshTrigger) => {
         }
 
         const data = await response.json();
+        console.log("DATAAAAAA", data);
+        
 
         // --- CAMBIO CLAVE AQUÍ: Acceder a data.cursos.cursos ---
         // Verificamos que 'data.cursos' sea un objeto y que dentro tenga la propiedad 'cursos' que sea un array
