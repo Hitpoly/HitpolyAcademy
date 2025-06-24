@@ -5,6 +5,8 @@ const useCourseActions = () => {
   const [loading, setLoading] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [responseMessage, setResponseMessage] = useState({ type: '', message: '' });
+ 
+
 
   // --- Lógica Común para Subir Imágenes (Cloudinary) ---
   const uploadImageToCloudinary = async (bannerFile) => {

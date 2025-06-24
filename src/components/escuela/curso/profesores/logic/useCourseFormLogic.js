@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../context/AuthContext";
 import useCourseActions from "../cursosCardsProfesor/useCourseActions";
 import { useTheme, useMediaQuery } from "@mui/material";
+import Swal from 'sweetalert2';
 
 const useCourseFormLogic = () => {
   const { user } = useAuth();
@@ -259,18 +260,56 @@ const useCourseFormLogic = () => {
     }
   };
 
-  const handleRemoveMarcaPlataforma = (indexToRemove) => {
-    setFormData((prevData) => {
-      const updatedMarcas = prevData.marca_plataforma.filter(
-        (_, index) => index !== indexToRemove
-      );
-      console.log("🐛 CourseFormLogic: Marcas después de eliminar:", updatedMarcas);
-      return {
-        ...prevData,
-        marca_plataforma: updatedMarcas,
-      };
-    });
-  };
+  
+ const handleRemoveMarcaPlataforma = async (idToRemove) => {
+  if (!idToRemove) {
+    console.warn("⚠️ No se encontró ID para la marca, no se puede eliminar del backend.");
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "Esta acción eliminará la marca permanentemente.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const response = await fetch("https://apiacademy.hitpoly.com/ajax/eliminarMarcaPlataformaController.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accion: "delete",
+          id: idToRemove,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        Swal.fire('Eliminado!', 'La marca ha sido eliminada.', 'success');
+      
+        setFormData((prevData) => ({
+          ...prevData,
+          marca_plataforma: prevData.marca_plataforma.filter(
+            (marca) => marca.id !== idToRemove
+          ),
+        }));
+      } else {
+        Swal.fire('Error', `No se pudo eliminar: ${data.message}`, 'error');
+      }
+    } catch (error) {
+      Swal.fire('Error', 'Error de red al eliminar la marca.', 'error');
+    }
+  }
+};
+
+
 
   const handleEditMarcaPlataforma = useCallback(
     (indexToEdit, updatedLogoText, updatedDescription) => {

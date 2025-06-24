@@ -74,7 +74,7 @@ const useCourseData = (refreshTrigger) => {
         }
 
         const data = await response.json();
-        console.log("DATAAAAAA", data);
+      
         
 
         // --- CAMBIO CLAVE AQUÍ: Acceder a data.cursos.cursos ---

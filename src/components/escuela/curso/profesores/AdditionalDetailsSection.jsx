@@ -306,6 +306,9 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
         <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {editingMarcaIndex === index ? (
+
+              
+              
               <>
                 <TextField
                   label="Nombre de Marca"
@@ -373,7 +376,7 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
                   <IconButton
                     aria-label="delete"
                     onClick={() => {
-                      handleRemoveMarcaPlataforma(index);
+                      handleRemoveMarcaPlataforma(marca.id);
                     }}
                     color="error"
                   >
