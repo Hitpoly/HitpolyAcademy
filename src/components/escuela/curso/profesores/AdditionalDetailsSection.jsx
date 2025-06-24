@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   TextField,
@@ -32,14 +32,13 @@ const AdditionalDetailsSection = ({
   handleAddTema,
   handleRemoveTema,
   handleEditTema,
-  // Nueva prop para editar marcas de plataforma
-  handleEditMarcaPlataforma,
+  handleEditMarcaPlataforma, // Asegúrate de que esta prop se esté pasando desde el componente padre
 }) => {
   // Estado local para la edición de temas
   const [editingTemaIndex, setEditingTemaIndex] = useState(null);
   const [currentEditingTemaTitle, setCurrentEditingTemaTitle] = useState("");
 
-  // NUEVOS estados locales para la edición de marcas de plataforma
+  // Estados locales para la edición de marcas de plataforma
   const [editingMarcaIndex, setEditingMarcaIndex] = useState(null);
   const [currentEditingLogoText, setCurrentEditingLogoText] = useState("");
   const [currentEditingDescription, setCurrentEditingDescription] = useState("");
@@ -62,23 +61,33 @@ const AdditionalDetailsSection = ({
     setCurrentEditingTemaTitle("");
   };
 
-  // NUEVAS funciones para la edición de marcas de plataforma
+  // Funciones para la edición de marcas de plataforma
   const handleStartEditingMarca = (index, logoText, description) => {
     setEditingMarcaIndex(index);
-    setCurrentEditingLogoText(logoText);
-    setCurrentEditingDescription(description);
+    // Asegurarse de que los valores sean cadenas, incluso si son nulos o indefinidos
+    setCurrentEditingLogoText(logoText || "");
+    setCurrentEditingDescription(description || "");
   };
 
   const handleSaveEditingMarca = (index) => {
-    if (currentEditingLogoText.trim() || currentEditingDescription.trim()) {
+    // Asegurarse de que los valores no sean undefined o null antes de llamar a trim()
+    const logoTextToSave = currentEditingLogoText || "";
+    const descriptionToSave = currentEditingDescription || "";
+
+    // Solo guardar si al menos uno de los campos tiene contenido significativo
+    if (logoTextToSave.trim() || descriptionToSave.trim()) {
       handleEditMarcaPlataforma(
         index,
-        currentEditingLogoText.trim(),
-        currentEditingDescription.trim()
+        logoTextToSave.trim(),
+        descriptionToSave.trim()
       );
       setEditingMarcaIndex(null);
       setCurrentEditingLogoText("");
       setCurrentEditingDescription("");
+    } else {
+      // Opcional: Mostrar un mensaje al usuario si ambos campos están vacíos
+      console.log("No se puede guardar una marca con campos vacíos.");
+      handleCancelEditingMarca(); // Cancelar la edición si no hay nada que guardar
     }
   };
 
@@ -87,13 +96,12 @@ const AdditionalDetailsSection = ({
     setCurrentEditingLogoText("");
     setCurrentEditingDescription("");
   };
-console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
 
+  console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
 
   return (
     <>
       {/* --- SECCIÓN: TEMARIO DEL CURSO (PRIMERO) --- */}
-      {/* Línea divisoria visible solo en móviles, oculta en desktop */}
       <Divider sx={{ my: 3, display: { xs: "block", sm: "none" } }} />
       <Typography variant="h6" gutterBottom>
         Temario del Curso
@@ -197,12 +205,11 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
       )}
 
       {/* --- SECCIÓN: DETALLES ADICIONALES (SEGUNDO) --- */}
-      <Divider sx={{ my: 3 }} /> {/* Este Divider siempre es visible */}
+      <Divider sx={{ my: 3 }} />
       <Typography variant="h6" gutterBottom>
         Detalles Adicionales
       </Typography>
 
-      {/* Agrupación de 3 en 3 con Box y flexbox usando width porcentual */}
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: "2%", justifyContent: "space-between" }}>
         <Box sx={{ width: { xs: "100%", sm: "32%" } }}>
           <TextField
@@ -281,7 +288,6 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
           />
         </Box>
 
-        {/* Último campo, ocupa el ancho completo */}
         <Box sx={{ width: "100%" }}>
           <TextField
             label="Descripción Credencial"
@@ -297,18 +303,16 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
       </Box>
 
       {/* --- SECCIÓN: MARCAS DE PLATAFORMA (TERCERO Y ÚLTIMO) --- */}
-      <Divider sx={{ my: 3 }} /> {/* Este Divider siempre es visible */}
+      <Divider sx={{ my: 3 }} />
       <Typography variant="h6" gutterBottom>
         Marcas de Plataforma
       </Typography>
+
       {/* Mapear las marcas de plataforma existentes */}
       {formData.marca_plataforma.map((marca, index) => (
         <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {editingMarcaIndex === index ? (
-
-              
-              
               <>
                 <TextField
                   label="Nombre de Marca"
@@ -346,9 +350,10 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
               </>
             ) : (
               <>
+                {/* Asegurarse de mostrar el logotext cuando no se está editando */}
                 <TextField
                   label={`Nombre de Marca ${index + 1}`}
-                  value={marca.logotext || ""}
+                  value={marca.logoText || ""}
                   fullWidth
                   size="small"
                   sx={{ mb: 1 }}
@@ -356,7 +361,7 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
                 />
                 <TextField
                   label={`Descripción de Marca ${index + 1}`}
-                  value={marca.description || ""}
+                  value={marca.description || ""} 
                   fullWidth
                   multiline
                   rows={2}
@@ -367,7 +372,7 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
                   <IconButton
                     aria-label="edit"
                     onClick={() =>
-                      handleStartEditingMarca(index, marca.logotext, marca.description)
+                      handleStartEditingMarca(index, marca.logoText, marca.description)
                     }
                     sx={{ mr: 1 }}
                   >
@@ -403,6 +408,7 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
           onChange={(e) => setNewLogoText(e.target.value)}
           fullWidth
           size="small"
+          // Puedes ajustar esta validación según si quieres que ambos campos sean requeridos o solo uno
           required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <TextField
@@ -413,6 +419,7 @@ console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
           multiline
           rows={2}
           size="small"
+          // Puedes ajustar esta validación
           required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <Button

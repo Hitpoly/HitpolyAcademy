@@ -1,4 +1,3 @@
-// src/components/escuela/curso/components/clases/VideoPreviewModal.jsx
 import React from "react";
 import {
   Box,
@@ -14,7 +13,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import Alert from "@mui/material/Alert";
 // Ajusta la ruta según tu estructura real de carpetas.
 // ¡Importa VideoPlayerWithControls en lugar de Videopopup!
-import VideoPlayerWithControls from "../../../../videos/VideoPlayerWithControls"; 
+import VideoPlayerWithControls from "../../../../videos/VideoPlayerWithControls";
 
 /**
  * Modal que muestra la previsualización de un video.

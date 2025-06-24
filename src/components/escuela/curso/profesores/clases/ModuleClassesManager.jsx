@@ -1,4 +1,3 @@
-// src/components/escuela/curso/components/clases/ModuleClassesManager.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -8,14 +7,11 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  // Dialog, DialogTitle, DialogContent, DialogActions, IconButton, // Estas ya no son necesarias aquí
 } from '@mui/material';
-// import CloseIcon from "@mui/icons-material/Close"; // Ya no es necesaria aquí
 import ClassCard from './ClassCard';
 import ClassForm from './ClassForm';
-import VideoPreviewModal from './VideoPreviewModal'; // ¡Importación del nuevo componente!
+import VideoPreviewModal from './VideoPreviewModal';
 
-// Recibe la prop onBack para volver a la página anterior
 const ModuleClassesManager = ({ onBack }) => {
   const { moduleId, courseId } = useParams();
   const location = useLocation();
@@ -94,7 +90,7 @@ const ModuleClassesManager = ({ onBack }) => {
   };
 
   const handleDeleteClass = async (classId) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta clase?')) {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta clase? Esto también eliminará todos sus recursos asociados.')) {
       return;
     }
     setLoading(true);
@@ -153,7 +149,7 @@ const ModuleClassesManager = ({ onBack }) => {
     navigate(`/cursos/${courseId}/modulos`);
   };
 
-  if (loading) {
+  if (loading && classes.length === 0) { // Mostrar spinner solo si es la carga inicial y no hay clases
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
         <CircularProgress size={24} />
@@ -209,7 +205,6 @@ const ModuleClassesManager = ({ onBack }) => {
         </Grid>
       )}
 
-      {/* Renderiza el Modal de Previsualización separado */}
       <VideoPreviewModal
         open={showPreviewModal}
         onClose={handleClosePreviewModal}

@@ -1,10 +1,7 @@
-// Videopopup.jsx
-import React, { useState } from 'react';
-import { Box, IconButton } from '@mui/material'; 
+// src/components/videos/Videopopup.jsx
+import React, { useRef, useEffect, useCallback } from 'react'; // Agregamos useCallback
+import { Box } from '@mui/material';
 import YouTube from 'react-youtube';
-import YouTubeIcon from '@mui/icons-material/YouTube'; 
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
 
 const getYouTubeVideoId = (url) => {
   const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\s&]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
@@ -12,18 +9,20 @@ const getYouTubeVideoId = (url) => {
   return match && match[1] ? match[1] : null;
 };
 
-const Videopopup = ({ videoUrl, onPlayerReady, isPlaying, onPlayPause, hasStartedPlaying }) => {
-  const [isHovering, setIsHovering] = useState(false); 
+const Videopopup = ({ videoUrl, onPlayerReady }) => {
+  const videoRef = useRef(null); // Para el elemento <video> nativo
+  // El `youtubePlayerRef` ya no es estrictamente necesario aquí si `onPlayerReady` maneja la instancia.
+  // const youtubePlayerRef = useRef(null); // Para la instancia de YouTube (event.target)
 
-  if (!videoUrl) return null;
-
+  // Determinamos el tipo de video fuera de los Hooks, antes de cualquier lógica condicional importante.
   const youtubeVideoId = getYouTubeVideoId(videoUrl);
   const isYouTubeVideo = !!youtubeVideoId;
-  
+
+  // Opciones para el reproductor de YouTube
   const youtubeOpts = {
     playerVars: {
       autoplay: 0,
-      controls: 0,         
+      controls: 0, // Deshabilitamos los controles nativos de YouTube
       modestbranding: 1,
       rel: 0,
       disablekb: 1,
@@ -37,13 +36,49 @@ const Videopopup = ({ videoUrl, onPlayerReady, isPlaying, onPlayPause, hasStarte
     width: '100%',
     height: '100%',
     border: 0,
+    pointerEvents: 'none', // Aseguramos que los clicks pasen al overlay en VideoPlayerWithControls
   };
 
-  const handleOnReady = (event) => {
+  // Manejador para cuando el reproductor de YouTube está listo
+  const handleYouTubeReady = useCallback((event) => {
+    // youtubePlayerRef.current = event.target; // No es necesario si solo lo pasamos
     if (onPlayerReady) {
       onPlayerReady(event.target);
     }
-  };
+  }, [onPlayerReady]); // Dependencia onPlayerReady
+
+  // Este useEffect siempre se llama, y la lógica interna se bifurca.
+  useEffect(() => {
+    if (!videoUrl) return; // Si no hay URL, no hacemos nada.
+
+    // Reiniciar la referencia del video HTML si la URL cambia o el tipo de video
+    // (para evitar que se intente inicializar un player nativo si pasamos a YT)
+    if (videoRef.current && isYouTubeVideo) {
+      videoRef.current.src = ""; // Limpiar src para asegurar que no haya un player fantasma
+      // No necesitamos `videoRef.current = null;` directamente porque useRef devuelve un objeto mutable.
+    }
+
+    if (!isYouTubeVideo) { // Si NO es un video de YouTube, inicializamos el HTML video
+      if (videoRef.current) {
+        if (onPlayerReady) {
+          onPlayerReady(videoRef.current);
+        }
+      }
+    }
+    // Para YouTube, `onPlayerReady` se llama desde `handleYouTubeReady` cuando el componente `YouTube` está listo.
+
+    // Función de limpieza para HTML video si se desmonta o cambia a YouTube
+    return () => {
+      if (videoRef.current && !isYouTubeVideo) {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute('src'); // Evita errores de red en la consola
+        videoRef.current.load();
+      }
+      // La limpieza de YouTube la maneja el propio componente `react-youtube` al desmontar
+    };
+  }, [videoUrl, isYouTubeVideo, onPlayerReady]); // Dependencias esenciales
+
+  if (!videoUrl) return null; // Salida temprana si no hay URL
 
   return (
     <Box
@@ -60,72 +95,23 @@ const Videopopup = ({ videoUrl, onPlayerReady, isPlaying, onPlayPause, hasStarte
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {youtubeVideoId ? (
+      {isYouTubeVideo ? (
         <YouTube
           videoId={youtubeVideoId}
           opts={youtubeOpts}
           className="yt-player"
           style={fillParentStyles}
-          onReady={handleOnReady}
+          onReady={handleYouTubeReady} // Usamos el manejador useCallback
         />
       ) : (
         <video
+          ref={videoRef}
           src={videoUrl}
+          controls={false} // Deshabilitamos los controles nativos
           style={{ ...fillParentStyles, objectFit: 'contain' }}
           title="Video del curso"
         />
       )}
-
-      <Box
-        sx={{
-          ...fillParentStyles, 
-          zIndex: 1,           
-          backgroundColor: 'transparent', 
-          cursor: 'pointer',   
-          pointerEvents: 'auto', 
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          opacity: (!hasStartedPlaying || !isPlaying || isHovering) ? 1 : 0, 
-          transition: 'opacity 0.3s ease-in-out', 
-        }}
-        onContextMenu={(e) => e.preventDefault()} 
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        onClick={onPlayPause} 
-      >
-        {isYouTubeVideo && !hasStartedPlaying ? (
-          <Box
-            sx={{
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              borderRadius: '50%',
-              padding: 1, 
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: { xs: 80, sm: 100 }, 
-              height: { xs: 80, sm: 100 }, 
-            }}
-          >
-            <YouTubeIcon sx={{ fontSize: { xs: 70, sm: 82 }, color: 'white' }} />
-          </Box>
-        ) : (
-          <IconButton 
-            sx={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-              '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' },
-              padding: { xs: '12px', sm: '16px' } 
-            }}
-            aria-label={isPlaying ? "Pausar video" : "Reproducir video"}
-          >
-            {isPlaying ? 
-              <PauseIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} /> 
-              : 
-              <PlayArrowIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} />
-            }
-          </IconButton>
-        )}
-      </Box>
     </Box>
   );
 };

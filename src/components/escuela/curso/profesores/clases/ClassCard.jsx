@@ -1,4 +1,3 @@
-// src/components/escuela/curso/components/clases/ClassCard.jsx
 import React, { useState } from "react";
 import {
   Card,
