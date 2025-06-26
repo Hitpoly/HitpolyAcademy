@@ -26,6 +26,89 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   const playerContainerRef = useRef(null); // Ref para el contenedor del reproductor
   const [isHovering, setIsHovering] = useState(false); // Para mostrar/ocultar overlay
 
+  // Constantes de estado del reproductor de YouTube
+  const YT_PLAYING = 1;
+  const YT_PAUSED = 2;
+  const YT_ENDED = 0;
+  const YT_BUFFERING = 3;
+
+  const startProgressInterval = useCallback((playerInstance, isYouTube) => {
+    stopProgressInterval(); // Asegurarse de limpiar cualquier intervalo anterior
+    const id = setInterval(() => {
+      if (isYouTube) {
+        if (playerInstance && typeof playerInstance.getCurrentTime === 'function' && typeof playerInstance.getDuration === 'function') {
+          const currentT = playerInstance.getCurrentTime();
+          const dur = playerInstance.getDuration();
+          if (dur > 0 && currentT !== null && currentT !== undefined) {
+            setCurrentTime(currentT);
+            setVideoProgress((currentT / dur) * 100);
+
+            // Añadir lógica para detectar el final del video de YouTube por progreso
+            // Solo si el video ya ha empezado a reproducirse y está casi al final
+            // Usamos player?.getPlayerState() para asegurar que no falle si el player no tiene el método
+            if (currentT >= dur - 0.5 && dur > 0 && player?.getPlayerState() !== YT_ENDED) {
+                // console.log("🐛 VideoPlayerWithControls: Video de YouTube finalizado (por progreso, después de seek).");
+                setIsPaused(true);
+                setVideoProgress(100);
+                setCurrentTime(duration);
+                stopProgressInterval();
+                onVideoCompleted();
+            }
+          }
+        }
+      } else {
+        if (playerInstance && playerInstance.currentTime !== null && playerInstance.duration !== null && playerInstance.duration > 0) {
+          setCurrentTime(playerInstance.currentTime);
+          setVideoProgress((playerInstance.currentTime / playerInstance.duration) * 100);
+        }
+      }
+    }, 1000); // Actualiza cada segundo
+    setIntervalId(id);
+  }, [duration, onVideoCompleted, player]); // Añadir 'player' como dependencia para acceder a player.getPlayerState()
+
+  const stopProgressInterval = useCallback(() => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+  }, [intervalId]);
+
+  // Nuevo manejador para los cambios de estado de YouTube
+  const handleYouTubeStateChange = useCallback((state) => {
+    // console.log("🐛 YouTube State Changed:", state);
+    if (!player) return; // Asegúrate de que el player esté disponible
+
+    switch (state) {
+      case YT_PLAYING:
+        setIsPaused(false);
+        setHasStartedPlaying(true);
+        startProgressInterval(player, true);
+        if (player.getDuration() > 0) {
+          setDuration(player.getDuration());
+        }
+        break;
+      case YT_PAUSED:
+        setIsPaused(true);
+        stopProgressInterval();
+        break;
+      case YT_ENDED:
+        // console.log("🐛 VideoPlayerWithControls: Video de YouTube finalizado (por estado).");
+        setIsPaused(true);
+        setVideoProgress(100);
+        setCurrentTime(duration); // Asegurarse de que el tiempo final sea la duración total
+        stopProgressInterval();
+        onVideoCompleted();
+        break;
+      case YT_BUFFERING:
+        // Opcional: Puedes mostrar un indicador de buffering o detener el intervalo si lo prefieres
+        // Actualmente, el intervalo sigue corriendo si estaba reproduciéndose, ya que el buffering es temporal.
+        break;
+      default:
+        break;
+    }
+  }, [player, startProgressInterval, stopProgressInterval, onVideoCompleted, duration]);
+
+
   const handlePlayerReady = useCallback((playerInstance) => {
     // console.log("🐛 VideoPlayerWithControls: Reproductor listo.", playerInstance);
     setPlayer(playerInstance);
@@ -35,34 +118,6 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
 
     if (typeof playerInstance.playVideo === 'function') { // Es un reproductor de YouTube (react-youtube)
       // console.log("🐛 VideoPlayerWithControls: Es reproductor de YouTube (via react-youtube).");
-      // Importante: La librería react-youtube maneja directamente los eventos si los pasas como props al <YouTube>
-      // Pero si queremos centralizar la lógica aquí, debemos añadir listeners a la instancia del player.
-      // Sin embargo, `react-youtube` no expone `addEventListener` de la misma manera que el iframe nativo.
-      // La forma más robusta es usar los callbacks de props de <YouTube> en Videopopup, y que Videopopup notifique el estado.
-      // Para simplificar, asumiremos que si es YouTube, controlamos el estado con `getCurrentTime` y `getDuration`
-      // y la lógica de `onStateChange` la simulamos o la manejamos con los botones de play/pause.
-
-      // Para los eventos de estado de YouTube, `react-youtube` los expone a través de props como `onStateChange`.
-      // Como `Videopopup` es el que renderiza el <YouTube> real, necesitamos que nos pase estos eventos.
-      // Sin embargo, mi enfoque anterior con `Videopopup` como "renderizador pasivo" significa que
-      // no queremos que `Videopopup` reciba esos callbacks directamente.
-
-      // Vuelvo a la idea de que `Videopopup` solo pasa el player, y aquí lo escuchamos.
-      // Si `react-youtube` no expone `addEventListener` a su `event.target` de manera estándar,
-      // la mejor práctica es pasar los callbacks (`onStateChange`, `onEnd`) directamente a `Videopopup`.
-      // **Revertiré la simplificación anterior y hare que Videopopup reciba callbacks de estado**
-      // **para YouTube para que `VideoPlayerWithControls` los gestione.**
-
-      // Esto requiere que Videopopup pase más que solo onPlayerReady
-      // Para esta solución y mantener la estructura, usaremos `setInterval` para actualizar el estado
-      // y asumiremos que los métodos `playVideo()`, `pauseVideo()`, etc., funcionan.
-      // La detección de fin de video para YouTube se hará por el progreso o por un callback.
-
-      // Una solución más limpia sería que Videopopup tuviera props como `onYouTubeStateChange`
-      // y `onYouTubeEnded` que luego VideoPlayerWithControls pasaría a sus propios manejadores.
-      // Por ahora, para tu código actual, mantendremos la detección por `getCurrentTime()` y `getDuration()`
-      // para el progreso, y la finalización se detectará si el progreso llega a 100%.
-
       // Obtener la duración de YouTube una vez que esté disponible
       const checkDurationYT = setInterval(() => {
         if (playerInstance.getDuration && playerInstance.getDuration() > 0) {
@@ -109,49 +164,8 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
         setDuration(playerInstance.duration);
       }
     }
-  }, [volume, onVideoCompleted, duration]);
+  }, [volume, onVideoCompleted, duration, startProgressInterval, stopProgressInterval]);
 
-
-  const startProgressInterval = useCallback((playerInstance, isYouTube) => {
-    stopProgressInterval();
-    const id = setInterval(() => {
-      if (isYouTube) {
-        if (playerInstance.getCurrentTime && playerInstance.getDuration) {
-          const currentT = playerInstance.getCurrentTime();
-          const dur = playerInstance.getDuration();
-          if (dur > 0) {
-            setCurrentTime(currentT);
-            setVideoProgress((currentT / dur) * 100);
-            if (currentT >= dur && hasStartedPlaying) { // Si el video de YouTube termina
-              // console.log("🐛 VideoPlayerWithControls: Video de YouTube finalizado (por progreso).");
-              setIsPaused(true);
-              setVideoProgress(100);
-              setCurrentTime(duration);
-              stopProgressInterval();
-              onVideoCompleted();
-            }
-          }
-        }
-      } else {
-        if (playerInstance.currentTime && playerInstance.duration) {
-          const currentT = playerInstance.currentTime;
-          const dur = playerInstance.duration;
-          if (dur > 0) {
-            setCurrentTime(currentT);
-            setVideoProgress((currentT / dur) * 100);
-          }
-        }
-      }
-    }, 1000);
-    setIntervalId(id);
-  }, [hasStartedPlaying, duration, onVideoCompleted]); // Incluimos hasStartedPlaying y duration
-
-  const stopProgressInterval = useCallback(() => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      setIntervalId(null);
-    }
-  }, [intervalId]);
 
   useEffect(() => {
     return () => {
@@ -186,32 +200,44 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
           player.pause();
         }
       }
-      setIsPaused(!isPaused); // Actualizar el estado de pausa
-      setHasStartedPlaying(true); // Marca que la reproducción ya inició.
     }
   };
 
   const handleSeek = (event, newValue) => {
+    // Solo actualiza el slider visualmente mientras el usuario arrastra
+    setVideoProgress(newValue);
+  };
+
+  const handleSeekCommitted = (event, newValue) => {
     if (player) {
-      setVideoProgress(newValue); // Actualiza el slider inmediatamente para UX
       if (isYouTubePlayer) {
         if (player.getDuration) {
           const dur = player.getDuration();
           if (dur > 0) {
             const timeToSeek = (newValue / 100) * dur;
             player.seekTo(timeToSeek, true);
-            setCurrentTime(timeToSeek); // Actualiza el tiempo actual
+            setCurrentTime(timeToSeek);
+            // Si el video estaba reproduciéndose, reinicia el intervalo de progreso
+            // Esto es crucial para que la barra siga avanzando después de un seek.
+            if (!isPaused) {
+                startProgressInterval(player, true);
+            }
           }
         }
-      } else {
+      } else { // Es un elemento <video> HTML nativo
         if (player.duration > 0) {
           const timeToSeek = (newValue / 100) * player.duration;
           player.currentTime = timeToSeek;
-          setCurrentTime(timeToSeek); // Actualiza el tiempo actual
+          setCurrentTime(timeToSeek);
+          // Si el video estaba reproduciéndose, reinicia el intervalo de progreso
+          if (!isPaused) {
+            startProgressInterval(player, false);
+          }
         }
       }
     }
   };
+
 
   const handleVolumeChange = (event, newValue) => {
     if (player) {
@@ -270,6 +296,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
         <Videopopup
           videoUrl={videoUrl}
           onPlayerReady={handlePlayerReady}
+          onYouTubeStateChange={handleYouTubeStateChange}
         />
 
         {/* Overlay de control: solo visible cuando el video no ha empezado, pausado, o al pasar el mouse */}
@@ -351,6 +378,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
             <Slider
               value={videoProgress}
               onChange={handleSeek}
+              onChangeCommitted={handleSeekCommitted}
               aria-labelledby="video-progress-slider"
               size="small"
               color="primary"

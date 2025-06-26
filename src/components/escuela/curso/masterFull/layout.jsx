@@ -1,37 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { Box, Typography, Button, CircularProgress, Alert } from "@mui/material";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
 import ProgressBar from "./components/progreso.jsx";
 import VideoPlayerWithControls from "../../../videos/VideoPlayerWithControls.jsx";
 import VideoList from "./components/VideoList.jsx";
 import Footer from "../../../footer/pieDePagina.jsx";
-import ProgressAccordion from "./components/ProgressAcordion";
 import Resources from "./components/resources.jsx";
+import CommentSection from "./components/comentarios/CommentSection.jsx";
 
 const VideoLayout = ({ courseId }) => {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allResources, setAllResources] = useState([]);
 
-  // El video actual ahora se identificará por su ID de clase
+  const baseUrl = "https://apiacademy.hitpoly.com/";
+
   const [currentVideoId, setCurrentVideoId] = useState(() => {
-    // No recuperamos del localStorage al inicio para forzar la primera clase
-    // Pero si quieres mantener la funcionalidad de localStorage, puedes comentarme
-    // const savedVideoId = localStorage.getItem("currentVideoId");
-    // return savedVideoId || null;
-    return null; // Inicializamos a null para que la lógica de useEffect lo establezca
+    const savedVideoId = localStorage.getItem(
+      `currentVideoId_course_${courseId}`
+    );
+    return savedVideoId ? parseInt(savedVideoId, 10) : null;
   });
 
-  // Los videos completados ahora se guardarán por su ID de clase
   const [completedVideoIds, setCompletedVideoIds] = useState(() => {
     const savedCompletedVideoIds = JSON.parse(
-      localStorage.getItem("completedVideoIds")
+      localStorage.getItem(`completedVideoIds_course_${courseId}`)
     );
     return savedCompletedVideoIds || [];
   });
 
-  // Efecto para cargar los módulos y clases
   useEffect(() => {
-    const fetchCourseContent = async () => {
+    const fetchData = async () => {
       if (!courseId) {
         setError("No se proporcionó un ID de curso.");
         setLoading(false);
@@ -40,8 +45,9 @@ const VideoLayout = ({ courseId }) => {
 
       setLoading(true);
       setError(null);
+
       try {
-        const response = await fetch(
+        const modulesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php",
           {
             method: "POST",
@@ -50,16 +56,22 @@ const VideoLayout = ({ courseId }) => {
           }
         );
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error HTTP al cargar módulos: ${response.status} - ${errorText}`);
+        if (!modulesResponse.ok) {
+          const errorText = await modulesResponse.text();
+          throw new Error(
+            `Error HTTP al cargar módulos: ${modulesResponse.status} - ${errorText}`
+          );
         }
 
-        const data = await response.json();
-        // console.log("Respuesta de getModulosPorCursoController.php:", data);
+        const modulesData = await modulesResponse.json();
 
-        if (data.status === "success" && Array.isArray(data.modulos)) {
-          const sortedModules = data.modulos.sort((a, b) => a.orden - b.orden);
+        if (
+          modulesData.status === "success" &&
+          Array.isArray(modulesData.modulos)
+        ) {
+          const sortedModules = modulesData.modulos.sort(
+            (a, b) => a.orden - b.orden
+          );
 
           const modulesWithClasses = await Promise.all(
             sortedModules.map(async (module) => {
@@ -69,36 +81,39 @@ const VideoLayout = ({ courseId }) => {
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ accion: "getClases", id: module.id }),
+                    body: JSON.stringify({
+                      accion: "getClases",
+                      id: module.id,
+                    }),
                   }
                 );
 
                 if (!classResponse.ok) {
                   const errorText = await classResponse.text();
-                  console.error(`Error HTTP al cargar clases para el módulo ${module.id}: ${classResponse.status} - ${errorText}`);
-                  return { ...module, classes: [] };
+                  throw new Error(
+                    `Error HTTP al cargar clases para el módulo ${module.id}: ${classResponse.status} - ${errorText}`
+                  );
                 }
 
                 const classData = await classResponse.json();
-                // console.log(`Respuesta de clases para el módulo ${module.id}:`, classData);
 
-                if (classData.status === "success" && Array.isArray(classData.clases)) {
-                  // **FILTRADO EN EL FRONTEND: Filtramos las clases por el ID del módulo actual**
-                  // Asegúrate de que 'modulo_id' es el nombre correcto en tu API para la relación.
-                  const filteredClasses = classData.clases.filter(clase =>
-                    String(clase.modulo_id) === String(module.id)
+                if (
+                  classData.status === "success" &&
+                  Array.isArray(classData.clases)
+                ) {
+                  const filteredClasses = classData.clases.filter(
+                    (clase) => String(clase.modulo_id) === String(module.id)
                   );
 
                   const formattedClasses = filteredClasses
-                    .map(clase => ({
+                    .map((clase) => ({
                       id: clase.id,
                       title: clase.titulo,
-                      // *** CAMBIO AQUÍ: Ahora usa 'url_video' ***
-                      videoUrl: clase.url_video, // Asumiendo que la API devuelve 'url_video'
-                      resources: clase.recursos || [],
+                      videoUrl: clase.url_video,
                       progressPanels: clase.paneles_progreso || [],
+                      orden: clase.orden,
                     }))
-                    .sort((a, b) => a.orden - b.orden); // Asumiendo que las clases tienen una propiedad 'orden'
+                    .sort((a, b) => a.orden - b.orden);
                   return {
                     id: module.id,
                     title: module.titulo,
@@ -106,111 +121,163 @@ const VideoLayout = ({ courseId }) => {
                     classes: formattedClasses,
                   };
                 } else {
-                  console.warn(`No se encontraron clases para el módulo ${module.id} o formato inesperado.`, classData);
                   return { ...module, classes: [] };
                 }
               } catch (err) {
-                console.error(`Excepción al cargar clases para el módulo ${module.id}: ${err.message}`);
                 return { ...module, classes: [] };
               }
             })
           );
           setModules(modulesWithClasses);
-          // console.log("Módulos con clases después de formatear y filtrar:", modulesWithClasses);
 
-          // *** CAMBIO AQUÍ: Establecer la primera clase del primer módulo por defecto ***
-          if (modulesWithClasses.length > 0) {
-            const firstModuleWithClasses = modulesWithClasses.find(m => m.classes && m.classes.length > 0);
+          if (currentVideoId === null && modulesWithClasses.length > 0) {
+            const firstModuleWithClasses = modulesWithClasses.find(
+              (m) => m.classes && m.classes.length > 0
+            );
             if (firstModuleWithClasses) {
               setCurrentVideoId(firstModuleWithClasses.classes[0].id);
             }
           }
-
         } else {
-          setError(data.message || "Error al cargar los módulos o formato de datos inesperado en la respuesta.");
+          setError(
+            modulesData.message ||
+              "Error al cargar los módulos o formato de datos inesperado en la respuesta."
+          );
           setModules([]);
         }
+
+        const resourcesResponse = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/getAllRecursosController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "getRecursos" }),
+          }
+        );
+
+        if (!resourcesResponse.ok) {
+          const errorText = await resourcesResponse.text();
+          throw new Error(
+            `Error HTTP al cargar recursos: ${resourcesResponse.status} - ${errorText}`
+          );
+        }
+
+        const resourcesData = await resourcesResponse.json();
+
+        if (
+          resourcesData.status === "success" &&
+          Array.isArray(resourcesData.recursos)
+        ) {
+          const formattedResources = resourcesData.recursos.map((resource) => ({
+            ...resource,
+            fullUrl: resource.url.startsWith("http")
+              ? resource.url
+              : baseUrl + resource.url,
+          }));
+          setAllResources(formattedResources);
+        } else {
+          setAllResources([]);
+        }
       } catch (err) {
-        setError(`No se pudieron cargar los módulos o clases: ${err.message}`);
+        setError(`No se pudieron cargar los datos del curso: ${err.message}`);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCourseContent();
-  }, [courseId]); // Se ejecuta cuando cambia el courseId
+    fetchData();
+  }, [courseId]);
 
-  // Efecto para guardar el video actual en localStorage
   useEffect(() => {
-    if (currentVideoId) {
-      localStorage.setItem("currentVideoId", currentVideoId);
+    if (currentVideoId !== null) {
+      localStorage.setItem(
+        `currentVideoId_course_${courseId}`,
+        currentVideoId.toString()
+      );
     }
-  }, [currentVideoId]);
+  }, [currentVideoId, courseId]);
 
-  // Efecto para guardar los videos completados en localStorage
   useEffect(() => {
-    localStorage.setItem("completedVideoIds", JSON.stringify(completedVideoIds));
-  }, [completedVideoIds]);
+    localStorage.setItem(
+      `completedVideoIds_course_${courseId}`,
+      JSON.stringify(completedVideoIds)
+    );
+  }, [completedVideoIds, courseId]);
 
-  // Función para encontrar la clase actual
-  const getCurrentClass = () => {
+  const getCurrentClass = useCallback(() => {
     for (const module of modules) {
-      const foundClass = module.classes?.find(clase => clase.id === currentVideoId);
+      const foundClass = module.classes?.find(
+        (clase) => clase.id === currentVideoId
+      );
       if (foundClass) {
         return foundClass;
       }
     }
-    return null; // Si no se encuentra la clase
-  };
+    return null;
+  }, [modules, currentVideoId]);
 
   const currentClass = getCurrentClass();
 
-  // Cambiar el video/clase seleccionado
-  const handleVideoChange = (clase) => {
-    setCurrentVideoId(clase.id);
-  };
+  const currentClassResources = currentVideoId
+    ? allResources.filter(
+        (resource) => String(resource.clase_id) === String(currentVideoId)
+      )
+    : [];
 
-  // Marcar video como completado al finalizar
-  const handleVideoEnd = () => {
+  const handleVideoChange = useCallback((clase) => {
+    setCurrentVideoId(clase.id);
+  }, []);
+
+  const handleVideoEnd = useCallback(() => {
     setCompletedVideoIds((prev) => {
       if (currentClass && !prev.includes(currentClass.id)) {
         return [...prev, currentClass.id];
       }
       return prev;
     });
-  };
+  }, [currentClass]);
 
-  // Alternar el estado de completado de un video manualmente
-  const toggleCompletedVideo = (claseId) => {
+  const toggleCompletedVideo = useCallback((claseId) => {
     setCompletedVideoIds((prev) =>
       prev.includes(claseId)
         ? prev.filter((id) => id !== claseId)
         : [...prev, claseId]
     );
-  };
+  }, []);
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", flexDirection: "column" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          flexDirection: "column",
+        }}
+      >
         <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>Cargando contenido del curso...</Typography>
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Cargando contenido del curso...
+        </Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <Box sx={{ p: 3, textAlign: "center" }}>
         <Alert severity="error">{error}</Alert>
-        <Typography variant="body1" sx={{ mt: 2 }}>Por favor, recarga la página o contacta con soporte.</Typography>
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Por favor, recarga la página o contacta con soporte.
+        </Typography>
       </Box>
     );
   }
 
-  // Si no hay clases cargadas pero ya terminó la carga y no hay error
-  if (!currentClass && modules.length > 0 && !loading && !error) {
+  if (!currentClass && modules.length > 0) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <Box sx={{ p: 3, textAlign: "center" }}>
         <Typography variant="h6">Selecciona una clase para empezar.</Typography>
         <VideoList
           modules={modules}
@@ -224,14 +291,15 @@ const VideoLayout = ({ courseId }) => {
     );
   }
 
-  // Si no hay módulos o clases después de la carga
   if (modules.length === 0 || !currentClass) {
-      return (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6">No hay contenido disponible para este curso.</Typography>
-              <Footer />
-          </Box>
-      );
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6">
+          No hay contenido disponible para este curso.
+        </Typography>
+        <Footer />
+      </Box>
+    );
   }
 
   return (
@@ -244,7 +312,10 @@ const VideoLayout = ({ courseId }) => {
       >
         <ProgressBar
           completedVideos={completedVideoIds}
-          totalVideos={modules.reduce((acc, mod) => acc + (mod.classes?.length || 0), 0)}
+          totalVideos={modules.reduce(
+            (acc, mod) => acc + (mod.classes?.length || 0),
+            0
+          )}
         />
       </Box>
 
@@ -290,25 +361,20 @@ const VideoLayout = ({ courseId }) => {
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
+          flexDirection: { xs: "column-reverse", md: "row" }, // Aquí está el cambio clave
           padding: { xs: "20px", md: "0px 50px" },
           marginTop: { xs: "0px", md: "40px" },
           gap: "20px",
         }}
       >
+        {/* Este Box contiene los Comentarios */}
         <Box sx={{ flex: 7 }}>
-          <Resources resources={currentClass?.resources} />
+          <CommentSection claseId={currentVideoId} />
         </Box>
+        {/* Este Box contiene los Recursos */}
         <Box sx={{ flex: 3 }}>
-          <ProgressAccordion
-            key={currentVideoId}
-            panels={currentClass?.progressPanels || []}
-          />
+          <Resources resources={currentClassResources} />
         </Box>
-      </Box>
-
-      <Box sx={{ marginTop: "40px" }}>
-        <Footer />
       </Box>
     </>
   );

@@ -19,13 +19,17 @@ import {
   DialogActions,
   IconButton,
   Chip,
-  // InputLabel, // No se usa directamente aquí si TextField ya tiene label
+  InputLabel,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import useClassFormLogic from "./logic/useClassFormLogic"; // Importa tu custom hook
+import LinkIcon from '@mui/icons-material/Link';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+
+
+import useClassFormLogic from "./logic/useClassFormLogic";
 
 const ClassForm = ({
   moduleId,
@@ -42,6 +46,8 @@ const ClassForm = ({
     durationUnit,
     newResourceTitle,
     newResourceFile,
+    newResourceUrl,
+    newResourceType,
     handleChange,
     handleDurationUnitChange,
     handleFileChange,
@@ -49,18 +55,21 @@ const ClassForm = ({
     handleDeleteResource,
     handleSubmit,
     setResponseMessage,
-    setNewResourceTitle, // ¡Aquí está la corrección! Ahora se desestructura de useClassFormLogic
+    setNewResourceTitle,
     setNewResourceFile,
+    setNewResourceUrl,
+    setNewResourceType,
   } = useClassFormLogic(moduleId, classToEdit, onClassSaved, existingClassOrders);
 
-  // Efecto para limpiar mensajes y archivos al abrir/cerrar el modal
   React.useEffect(() => {
     if (!open) {
       setResponseMessage({ type: "", message: "" });
-      setNewResourceTitle(""); // ¡Y aquí se usa!
+      setNewResourceTitle("");
       setNewResourceFile(null);
+      setNewResourceUrl("");
+      setNewResourceType("pdf");
     }
-  }, [open, setResponseMessage, setNewResourceTitle, setNewResourceFile]); // ¡Asegúrate de agregarla como dependencia también!
+  }, [open, setResponseMessage, setNewResourceTitle, setNewResourceFile, setNewResourceUrl, setNewResourceType]);
 
   return (
     <Dialog open={open} onClose={onClose} aria-labelledby="class-form-dialog-title" maxWidth="md" fullWidth>
@@ -103,13 +112,13 @@ const ClassForm = ({
           />
           <TextField
             fullWidth
-            label="URL del Video/Contenido"
+            label="URL del Video/Contenido Principal"
             name="url_video"
             value={formData.url_video}
             onChange={handleChange}
             margin="normal"
             required
-            helperText="URL del recurso principal de la clase (video, PDF, etc.)"
+            helperText="URL del recurso principal de la clase (video de YouTube, Vimeo, etc.)"
           />
           <FormControl fullWidth margin="normal">
             <TextField
@@ -174,13 +183,14 @@ const ClassForm = ({
                   {formData.recursos.map((resource, index) => (
                     <Chip
                       key={resource.id || `new-${index}`}
-                      label={`${resource.titulo} (${resource.tipo || "desconocido"})`}
+                      label={`${resource.nombre} (${resource.tipo || "desconocido"})`}
                       onDelete={() => handleDeleteResource(resource)}
                       deleteIcon={<DeleteIcon />}
                       color={resource.tipo === "pdf" ? "secondary" : "primary"}
+                      icon={resource.tipo === "pdf" ? <InsertDriveFileIcon  /> : <LinkIcon />}
                       variant="outlined"
                       onClick={() => resource.url && window.open(resource.url, "_blank")}
-                      sx={{ cursor: resource.url ? "pointer" : "default" }}
+                      sx={{ cursor: "pointer" }} // El cursor de puntero siempre es apropiado si es cliqueable
                     />
                   ))}
                 </Box>
@@ -195,37 +205,68 @@ const ClassForm = ({
               margin="normal"
               size="small"
             />
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <input
-                accept=".pdf"
-                style={{ display: "none" }}
-                id="raised-button-file"
-                type="file"
-                onChange={handleFileChange}
-              />
-              <label htmlFor="raised-button-file">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  startIcon={<CloudUploadIcon />}
-                  fullWidth
-                >
-                  {newResourceFile ? newResourceFile.name : "Seleccionar Archivo PDF"}
-                </Button>
-              </label>
-              {newResourceFile && (
-                <Typography variant="caption" display="block" sx={{ mt: 1, ml: 1 }}>
-                  Archivo seleccionado: {newResourceFile.name}
+
+            <FormControl fullWidth margin="normal" size="small">
+              <InputLabel id="resource-type-select-label">Tipo de Recurso</InputLabel>
+              <Select
+                labelId="resource-type-select-label"
+                id="resource-type-select"
+                value={newResourceType}
+                label="Tipo de Recurso"
+                onChange={(e) => setNewResourceType(e.target.value)}
+              >
+                <MenuItem value="pdf">Archivo PDF</MenuItem>
+                <MenuItem value="url">Enlace/URL</MenuItem>
+              </Select>
+            </FormControl>
+
+            {newResourceType === "pdf" ? (
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <input
+                  accept=".pdf"
+                  style={{ display: "none" }}
+                  id="raised-button-file"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="raised-button-file">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<CloudUploadIcon />}
+                    fullWidth
+                  >
+                    {newResourceFile ? newResourceFile.name : "Seleccionar Archivo PDF"}
+                  </Button>
+                </label>
+                {newResourceFile && (
+                  <Typography variant="caption" display="block" sx={{ mt: 1, ml: 1 }}>
+                    Archivo seleccionado: {newResourceFile.name} {/* CAMBIO AQUÍ: newResourceFile.name */}
+                  </Typography>
+                )}
+                <Typography variant="caption" display="block" sx={{ mt: 0.5, ml: 1 }}>
+                  Solo archivos .pdf
                 </Typography>
-              )}
-              <Typography variant="caption" display="block" sx={{ mt: 0.5, ml: 1 }}>
-                Solo archivos .pdf
-              </Typography>
-            </Box>
+              </Box>
+            ) : (
+              <TextField
+                fullWidth
+                label="URL del Recurso"
+                value={newResourceUrl}
+                onChange={(e) => setNewResourceUrl(e.target.value)}
+                margin="normal"
+                size="small"
+                helperText="Introduce la URL completa del recurso (ej: https://ejemplo.com/documento.pdf o https://youtube.com/watch?v=...) "
+              />
+            )}
 
             <Button
               onClick={handleAddResource}
-              disabled={!newResourceTitle.trim() || !newResourceFile}
+              disabled={
+                !newResourceTitle.trim() ||
+                (newResourceType === "pdf" && !newResourceFile) ||
+                (newResourceType === "url" && !newResourceUrl.trim())
+              }
               startIcon={<AddIcon />}
               variant="contained"
               sx={{ mt: 2 }}
@@ -246,13 +287,7 @@ const ClassForm = ({
           disabled={loading}
           onClick={handleSubmit}
         >
-          {loading ? (
-            <CircularProgress size={24} />
-          ) : classToEdit ? (
-            "Guardar Cambios"
-          ) : (
-            "Crear Clase"
-          )}
+          {loading ? <CircularProgress size={24} /> : classToEdit ? "Guardar Cambios" : "Crear Clase"}
         </Button>
       </DialogActions>
     </Dialog>

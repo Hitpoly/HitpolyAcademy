@@ -10,11 +10,11 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import UserProfile from "./components/Profile/UserProfile";
 import ExamComponent from "./pages/examenes/ExamComponent";
 import ExamResults from "./pages/examenes/ExamResults";
-import CourseForm from "./components/escuela/curso/profesores/CourseForm"; // Mantén esta ruta
+import CourseForm from "./components/escuela/curso/profesores/CourseForm";
 import CategoryManager from "./components/escuela/curso/components/categorias/CategoryManager";
 import CourseModulesManager from "./components/escuela/curso/profesores/modulos/CourseModulesManager";
 import ModuleClassesManager from "./components/escuela/curso/profesores/clases/ModuleClassesManager";
-import CourseListManager from "./components/escuela/curso/profesores/CourseListManager"; // Importa el nuevo componente
+import CourseListManager from "./components/escuela/curso/profesores/CourseListManager";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -34,14 +34,17 @@ function App() {
           <Routes>
             <Route path="/" element={<Inicio />} />
             <Route path="/curso/:id" element={<PaginaDeInformacion />} />
+
+            {/* ***** CAMBIO AQUÍ: La ruta /master-full ahora espera un ID de curso ***** */}
             <Route
-              path="/master-full"
+              path="/master-full/:courseId" // <-- Agrega :courseId
               element={
                 <ProtectedRoute>
                   <PasosIniciales />
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/perfil"
               element={
@@ -51,12 +54,15 @@ function App() {
               }
             />
             <Route path="/login" element={<Login />} />
+            {/* Mantén la ruta /register que puede o no tener el :id */}
             <Route path="/register" element={<Register />} />
+            <Route path="/curso/:id/register" element={<Register />} /> {/* Esta ruta es la que te permite pasar el ID */}
+
+
             <Route path="/exam/:examName" element={<ExamComponent />} />
             <Route path="/exam-results" element={<ExamResults />} />
 
             {/* RUTAS DE ADMINISTRACIÓN DE CURSOS */}
-            {/* Ruta para el formulario de creación/edición */}
             <Route
               path="/datos-de-curso"
               element={
@@ -65,7 +71,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Ruta para la lista de cursos (donde se iniciará la edición o la creación) */}
             <Route
               path="/mis-cursos"
               element={
@@ -74,7 +79,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/categorias"
               element={

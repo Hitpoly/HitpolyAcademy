@@ -1,20 +1,11 @@
 // useClassFormLogic.js
 import { useState, useEffect, useRef } from "react";
+import { convertSecondsToUnits } from "./utils";
+import useResourceLogic from "./useResourceLogic";
 
-// Mover convertSecondsToUnits fuera del useEffect para que sea accesible globalmente
-const convertSecondsToUnits = (totalSeconds) => {
-  if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) {
-    return { value: "", unit: "segundos" };
-  }
-  if (totalSeconds % 3600 === 0 && totalSeconds >= 3600) {
-    return { value: totalSeconds / 3600, unit: "horas" };
-  }
-  if (totalSeconds % 60 === 0 && totalSeconds >= 60) {
-    return { value: totalSeconds / 60, unit: "minutos" };
-  }
-  return { value: totalSeconds, unit: "segundos" };
-};
-
+// --- ¡CAMBIO AQUÍ! ---
+// Define la base URL aquí, tal como en tu archivo HTML
+const BASE_API_URL = "https://apiacademy.hitpoly.com/";
 
 const useClassFormLogic = (
   moduleId,
@@ -30,26 +21,58 @@ const useClassFormLogic = (
     orden: "",
     tipo_clase: "video",
     es_gratis_vista_previa: false,
-    recursos: [],
+    recursos: [], // Asegúrate de que 'recursos' siempre sea un array en el estado inicial por defecto
   };
-  const [formData, setFormData] = useState(initialFormState);
+
+  // 1. Inicialización de formData: Se ejecuta solo en el primer renderizado o cuando classToEdit cambia.
+  const [formData, setFormData] = useState(() => {
+    if (classToEdit) {
+      // Si estamos editando, usa classToEdit, pero asegura que 'recursos' sea un array inicialmente
+      // Los recursos reales se cargarán en el useEffect de abajo
+      return {
+        ...classToEdit,
+        recursos: classToEdit.recursos || [],
+      };
+    }
+    return initialFormState;
+  });
+
   const [loading, setLoading] = useState(false);
   const [responseMessage, setResponseMessage] = useState({
     type: "",
     message: "",
   });
   const [durationUnit, setDurationUnit] = useState("segundos");
-  const [newResourceTitle, setNewResourceTitle] = useState("");
-  const [newResourceFile, setNewResourceFile] = useState(null);
 
-  const [deletedResourceIds, setDeletedResourceIds] = useState([]);
-
+  // initialFormDataRef para comparar cambios. Se inicializa de forma más robusta en los useEffect.
   const initialFormDataRef = useRef(null);
-  const initialResourcesRef = useRef([]);
 
+  // Usa el nuevo hook para la lógica de recursos
+  const {
+    resources,
+    setResources: setResourcesInLogic, // Renombré setResources para evitar conflicto con el estado global
+    newResourceTitle,
+    setNewResourceTitle,
+    newResourceFile,
+    setNewResourceFile,
+    newResourceUrl,
+    setNewResourceUrl,
+    newResourceType,
+    setNewResourceType,
+    deletedResourceIds,
+    setDeletedResourceIds,
+    handleAddResource: handleAddResourceFromLogic, // Renombrado para evitar conflicto
+    handleDeleteResource: handleDeleteResourceFromLogic, // Renombrado
+    handleFileChange: handleFileChangeFromLogic, // Renombrado
+    resourceResponseMessage,
+    setResourceResponseMessage,
+  } = useResourceLogic(setResponseMessage); // Pasa setResponseMessage para que useResourceLogic pueda actualizar los mensajes globales
+
+  // --- Primer useEffect: Para inicializar el formulario y los recursos al cargar/cambiar classToEdit ---
   useEffect(() => {
-    console.log("useEffect - classToEdit:", classToEdit); // LOG
+    console.log("useEffect [classToEdit] - classToEdit:", classToEdit); // LOG
     if (classToEdit) {
+      // Si estamos en modo edición
       const { value, unit } = convertSecondsToUnits(classToEdit.duracion_segundos);
 
       const newFormData = {
@@ -59,25 +82,63 @@ const useClassFormLogic = (
         duracion_valor: value,
         orden: classToEdit.orden || "",
         tipo_clase: classToEdit.tipo_clase || "video",
-        es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1, // Asegúrate de que sea booleano aquí
-        recursos: [],
+        es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1,
+        recursos: [], // Temporalmente vacío, se llenará con fetchResourcesForClass
       };
       setFormData(newFormData);
       setDurationUnit(unit);
+
+      // Llama a la función para cargar los recursos desde la API
       fetchResourcesForClass(classToEdit.id);
-      setDeletedResourceIds([]);
+      setDeletedResourceIds([]); // Limpiar eliminados al cargar una nueva clase para edición
+
     } else {
-      setFormData(initialFormState);
+      // Si estamos creando una nueva clase
+      setFormData(initialFormState); // Vuelve al estado inicial base
       setDurationUnit("segundos");
-      // Importante: para una clase nueva, la referencia inicial debe ser el estado actual para que hasClassDataChanged funcione
-      initialFormDataRef.current = { ...initialFormState, durationUnit: "segundos" }; 
-      initialResourcesRef.current = [];
-      setDeletedResourceIds([]);
+      initialFormDataRef.current = { ...initialFormState, durationUnit: "segundos" }; // Reinicia la ref
+      setResourcesInLogic([]); // Reinicia los recursos en useResourceLogic
+      setDeletedResourceIds([]); // Reinicia los IDs de recursos eliminados
     }
+    // Limpiar mensajes y campos de recursos al cambiar la clase o al crear una nueva
     setResponseMessage({ type: "", message: "" });
     setNewResourceTitle("");
     setNewResourceFile(null);
-  }, [classToEdit, moduleId, onClassSaved]);
+    setNewResourceUrl("");
+    setNewResourceType("pdf");
+    setResourceResponseMessage({ type: "", message: "" });
+  }, [
+    classToEdit,
+    setResourcesInLogic, // Usar el setter renombrado
+    setDeletedResourceIds,
+    setNewResourceTitle,
+    setNewResourceFile,
+    setNewResourceUrl,
+    setNewResourceType,
+    setResponseMessage,
+    setResourceResponseMessage,
+  ]);
+
+  // --- Segundo useEffect: Sincroniza `formData.recursos` con `resources` del hook de recursos ---
+  // Este useEffect es vital para que formData siempre tenga los recursos más actuales.
+  useEffect(() => {
+    // Solo actualiza si resources es diferente de formData.recursos para evitar bucles infinitos
+    // La comparación JSON.stringify es superficial pero suficiente para este caso.
+    if (JSON.stringify(formData.recursos) !== JSON.stringify(resources)) {
+        console.log("Sincronizando formData.recursos con resources desde useResourceLogic:", resources); // LOG
+        setFormData((prevData) => ({
+            ...prevData,
+            recursos: resources,
+        }));
+    }
+  }, [resources, setFormData]); // No incluir formData.recursos aquí si solo se usa para la comparación, ya que podría causar un bucle si el setFormData anterior no lo actualiza de inmediato.
+
+  // --- Tercer useEffect: Para sincronizar mensajes de recursos con el mensaje global ---
+  useEffect(() => {
+    if (resourceResponseMessage.message) {
+      setResponseMessage(resourceResponseMessage);
+    }
+  }, [resourceResponseMessage, setResponseMessage]);
 
   const fetchResourcesForClass = async (classId) => {
     setLoading(true);
@@ -97,54 +158,63 @@ const useClassFormLogic = (
       }
 
       const data = await response.json();
-      console.log("Response from getAllRecursosController.php:", data);
+      console.log("Response from getAllRecursosController.php:", data); // LOG completo de la respuesta de la API
       if (data.status === "success" && Array.isArray(data.recursos)) {
-        const classResources = data.recursos.filter(
-          (res) => String(res.clase_id) === String(classId)
-        );
-        console.log("Filtered resources for this class:", classResources); // LOG
+        const classResources = data.recursos
+          .filter(
+            (res) => String(res.clase_id) === String(classId)
+          )
+          .map(res => {
+            // --- ¡CAMBIO AQUÍ! Construye la URL completa del recurso ---
+            const fullResourceUrl = res.url && !res.url.startsWith("http")
+              ? BASE_API_URL + res.url
+              : res.url;
 
-        setFormData((prevData) => {
-          const updatedData = {
-            ...prevData,
-            recursos: classResources,
-          };
-          if (classToEdit) {
-            // Asegurarse de que el initialFormDataRef contenga también la unidad de duración y el valor original
-            initialFormDataRef.current = {
-                ...updatedData,
-                duracion_valor: updatedData.duracion_valor, // Mantener el valor numérico
-                durationUnit: durationUnit // Mantener la unidad
+            return {
+              ...res,
+              // ASEGURAR que el recurso tenga una propiedad 'nombre' para el frontend
+              nombre: res.nombre || res.titulo || 'Recurso sin título',
+              // Normaliza 'tipo' a minúsculas
+              tipo: (res.tipo && typeof res.tipo === 'string') ? res.tipo.toLowerCase() : res.tipo,
+              url: fullResourceUrl, // Asigna la URL completa
             };
-            initialResourcesRef.current = classResources.map(r => ({ ...r })); // Copia superficial de cada recurso
-            console.log("initialFormDataRef.current set in fetchResources (edit mode):", initialFormDataRef.current); // LOG
-            console.log("initialResourcesRef.current set in fetchResources (edit mode):", initialResourcesRef.current); // LOG
-          }
-          return updatedData;
-        });
+          });
+        console.log("Filtered and Mapped resources for this class (after type normalization and URL construction):", classResources); // LOG
+
+        setResourcesInLogic(classResources); // <-- ¡Actualiza los recursos en useResourceLogic!
+
+        // Después de cargar los recursos, establece initialFormDataRef con los datos completos
+        // Esto es importante para hasClassDataChanged.
+        const { value, unit } = convertSecondsToUnits(classToEdit?.duracion_segundos);
+        initialFormDataRef.current = {
+            ...classToEdit, // Usar el objeto classToEdit original como base
+            duracion_valor: value, // Usar el valor convertido de la duración original
+            durationUnit: unit,    // Usar la unidad convertida
+            es_gratis_vista_previa: classToEdit?.es_gratis_vista_previa === 1,
+            // Aquí, mapea los recursos de classResources para la referencia inicial
+            recursos: classResources.map(({ id, nombre, tipo, url }) => ({ id, nombre, tipo, url })), // Solo propiedades relevantes y 'nombre', 'tipo' normalizado
+        };
+        console.log("initialFormDataRef.current set in fetchResources (edit mode):", initialFormDataRef.current); // LOG
+
       } else {
         setResponseMessage({
           type: "warning",
           message:
             data.message || "No se pudieron cargar los recursos existentes de la clase.",
         });
-        setFormData((prevData) => ({ ...prevData, recursos: [] }));
+        setResourcesInLogic([]); // Asegura que los recursos estén vacíos en useResourceLogic
+        // También inicializa initialFormDataRef en caso de que no se carguen recursos
         if (classToEdit) {
-          // Establecer estado inicial si falla la carga para una clase existente
-          const { value, unit } = convertSecondsToUnits(classToEdit.duracion_segundos);
-          initialFormDataRef.current = { 
-            ...initialFormState, 
-            titulo: classToEdit.titulo || "",
-            descripcion: classToEdit.descripcion || "",
-            url_video: classToEdit.url_video || "",
-            duracion_valor: value,
-            orden: classToEdit.orden || "",
-            tipo_clase: classToEdit.tipo_clase || "video",
-            es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1,
-            recursos: [], 
-            durationUnit: unit 
-          }; 
-          initialResourcesRef.current = [];
+            const { value, unit } = convertSecondsToUnits(classToEdit.duracion_segundos);
+            initialFormDataRef.current = {
+                ...classToEdit,
+                duracion_valor: value,
+                orden: classToEdit.orden || "",
+                tipo_clase: classToEdit.tipo_clase || "video",
+                es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1,
+                recursos: [], // Si no hay recursos, se inicializa como vacío
+                durationUnit: unit,
+            };
         }
       }
     } catch (error) {
@@ -153,23 +223,19 @@ const useClassFormLogic = (
         type: "error",
         message: `Error al cargar recursos: ${error.message}`,
       });
-      setFormData((prevData) => ({ ...prevData, recursos: [] }));
+      setResourcesInLogic([]); // Asegura que los recursos estén vacíos en useResourceLogic
+      // También inicializa initialFormDataRef en caso de error
       if (classToEdit) {
-        // Establecer estado inicial si falla la carga para una clase existente
         const { value, unit } = convertSecondsToUnits(classToEdit.duracion_segundos);
-        initialFormDataRef.current = { 
-          ...initialFormState, 
-          titulo: classToEdit.titulo || "",
-          descripcion: classToEdit.descripcion || "",
-          url_video: classToEdit.url_video || "",
-          duracion_valor: value,
-          orden: classToEdit.orden || "",
-          tipo_clase: classToEdit.tipo_clase || "video",
-          es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1,
-          recursos: [], 
-          durationUnit: unit 
-        }; 
-        initialResourcesRef.current = [];
+        initialFormDataRef.current = {
+            ...classToEdit,
+            duracion_valor: value,
+            orden: classToEdit.orden || "",
+            tipo_clase: classToEdit.tipo_clase || "video",
+            es_gratis_vista_previa: classToEdit.es_gratis_vista_previa === 1,
+            recursos: [],
+            durationUnit: unit,
+        };
       }
     } finally {
       setLoading(false);
@@ -188,82 +254,30 @@ const useClassFormLogic = (
     setDurationUnit(e.target.value);
   };
 
-  const handleFileChange = (e) => {
-    setNewResourceFile(e.target.files[0]);
-  };
-
+  // Envoltura para handleAddResource de useResourceLogic, si necesitas pasarle algo extra
   const handleAddResource = () => {
-    if (!newResourceTitle.trim()) {
-      setResponseMessage({
-        type: "error",
-        message: "Por favor, ingresa un título para el nuevo recurso.",
-      });
-      return;
-    }
-
-    if (!newResourceFile) {
-      setResponseMessage({
-        type: "error",
-        message: "Por favor, selecciona un archivo PDF para subir.",
-      });
-      return;
-    }
-
-    const newResource = {
-      titulo: newResourceTitle.trim(),
-      tipo: "pdf",
-      url: "",
-      file: newResourceFile,
-      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      clase_id: null,
-    };
-
-    setFormData((prevData) => ({
-      ...prevData,
-      recursos: [...prevData.recursos, newResource],
-    }));
-
-    setNewResourceTitle("");
-    setNewResourceFile(null);
-    setResponseMessage({ type: "", message: "" });
-    console.log("Recurso PDF añadido localmente:", newResource); // LOG
+    // Asumiendo que useResourceLogic ya tiene acceso a newResourceTitle, newResourceFile, etc.
+    // Solo necesitamos pasar el método aquí.
+    handleAddResourceFromLogic();
   };
 
-  const handleDeleteResource = async (resourceToDelete) => {
-    if (!window.confirm("¿Estás seguro de que quieres eliminar este recurso?")) {
-      return;
-    }
-
-    if (resourceToDelete.id && !String(resourceToDelete.id).startsWith("temp-")) {
-      setDeletedResourceIds((prev) => [...prev, resourceToDelete.id]);
-      setFormData((prevData) => ({
-        ...prevData,
-        recursos: prevData.recursos.filter((res) => res.id !== resourceToDelete.id),
-      }));
-      setResponseMessage({
-        type: "info",
-        message: "Recurso marcado para eliminación. Los cambios se aplicarán al guardar la clase.",
-      });
-      console.log("Recurso existente marcado para eliminación:", resourceToDelete); // LOG
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        recursos: prevData.recursos.filter((res) => res.id !== resourceToDelete.id),
-      }));
-      setResponseMessage({
-        type: "info",
-        message: "Recurso temporal eliminado localmente.",
-      });
-      console.log("Recurso temporal eliminado localmente:", resourceToDelete); // LOG
-    }
+  // Envoltura para handleDeleteResource de useResourceLogic
+  const handleDeleteResource = (resource) => {
+    handleDeleteResourceFromLogic(resource);
   };
+
+  // Envoltura para handleFileChange de useResourceLogic
+  const handleFileChange = (event) => {
+    handleFileChangeFromLogic(event);
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setResponseMessage({ type: "", message: "" });
 
-    // Validaciones iniciales del formulario (mantener la lógica existente)
+    // Validaciones iniciales del formulario
     if (!formData.titulo || !formData.descripcion || !formData.orden) {
       setResponseMessage({
         type: "error",
@@ -317,9 +331,13 @@ const useClassFormLogic = (
       }
     }
 
-    const newOrTempResources = formData.recursos.filter(
-      (res) => String(res.id).startsWith("temp-")
+    const newTempPdfResources = resources.filter( // Filtra directamente del estado 'resources'
+      (res) => String(res.id).startsWith("temp-") && res.tipo === "pdf"
     );
+    const newTempUrlResources = resources.filter( // Filtra directamente del estado 'resources'
+      (res) => String(res.id).startsWith("temp-") && res.tipo !== "pdf"
+    );
+
 
     const hasClassDataChanged = () => {
       console.log("hasClassDataChanged - initialFormDataRef.current:", initialFormDataRef.current); // LOG
@@ -327,89 +345,79 @@ const useClassFormLogic = (
       console.log("hasClassDataChanged - duracionSegundosToSend:", duracionSegundosToSend); // LOG
       console.log("hasClassDataChanged - durationUnit:", durationUnit); // LOG
 
-
       if (!initialFormDataRef.current) {
         console.log("hasClassDataChanged: initialFormDataRef.current is null/undefined. Returning true."); // LOG
-        return true; // Si no hay estado inicial (ej. nueva clase), siempre hay cambios.
+        return true;
       }
 
       const initial = initialFormDataRef.current;
-      
       const current = {
         ...formData,
         duracion_segundos: duracionSegundosToSend,
         es_gratis_vista_previa: formData.es_gratis_vista_previa ? 1 : 0,
+        // No incluir 'recursos' en esta comparación, se maneja por separado
       };
 
-      const { recursos: initialRecursos, duracion_valor: initialDuracionValueRaw, ...initialClassDataClean } = initial;
-      const { recursos: currentRecursos, duracion_valor: currentDuracionValueRaw, ...currentClassDataClean } = current;
-
-      // Comparar campos principales
-      const classKeysToCompare = ['titulo', 'descripcion', 'url_video', 'orden', 'tipo_clase', 'es_gratis_vista_previa']; // Explicitamos los campos
+      const classKeysToCompare = ['titulo', 'descripcion', 'url_video', 'orden', 'tipo_clase', 'es_gratis_vista_previa'];
       for (const key of classKeysToCompare) {
-        // Asegúrate de que ambas estén en el mismo tipo (cadena o número) para la comparación
-        const initialValue = String(initialClassDataClean[key]);
-        const currentValue = String(currentClassDataClean[key]);
-        
+        // Asegurarse de comparar valores del estado inicial con los actuales,
+        // teniendo en cuenta que algunos pueden venir del objeto classToEdit original.
+        const initialValue = String(initial[key]); // Usar initial directamente
+        const currentValue = String(current[key]);
+
         if (initialValue !== currentValue) {
           console.log(`Class data changed: ${key} from '${initialValue}' to '${currentValue}'`); // LOG
           return true;
         }
       }
 
-      // Comparar específicamente la duración en segundos
+      // Comparación de duración: Convertir initial.duracion_valor a segundos para una comparación consistente
       const initialDurationInSeconds = initial.duracion_valor !== "" && initial.duracion_valor !== null && !isNaN(initial.duracion_valor) ?
-          parseInt(initial.duracion_valor) * (initial.durationUnit === 'horas' ? 3600 : initial.durationUnit === 'minutos' ? 60 : 1) : null;
-      
+        parseInt(initial.duracion_valor) * (initial.durationUnit === 'horas' ? 3600 : initial.durationUnit === 'minutos' ? 60 : 1) : null;
+
       console.log(`Comparing durations: Initial ${initialDurationInSeconds}s vs Current ${duracionSegundosToSend}s`); // LOG
       if (initialDurationInSeconds !== duracionSegundosToSend) {
         console.log(`Duration changed: from '${initial.duracion_valor} ${initial.durationUnit}' (as ${initialDurationInSeconds}s) to '${formData.duracion_valor} ${durationUnit}' (as ${duracionSegundosToSend}s)`); // LOG
         return true;
       }
 
-      console.log("hasClassDataChanged: No changes detected in main class data."); // LOG
+      // Comparar recursos: Convertir ambos arrays a una cadena JSON ordenada para una comparación profunda.
+      // Solo comparar los recursos "persistidos" o que no son temporales
+      const getComparableResources = (resourceArray) => {
+        console.log("getComparableResources - Input resourceArray:", resourceArray); // LOG
+        return resourceArray
+          .filter(res => !String(res.id).startsWith("temp-")) // Ignorar recursos temporales para la comparación inicial
+          .map(({ id, nombre, tipo, url }) => ({ id, nombre, tipo, url })) // Normalizar propiedades
+          .sort((a, b) => (a.id || '').localeCompare(b.id || '')); // Asegurar orden consistente
+      };
+
+      const initialExistingResources = getComparableResources(initial.recursos || []);
+      const currentExistingResources = getComparableResources(resources || []); // Usa el estado 'resources' de useResourceLogic
+      
+      console.log("initialExistingResources for comparison:", initialExistingResources); // LOG
+      console.log("currentExistingResources for comparison:", currentExistingResources); // LOG
+
+      if (JSON.stringify(initialExistingResources) !== JSON.stringify(currentExistingResources)) {
+          console.log("hasClassDataChanged: Existing resources list changed."); // LOG
+          return true;
+      }
+
+      console.log("hasClassDataChanged: No changes detected in main class data or existing resources."); // LOG
       return false;
     };
 
-    const hasResourceListChanged = () => {
-        console.log("hasResourceListChanged - initialResourcesRef.current:", initialResourcesRef.current); // LOG
-        console.log("hasResourceListChanged - formData.recursos:", formData.recursos); // LOG
-
-        // CAMBIO: Considerar solo cambios si hay recursos existentes para comparar o nuevos temporales
-        // O si se eliminaron recursos existentes
-        if (initialResourcesRef.current.length !== formData.recursos.length || deletedResourceIds.length > 0) {
-            console.log("Resource list length changed or resources deleted. Returning true."); // LOG
-            return true;
-        }
-        // Comparar IDs y títulos para asegurar que son los mismos recursos en el mismo orden
-        for (let i = 0; i < initialResourcesRef.current.length; i++) {
-            // Asegurarse de que ambos IDs no sean temporales para una comparación justa si se mezcla el array
-            const initialResId = String(initialResourcesRef.current[i].id).startsWith("temp-") ? null : initialResourcesRef.current[i].id;
-            const currentResId = String(formData.recursos[i].id).startsWith("temp-") ? null : formData.recursos[i].id;
-            
-            if (initialResId !== currentResId || initialResourcesRef.current[i].titulo !== formData.recursos[i].titulo) {
-                console.log(`Resource at index ${i} changed: Initial ID/Title ${initialResId}/${initialResourcesRef.current[i].titulo} vs Current ID/Title ${currentResId}/${formData.recursos[i].titulo}`); // LOG
-                return true;
-            }
-        }
-        console.log("Resource list content and order unchanged. Returning false."); // LOG
-        return false;
-    };
-    
     const classDataChanged = classToEdit ? hasClassDataChanged() : true;
-    const hasNewTempResources = newOrTempResources.length > 0;
+    const hasNewTempResources = newTempPdfResources.length > 0 || newTempUrlResources.length > 0;
     const hasDeletedResources = deletedResourceIds.length > 0;
     
-    // CAMBIO: Refinar la determinación de si los recursos necesitan procesamiento
-    // Si es una nueva clase, los recursos temporales siempre necesitan procesamiento.
-    // Si es una clase existente, cualquier cambio en la lista de recursos (nuevos temporales, eliminados, o si la lista en sí ha cambiado)
-    const resourcesNeedProcessing = hasNewTempResources || hasDeletedResources || (classToEdit && hasResourceListChanged());
+    // hasResourceListChanged de useResourceLogic sería ideal aquí si la exportas.
+    const resourcesNeedProcessing = hasNewTempResources || hasDeletedResources;
 
     console.log("Final check: classDataChanged:", classDataChanged, "resourcesNeedProcessing:", resourcesNeedProcessing); // LOG
 
     if (!classDataChanged && !resourcesNeedProcessing) {
       setResponseMessage({
-        type: "info", // Mantener como info para este caso específico de "sin cambios"
+        type: "info",
         message: "No se detectaron cambios en la clase ni en sus recursos.",
       });
       setLoading(false);
@@ -439,19 +447,18 @@ const useClassFormLogic = (
       : "https://apiacademy.hitpoly.com/ajax/subirDatosClaseController.php";
 
     let classId = classToEdit ? classToEdit.id : null;
-    let messages = []; // Se usará para mensajes de error/advertencia
-    let hasError = false; 
+    let messages = [];
+    let hasError = false;
     let hasWarning = false;
     let classOperationSuccessful = false;
-    let resourcesOperationSuccessful = false;
+    let resourcesOperationSuccessful = true;
     let classOperationAttempted = false;
     let resourceOperationAttempted = false;
 
 
     try {
-      // 1. Manejar la actualización/creación de la clase principal SI sus datos cambiaron o es nueva
       if (classDataChanged) {
-            classOperationAttempted = true;
+        classOperationAttempted = true;
         console.log(`Intentando ${classToEdit ? "actualizar" : "crear"} clase principal...`); // LOG
         const responseClass = await fetch(apiUrlClass, {
           method: "POST",
@@ -472,44 +479,36 @@ const useClassFormLogic = (
         console.log("Respuesta de la API de clase:", dataClass); // LOG
 
         if (dataClass.status === "success") {
-          // NO AGREGAR MENSAJE DE ÉXITO DE CLASE AQUÍ PARA MODO DE EDICIÓN
-          classOperationSuccessful = true; 
+          classOperationSuccessful = true;
           if (!classToEdit && dataClass.id) {
             classId = dataClass.id;
             console.log("ID de clase recién creada:", classId); // LOG
+          } else if (!classId && classToEdit) { // Si estamos editando y no hay un ID de clase válido.
+              classId = classToEdit.id; // Re-asegurar el ID de la clase existente.
           } else if (!classId) {
-            hasWarning = true;
-            messages.push("Advertencia: No se pudo obtener el ID de la clase para adjuntar nuevos recursos.");
+              hasWarning = true;
+              messages.push("Advertencia: No se pudo obtener el ID de la clase para adjuntar nuevos recursos.");
           }
         } else {
-            // *** INICIO DE LA MODIFICACIÓN CLAVE ***
-            // Verifica si el mensaje de error es el de "No se realizaron cambios"
-            // Y si hay cambios en los recursos (nuevos o eliminados).
-            const isNoChangesError = dataClass.message && dataClass.message.includes("No se realizaron cambios");
-            
-            if (isNoChangesError && resourcesNeedProcessing) {
-                // Si es el error de "no cambios" y SÍ hay recursos que procesar,
-                // NO LO MARCAMOS COMO ERROR FATAL PARA LA CLASE PRINCIPAL
-                // y la operación de la clase se considera "exitosa" para poder continuar con los recursos.
-                console.log("Ignorando error de 'No se realizaron cambios' porque hay recursos a procesar.");
-                classOperationSuccessful = true; 
-            } else {
-                // Si no es el error específico o si no hay recursos que procesar,
-                // entonces sí es un error real para la clase principal.
-                hasError = true;
-                messages.push(`Error al ${classToEdit ? "actualizar" : "crear"} la clase: ${dataClass.message || "error desconocido."}`); 
-                console.error("Error al guardar/actualizar la clase:", dataClass.message); // LOG
-            }
-            // *** FIN DE LA MODIFICACIÓN CLAVE ***
+          const isNoChangesError = dataClass.message && dataClass.message.includes("No se realizaron cambios");
+          
+          if (isNoChangesError && resourcesNeedProcessing) {
+            console.log("Ignorando error de 'No se realizaron cambios' porque hay recursos a procesar.");
+            classOperationSuccessful = true;
+          } else {
+            hasError = true;
+            messages.push(`Error al ${classToEdit ? "actualizar" : "crear"} la clase: ${dataClass.message || "error desconocido."}`);
+            console.error("Error al guardar/actualizar la clase:", dataClass.message); // LOG
+          }
         }
       } else {
         console.log("Datos de clase principal no cambiaron, omitiendo llamada a la API de clase."); // LOG
-        classOperationSuccessful = true; // Se considera "éxito" que no hubo necesidad de modificar
+        classOperationSuccessful = true; // Si no hay cambios, considera la operación exitosa para continuar con recursos.
       }
 
       // 2. Manejar la eliminación de recursos existentes
       if (hasDeletedResources) {
-            resourceOperationAttempted = true;
+        resourceOperationAttempted = true;
         console.log(`Intentando eliminar ${deletedResourceIds.length} recursos existentes...`); // LOG
         const deletePromises = deletedResourceIds.map(async (resourceId) => {
           try {
@@ -544,75 +543,105 @@ const useClassFormLogic = (
 
         if (failedDeletions.length > 0) {
           hasError = true;
+          resourcesOperationSuccessful = false;
           messages.push("Algunos recursos existentes no se pudieron eliminar: " + failedDeletions.map(f => f.message).join("; "));
-        } else {
-          resourcesOperationSuccessful = true;
         }
-        setDeletedResourceIds([]); 
+        setDeletedResourceIds([]); // Limpia los IDs eliminados después de intentar procesarlos
       }
 
 
       // 3. Manejar la subida de nuevos recursos (si hay un classId válido)
       if (hasNewTempResources && classId) {
-            resourceOperationAttempted = true;
-        console.log(`Intentando subir ${newOrTempResources.length} nuevos recursos...`); // LOG
-        const uploadResourcePromises = newOrTempResources.map(async (resource) => {
+        resourceOperationAttempted = true;
+        console.log(`Intentando subir ${newTempPdfResources.length} PDFs y ${newTempUrlResources.length} URLs...`); // LOG
+
+        const uploadPromises = [];
+
+        newTempPdfResources.forEach(resource => {
           const resourceFormData = new FormData();
           resourceFormData.append("clase_id", classId);
-          resourceFormData.append("nombre", resource.titulo);
-          resourceFormData.append("tipo", "pdf");
+          resourceFormData.append("nombre", resource.nombre); // USAR 'nombre' aquí
+          resourceFormData.append("tipo", "pdf"); // Se envía "pdf" al backend para PDFs
           resourceFormData.append("archivo", resource.file);
 
-          console.log(`Preparando subida de recurso "${resource.titulo}" (tipo: ${resource.tipo})...`);
-          try {
-            const resourceResponse = await fetch(
-              "https://apiacademy.hitpoly.com/ajax/recursosClasesController.php",
-              {
-                method: "POST",
-                body: resourceFormData,
+          uploadPromises.push(
+            fetch("https://apiacademy.hitpoly.com/ajax/recursosClasesController.php", {
+              method: "POST",
+              body: resourceFormData,
+            })
+            .then(response => {
+              if (!response.ok) {
+                return response.text().then(text => Promise.reject(new Error(`Error al subir PDF "${resource.nombre}": ${response.status} - ${text}`)));
               }
-            );
-
-            if (!resourceResponse.ok) {
-              const errorResourceText = await resourceResponse.text();
-              throw new Error(
-                `Error al subir recurso "${resource.titulo}": ${resourceResponse.status} - ${errorResourceText}`
-              );
-            }
-            const resourceData = await resourceResponse.json();
-            console.log(`Respuesta subida recurso "${resource.titulo}":`, resourceData);
-            if (resourceData.status === "success") {
-              return { success: true, message: `Recurso '${resource.titulo}' subido.` };
-            } else {
-              console.error(
-                `Error del servidor al subir recurso "${resource.titulo}":`,
-                resourceData.message
-              );
-              return { success: false, message: `Fallo al subir recurso '${resource.titulo}': ${resourceData.message}` };
-            }
-          } catch (resourceError) {
-            console.error(`Fallo de conexión/red al subir recurso "${resource.titulo}":`, resourceError);
-            return { success: false, message: `Fallo de red para recurso '${resource.titulo}': ${resourceError.message}` };
-          }
+              return response.json();
+            })
+            .then(data => {
+              console.log(`Respuesta subida PDF "${resource.nombre}":`, data);
+              if (data.status === "success") {
+                return { success: true, message: `Recurso PDF '${resource.nombre}' subido.` };
+              } else {
+                console.error(`Error del servidor al subir PDF "${resource.nombre}":`, data.message);
+                return { success: false, message: `Fallo al subir PDF '${resource.nombre}': ${data.message}` };
+              }
+            })
+            .catch(resourceError => {
+              console.error(`Fallo de conexión/red al subir PDF "${resource.nombre}":`, resourceError);
+              return { success: false, message: `Fallo de red para PDF '${resource.nombre}': ${resourceError.message}` };
+            })
+          );
         });
 
-        const resultsResources = await Promise.all(uploadResourcePromises);
+        newTempUrlResources.forEach(resource => {
+          const dataToSendUrlResource = {
+            clase_id: classId,
+            nombre: resource.nombre, // USAR 'nombre' aquí
+            tipo: resource.tipo, // Se envía el tipo que ya tiene, que debería ser 'enlace'
+            url: resource.url,
+          };
+          
+          uploadPromises.push(
+            fetch("https://apiacademy.hitpoly.com/ajax/recursoConUrlController.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(dataToSendUrlResource),
+            })
+            .then(response => {
+              if (!response.ok) {
+                return response.text().then(text => Promise.reject(new Error(`Error al subir URL "${resource.nombre}": ${response.status} - ${text}`)));
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log(`Respuesta subida URL "${resource.nombre}":`, data);
+              if (data.status === "success") {
+                return { success: true, message: `Recurso URL '${resource.nombre}' subido.` };
+              } else {
+                console.error(`Error del servidor al subir URL "${resource.nombre}":`, data.message);
+                return { success: false, message: `Fallo al subir URL '${resource.nombre}': ${data.message}` };
+              }
+            })
+            .catch(resourceError => {
+              console.error(`Fallo de conexión/red al subir URL "${resource.nombre}":`, resourceError);
+              return { success: false, message: `Fallo de red para URL '${resource.nombre}': ${resourceError.message}` };
+            })
+          );
+        });
+
+        const resultsResources = await Promise.all(uploadPromises);
 
         const failedResources = resultsResources.filter(r => !r.success);
 
         if (failedResources.length > 0) {
           hasError = true;
+          resourcesOperationSuccessful = false;
           messages.push("Algunos recursos adicionales no se pudieron subir: " + failedResources.map(f => f.message).join("; "));
-        } else {
-          resourcesOperationSuccessful = true;
         }
       } else if (hasNewTempResources && !classId) {
         hasWarning = true;
-        messages.push("Advertencia: No se pudieron subir nuevos recursos porque no se obtuvo un ID de clase válido. Guarde la clase primero."); 
+        messages.push("Advertencia: No se pudieron subir nuevos recursos porque no se obtuvo un ID de clase válido. Guarde la clase primero.");
       }
       
-      // Lógica MEJORADA para determinar el tipo de mensaje final
-      let finalMessageType = "success"; // Por defecto, si todo sale bien o no hay cambios, es éxito.
+      let finalMessageType = "success";
       let finalMessageText = "";
 
       if (hasError) {
@@ -620,15 +649,13 @@ const useClassFormLogic = (
       } else if (hasWarning) {
         finalMessageType = "warning";
       } else {
-        // Si no hay errores ni advertencias, construimos un mensaje de éxito más amigable
         const successMessages = [];
         
-        // Solo agrega el mensaje de clase si es una CLASE NUEVA
-        if (!classToEdit && classDataChanged && classOperationSuccessful) {
-            successMessages.push(`Clase creada exitosamente.`);
-        } 
-        // En modo de edición, no agregar mensaje de éxito para cambios de clase principal.
-        // Solo agregar mensajes si hay recursos.
+        if (!classToEdit && classDataChanged && classOperationSuccessful) {
+          successMessages.push(`Clase creada exitosamente.`);
+        } else if (classToEdit && classDataChanged && classOperationSuccessful) {
+          successMessages.push(`Clase actualizada exitosamente.`);
+        }
 
         if (hasDeletedResources && resourcesOperationSuccessful) {
           successMessages.push("Recursos eliminados exitosamente.");
@@ -637,22 +664,17 @@ const useClassFormLogic = (
           successMessages.push("Nuevos recursos subidos exitosamente.");
         }
         
-        // Si no hubo cambios en la clase principal y no se procesaron recursos (ni se agregaron ni se eliminaron)
         if (!classDataChanged && !resourcesNeedProcessing) {
-             finalMessageType = "info"; 
-             finalMessageText = "No se detectaron cambios en la clase ni en sus recursos.";
+          finalMessageType = "info";
+          finalMessageText = "No se detectaron cambios en la clase ni en sus recursos.";
         } else if (successMessages.length > 0) {
-            // Si hay mensajes de éxito de recursos, o si es una clase nueva (y se agregó un mensaje)
-          finalMessageText = successMessages.join(" "); // Unimos los mensajes de éxito
+          finalMessageText = successMessages.join(" ");
         } else if (classToEdit && classDataChanged && !resourcesNeedProcessing && classOperationSuccessful) {
-            // Este es el caso cuando se actualizó la clase en modo edición, pero no hay recursos procesados.
-            // Según tu petición, no queremos mensaje para esto. Así que dejamos finalMessageText vacío.
-            finalMessageType = ""; // No mostrar mensaje
-            finalMessageText = "";
-        }
+          // Este caso podría ser si la clase se actualizó pero no hay mensajes específicos de recursos.
+          finalMessageText = "Clase actualizada exitosamente.";
+        }
       }
 
-      // Si hay errores o advertencias, unimos todos los mensajes capturados
       if (hasError || hasWarning) {
         finalMessageText = messages.join("\n");
       }
@@ -663,10 +685,9 @@ const useClassFormLogic = (
       });
 
       setLoading(false);
-      
-      // Llamar a onClassSaved si hubo cambios en la clase, o si se procesaron recursos (nuevos/eliminados),
-      // siempre que la operación general no sea un error fatal (ej. fallo de la clase principal)
-      if (((classDataChanged && classOperationSuccessful) || resourcesNeedProcessing) && !hasError) { // Añadido !hasError
+
+      // Llama a onClassSaved solo si la operación principal fue exitosa (clase y recursos si aplicable)
+      if ((classOperationSuccessful || !classOperationAttempted) && (resourcesOperationSuccessful || !resourceOperationAttempted)) {
         setTimeout(() => {
           onClassSaved();
         }, 1000);
@@ -687,17 +708,25 @@ const useClassFormLogic = (
     loading,
     responseMessage,
     durationUnit,
-    newResourceTitle,
-    newResourceFile,
     handleChange,
     handleDurationUnitChange,
-    handleFileChange,
-    handleAddResource,
-    handleDeleteResource,
     handleSubmit,
     setResponseMessage,
+    // Propiedades y funciones de recursos que vienen de useResourceLogic
+    resources, // Proporciona el estado 'resources' para que ClassForm lo use.
+    newResourceTitle,
     setNewResourceTitle,
+    newResourceFile,
     setNewResourceFile,
+    newResourceUrl,
+    setNewResourceUrl,
+    newResourceType,
+    setNewResourceType,
+    handleAddResource, // Usar las envolturas
+    handleDeleteResource, // Usar las envolturas
+    handleFileChange, // Usar la envoltura
+    deletedResourceIds,
+    setResources: setResourcesInLogic, // Exporta el setter renombrado de useResourceLogic
   };
 };
 

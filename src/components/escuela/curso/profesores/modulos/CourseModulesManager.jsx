@@ -253,7 +253,7 @@ const CourseModulesManager = () => {
 
   const handleBackToCourses = () => {
     console.log("handleBackToCourses: Navegando a la lista de cursos.");
-    navigate("/datos-de-curso");
+    navigate("/mis-cursos");
   };
 
   if (loading) {
