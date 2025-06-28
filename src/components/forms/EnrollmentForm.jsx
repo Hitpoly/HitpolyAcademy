@@ -341,8 +341,6 @@ const EnrollmentForm = () => {
           margin: "auto",
           maxWidth: "500px",
           borderRadius: "8px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          backgroundColor: "white",
           display: "flex",
           flexDirection: "column",
         }}
@@ -554,8 +552,6 @@ const EnrollmentForm = () => {
         margin: "auto",
         maxWidth: "500px",
         borderRadius: "8px",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-        backgroundColor: "white",
         display: "flex",
         flexDirection: "column",
       }}

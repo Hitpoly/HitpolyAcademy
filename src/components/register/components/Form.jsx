@@ -11,11 +11,16 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Avatar,
+  IconButton,
 } from "@mui/material";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Ray from "../../UI/Ray";
 import { FONT_COLOR_GRAY } from "../../constant/Colors";
+import axios from "axios";
+import { useAuth } from "../../../context/AuthContext"; // ¡Importa useAuth!
 
 const fontFamily = "Inter";
 
@@ -34,34 +39,53 @@ const RegisterSchema = Yup.object().shape({
   id_tipo_usuario: Yup.number()
     .oneOf([1, 2, 3], "Selecciona un tipo de usuario válido")
     .required("El tipo de usuario es requerido"),
+  avatarFile: Yup.mixed()
+    .required("La foto de perfil es requerida")
+    .test(
+      "fileType",
+      "Formato de imagen no válido (solo JPG, PNG, GIF)",
+      (value) => {
+        if (!value) return true;
+        return (
+          value &&
+          ["image/jpeg", "image/png", "image/gif"].includes(value.type)
+        );
+      }
+    )
+    .test("fileSize", "La imagen es demasiado grande (máx. 5MB)", (value) => {
+      if (!value) return true;
+      return value.size <= 5 * 1024 * 1024; // 5 MB
+    }),
 });
 
+// ---
+
 const Title = styled.p({
-  fontSize: 32, 
+  fontSize: 32,
   fontFamily,
   fontWeight: 600,
   color: "#F21D6B",
   textAlign: "center",
-  marginBottom: "8px", 
+  marginBottom: "8px",
 });
 
 const SubTitle = styled.p({
-  fontSize: 16, 
+  fontSize: 16,
   fontFamily,
   fontWeight: 400,
   textAlign: "center",
-  marginBottom: "16px", 
+  marginBottom: "16px",
 });
 
 const TextGray = styled(Typography)({
-  fontSize: 16, 
+  fontSize: 16,
   fontFamily,
   fontWeight: 400,
   color: FONT_COLOR_GRAY,
 });
 
 const TextGrayBold = styled(Typography)({
-  fontSize: 16, 
+  fontSize: 16,
   fontFamily,
   fontWeight: 700,
   color: FONT_COLOR_GRAY,
@@ -69,6 +93,7 @@ const TextGrayBold = styled(Typography)({
 
 const RegisterUserForm = () => {
   const navigate = useNavigate();
+  const { login } = useAuth(); // ¡Obtén la función login del AuthContext!
 
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -76,6 +101,10 @@ const RegisterUserForm = () => {
     message: "",
     severity: "success",
   });
+  const [error, setError] = useState(null);
+  const [newAvatarFile, setNewAvatarFile] = useState(null);
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const userTypes = [
     { value: 1, label: "Administrador" },
@@ -90,13 +119,88 @@ const RegisterUserForm = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const uploadAvatarToCloudinary = async (file) => {
+    const formDataImg = new FormData();
+    formDataImg.append("file", file);
+
+    try {
+      setUploadingAvatar(true);
+      const response = await axios.post(
+        "https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php",
+        formDataImg,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("Cloudinary response:", response.data);
+
+      if (response.data?.url) {
+        return response.data.url;
+      } else {
+        throw new Error(
+          "No se recibió una URL válida desde el backend de Cloudinary."
+        );
+      }
+    } catch (error) {
+      console.error("Error al subir el avatar:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error al subir imagen",
+        text: "Ocurrió un error al intentar subir la imagen de perfil. Por favor, inténtalo de nuevo.",
+      });
+      throw error;
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarChange = (e, setFieldValue) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewAvatarFile(file);
+      setPreviewAvatarUrl(URL.createObjectURL(file));
+      setFieldValue("avatarFile", file);
+    } else {
+      setNewAvatarFile(null);
+      setPreviewAvatarUrl(null);
+      setFieldValue("avatarFile", null);
+    }
+  };
+
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     setLoading(true);
     setSubmitting(true);
     setSnackbar({ open: false, message: "", severity: "success" });
+    setError(null);
 
-    const url = "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php";
-    const dataToSend = {
+    let finalAvatarUrl = "";
+
+    if (newAvatarFile) {
+      try {
+        finalAvatarUrl = await uploadAvatarToCloudinary(newAvatarFile);
+      } catch (uploadError) {
+        setLoading(false);
+        setSubmitting(false);
+        return;
+      }
+    } else {
+      setSnackbar({
+        open: true,
+        message: "Error: La foto de perfil es requerida.",
+        severity: "error",
+      });
+      setLoading(false);
+      setSubmitting(false);
+      return;
+    }
+
+    const registerUrl = "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php";
+    const loginUrl = "https://apiacademy.hitpoly.com/ajax/usuarioController.php"; // Endpoint de logueo
+
+    const registerData = {
       accion: "registrarUsuario",
       nombre: values.nombre,
       apellido: values.apellido,
@@ -104,30 +208,69 @@ const RegisterUserForm = () => {
       pass: values.pass,
       estado: values.estado,
       id_tipo_usuario: values.id_tipo_usuario,
+      url_foto_perfil: finalAvatarUrl,
     };
 
     try {
-      const response = await fetch(url, {
+      // 1. Intentar registrar al usuario
+      const registerResponse = await fetch(registerUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(registerData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json();
         throw new Error(errorData.message || "Error desconocido al registrar.");
       }
 
-      const result = await response.json();
+      const registerResult = await registerResponse.json();
       setSnackbar({
         open: true,
         message: "¡Usuario registrado exitosamente!",
         severity: "success",
       });
       resetForm();
+      setNewAvatarFile(null);
+      setPreviewAvatarUrl(null);
+
+      // 2. Si el registro fue exitoso, intentar loguear al usuario
+      const loginResponse = await fetch(loginUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          funcion: "login", // Asegúrate de que tu endpoint de login espera 'funcion: "login"'
+          email: values.email,
+          pass: values.pass, // Usa la contraseña del formulario de registro
+        }),
+      });
+
+      const loginData = await loginResponse.json();
+
+      if (loginData.status === "success") {
+        const userData = loginData.user;
+        login(userData); // Usa la función login de tu AuthContext
+        Swal.fire({
+          icon: "success",
+          title: "¡Bienvenido al master de hitpoly!",
+          text: "Has iniciado sesión correctamente",
+        });
+        navigate("/"); // Redirige al inicio después del login exitoso
+      } else {
+        // Si el login falla después del registro exitoso, notifica al usuario
+        Swal.fire({
+          icon: "warning",
+          title: "Registro exitoso, pero no se pudo iniciar sesión automáticamente",
+          text: "Por favor, inicia sesión manualmente con tus nuevas credenciales.",
+        });
+        navigate("/login"); // Envía al usuario a la página de login
+      }
     } catch (error) {
+      // Manejo de errores generales (registro o subida de avatar fallida)
       setSnackbar({
         open: true,
         message: `Error: ${error.message}`,
@@ -135,8 +278,8 @@ const RegisterUserForm = () => {
       });
       Swal.fire({
         icon: "error",
-        title: "Error de registro",
-        text: `Hubo un problema al registrar el usuario: ${error.message}`,
+        title: "Error en el proceso",
+        text: `Hubo un problema: ${error.message}`,
       });
     } finally {
       setLoading(false);
@@ -165,11 +308,12 @@ const RegisterUserForm = () => {
           pass: "",
           estado: "activo",
           id_tipo_usuario: "",
+          avatarFile: null,
         }}
         validationSchema={RegisterSchema}
         onSubmit={handleSubmit}
       >
-        {({ errors, touched, isSubmitting, values, handleChange }) => (
+        {({ errors, touched, isSubmitting, values, handleChange, setFieldValue }) => (
           <Form>
             <Box
               display="flex"
@@ -181,6 +325,52 @@ const RegisterUserForm = () => {
                 <Title>¡Regístrate en nuestra plataforma!</Title>
                 <SubTitle>Crea tu cuenta para empezar tu camino hacia el éxito</SubTitle>
               </Box>
+
+              {/* --- SECCIÓN DE AVATAR --- */}
+              <Box sx={{ position: 'relative', mb: 3, textAlign: 'center' }}>
+                <Avatar
+                  src={previewAvatarUrl || "/images/default-avatar.png"}
+                  alt="Foto de perfil"
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    border: "3px solid #F21D6B",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                    mx: 'auto',
+                  }}
+                />
+                <IconButton
+                  component="label"
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: '#F21D6B',
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#d81a5f' },
+                    transform: 'translate(25%, 25%)',
+                  }}
+                  disabled={uploadingAvatar}
+                >
+                  {uploadingAvatar ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <PhotoCameraIcon />
+                  )}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => handleAvatarChange(e, setFieldValue)}
+                  />
+                </IconButton>
+              </Box>
+              {touched.avatarFile && errors.avatarFile && (
+                <Typography color="error" variant="caption" sx={{ mt: -2, mb: 1 }}>
+                  {errors.avatarFile}
+                </Typography>
+              )}
+              {/* --- FIN SECCIÓN DE AVATAR --- */}
 
               <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
                 <TextField
@@ -247,10 +437,12 @@ const RegisterUserForm = () => {
                     </MenuItem>
                   ))}
                 </TextField>
+                <input type="hidden" name="estado" value="activo" />
+
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting || loading}
+                  disabled={isSubmitting || loading || uploadingAvatar}
                   sx={{
                     width: "100%",
                     backgroundColor: "#F21D6B",
@@ -264,7 +456,7 @@ const RegisterUserForm = () => {
                     py: 1,
                   }}
                 >
-                  {loading ? (
+                  {loading || uploadingAvatar ? (
                     <CircularProgress size={20} color="inherit" />
                   ) : (
                     "Registrar Usuario"

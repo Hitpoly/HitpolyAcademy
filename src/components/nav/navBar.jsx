@@ -14,14 +14,14 @@ import {
   Paper,
   Alert,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+import MenuIcon from '@mui/icons-material/Menu';
+import HomeIcon from '@mui/icons-material/Home';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import ListaDeNombres from "./components/MenuHamburguesa"; // Este debería ser tu ListaDeCategorias
+import ListaDeCategorias from "./components/MenuHamburguesa";
 import TemporaryDrawer from "./components/drawer";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import SequencePopup from "../../components/popups/SequencePopup";
-import CategoryCoursesPopup from "../categorias/CoursesByCategory"; // <--- IMPORTA EL POPUP DE CATEGORÍAS
 
 // Define los pasos específicos para la secuencia del popup "Soy Afiliado"
 const affiliateSteps = [
@@ -57,10 +57,7 @@ const MenuDeNavegacion = () => {
   const [isAffiliatePopupOpen, setIsAffiliatePopupOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // --- Estados para el Popup de Categorías ---
-  const [isCategoryCoursesPopupOpen, setIsCategoryCoursesPopupOpen] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Para almacenar el ID de la categoría seleccionada
+  const location = useLocation();
 
   // --- Estados y Refs para la Búsqueda ---
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,6 +73,10 @@ const MenuDeNavegacion = () => {
   // --- Funciones del Menú Principal ---
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
   };
 
   const handleRegisterClick = () => {
@@ -95,8 +96,13 @@ const MenuDeNavegacion = () => {
   };
 
   const handleAffiliateSequenceComplete = () => {
-    console.log("Secuencia de afiliado completada.");
+    // Aquí puedes añadir lógica adicional si es necesario después de completar la secuencia
     handleCloseAffiliatePopup();
+  };
+
+  // Función para navegar a la página de inicio
+  const handleGoHome = () => {
+    navigate('/');
   };
 
   // --- Lógica para la Carga de Datos de Búsqueda (Cursos y Categorías) ---
@@ -105,7 +111,6 @@ const MenuDeNavegacion = () => {
       setLoadingSearchData(true);
       setSearchError(null);
       try {
-        console.log("Iniciando carga de datos para búsqueda...");
         const [categoriesResponse, coursesResponse] = await Promise.all([
           fetch(
             "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
@@ -133,7 +138,6 @@ const MenuDeNavegacion = () => {
           );
         }
         const categoriesData = await categoriesResponse.json();
-        console.log("Datos de categorías cargados:", categoriesData);
         if (
           categoriesData.status !== "success" ||
           !Array.isArray(categoriesData.categorias)
@@ -143,11 +147,10 @@ const MenuDeNavegacion = () => {
           );
         }
         const newCategoryMap = categoriesData.categorias.reduce((map, cat) => {
-          map[cat.id] = cat.nombre;
+          map[cat.id] = cat.nombre; 
           return map;
         }, {});
         setCategoryMap(newCategoryMap);
-        console.log("CategoryMap generado:", newCategoryMap);
 
         // Procesamiento de Cursos
         if (!coursesResponse.ok) {
@@ -157,30 +160,26 @@ const MenuDeNavegacion = () => {
           );
         }
         const coursesData = await coursesResponse.json();
-        console.log("Datos de cursos cargados:", coursesData);
-        if (
-          coursesData.status !== "success" ||
-          !coursesData.cursos ||
-          !Array.isArray(coursesData.cursos.cursos)
-        ) {
-          throw new Error(
-            coursesData.message ||
-            "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada."
-          );
+        
+        let fetchedCoursesArray;
+        // La lógica para extraer los cursos es más robusta aquí
+        if (coursesData.status === "success" && coursesData.cursos && Array.isArray(coursesData.cursos.cursos)) {
+            fetchedCoursesArray = coursesData.cursos.cursos;
+        } else if (coursesData.status === "success" && Array.isArray(coursesData.cursos)) {
+            fetchedCoursesArray = coursesData.cursos;
+        } else {
+            throw new Error(coursesData.message || "Datos de cursos inválidos para búsqueda: La estructura del array de cursos no es la esperada.");
         }
 
-        const publishedCourses = coursesData.cursos.cursos.filter(
+        const publishedCourses = fetchedCoursesArray.filter(
           (curso) => curso.estado === "Publicado"
         );
         setAllCourses(publishedCourses);
-        console.log("Cursos publicados cargados:", publishedCourses);
 
       } catch (err) {
-        console.error('Error general al cargar datos para búsqueda:', err);
         setSearchError(err.message);
       } finally {
         setLoadingSearchData(false);
-        console.log("Carga de datos de búsqueda finalizada.");
       }
     };
 
@@ -191,13 +190,10 @@ const MenuDeNavegacion = () => {
   useEffect(() => {
     if (loadingSearchData) return;
 
-    console.log("useEffect de filtrado activado. SearchTerm:", searchTerm);
     if (searchTerm === '') {
       setFilteredCourses([]);
-      console.log("SearchTerm vacío, filteredCourses se vacía.");
     } else {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
-      console.log("SearchTerm en minúsculas:", lowercasedSearchTerm);
 
       const results = allCourses.filter((course) => {
         const courseName = course.titulo ? String(course.titulo).toLowerCase() : '';
@@ -211,53 +207,29 @@ const MenuDeNavegacion = () => {
           courseSubtitle.includes(lowercasedSearchTerm) ||
           categoryName.includes(lowercasedSearchTerm)
         );
-
-        if (match) {
-            console.log(`Coincidencia encontrada para "${lowercasedSearchTerm}" en:`, {
-                id: course.id,
-                titulo: course.titulo,
-                subtitulo: course.subtitulo,
-                categoria: getCategoryName(course.categoria_id),
-                matchedBy: {
-                    name: courseName.includes(lowercasedSearchTerm),
-                    subtitle: courseSubtitle.includes(lowercasedSearchTerm),
-                    category: categoryName.includes(lowercasedSearchTerm)
-                }
-            });
-        }
         return match;
       });
       setFilteredCourses(results);
-      console.log("Cursos filtrados:", results);
     }
   }, [searchTerm, allCourses, categoryMap, loadingSearchData]);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
     setIsSearchActive(true);
-    console.log("Search term cambiado a:", event.target.value);
   };
 
   const handleSearchFocus = () => {
-    // Si ya hay un término de búsqueda, al enfocar se vuelven a mostrar los resultados
     if (searchTerm !== '') {
         setIsSearchActive(true);
-        console.log("Campo de búsqueda enfocado y activo (con término existente).");
-    } else {
-        // Si el searchTerm está vacío, no se activará el popup automáticamente solo al enfocar.
-        // Solo se activará cuando empiece a escribir.
-        console.log("Campo de búsqueda enfocado, pero término de búsqueda vacío.");
     }
   };
 
-  // Cierra los resultados de búsqueda Y limpia el input al hacer clic fuera del cuadro de búsqueda
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
         setIsSearchActive(false);
-        setSearchTerm(''); // Limpia el término de búsqueda
-        setFilteredCourses([]); // Asegura que también se vacíen los resultados en el estado
-        console.log("Clic fuera, resultados de búsqueda ocultos y campo limpiado.");
+        setSearchTerm(''); 
+        setFilteredCourses([]);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -271,32 +243,21 @@ const MenuDeNavegacion = () => {
   };
 
   const handleCourseClick = (course) => {
-      console.log("Curso clickeado, navegando a ID:", course.id);
       navigate(`/curso/${course.id}`);
-      setIsSearchActive(false); // Cierra los resultados
-      setSearchTerm(''); // Limpia el campo de búsqueda
-      setFilteredCourses([]); // Limpia los cursos filtrados
+      setIsSearchActive(false); 
+      setSearchTerm(''); 
+      setFilteredCourses([]); 
   };
 
-  // --- Funciones para el Popup de Categorías ---
-  const handleSelectCategory = (categoryId) => {
-    setSelectedCategoryId(categoryId);
-    setDrawerOpen(false); // Cierra el Drawer al seleccionar una categoría
-    setIsCategoryCoursesPopupOpen(true); // Abre el popup de cursos de categoría
-    console.log("Categoría seleccionada:", categoryId);
-  };
-
-  const handleCloseCategoryCoursesPopup = () => {
-    setIsCategoryCoursesPopupOpen(false);
-    setSelectedCategoryId(null); // Resetea el ID de categoría seleccionada
-  };
+  // Determinar si NO estamos en la página de inicio
+  const isNotHomePage = location.pathname !== '/';
 
   return (
     <>
       <Box
         sx={{
           width: "100vw",
-          height: "64px",
+          height: "65px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -310,9 +271,17 @@ const MenuDeNavegacion = () => {
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
+          {/* Ícono de Casa - Visible solo si NO estamos en la página de inicio */}
+          {isNotHomePage && (
+            <IconButton onClick={handleGoHome} color="primary" aria-label="ir al inicio">
+              <HomeIcon />
+            </IconButton>
+          )}
+          {/* Ícono de Menú Hamburguesa */}
           <IconButton onClick={toggleDrawer(true)} color="inherit">
             <MenuIcon />
           </IconButton>
+          {/* Campo de Búsqueda */}
           <Box sx={{ position: 'relative' }} ref={searchBoxRef}>
             <TextField
               sx={{ display: { xs: "none", md: "flex" } }}
@@ -323,7 +292,6 @@ const MenuDeNavegacion = () => {
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
             />
-            {/* Solo muestra el Paper si isSearchActive es true Y (hay un término de búsqueda O hay resultados filtrados y no está cargando) */}
             {isSearchActive && (searchTerm !== '' || (filteredCourses.length > 0 && !loadingSearchData)) && (
                 <Paper
                     sx={{
@@ -462,10 +430,8 @@ const MenuDeNavegacion = () => {
         <Box
           sx={{ width:250 }}
           role="presentation"
-          onClick={toggleDrawer(false)} // Cierra el drawer al hacer clic en cualquier parte del Box
         >
-          {/* PASA LA FUNCIÓN handleSelectCategory A ListaDeNombres (ListaDeCategorias) */}
-          <ListaDeNombres onSelectCategory={handleSelectCategory} />
+          <ListaDeCategorias onCloseDrawer={handleCloseDrawer} />
         </Box>
       </Drawer>
 
@@ -474,17 +440,6 @@ const MenuDeNavegacion = () => {
         isOpen={isAffiliatePopupOpen}
         onClose={handleCloseAffiliatePopup}
         onSequenceComplete={handleAffiliateSequenceComplete}
-      />
-
-      {/* RENDERIZA EL POPUP DE CATEGORÍAS AQUÍ */}
-      <CategoryCoursesPopup
-        isOpen={isCategoryCoursesPopupOpen}
-        onClose={handleCloseCategoryCoursesPopup}
-        selectedCategoryId={selectedCategoryId}
-        categoryMap={categoryMap}
-        allCourses={allCourses} // Pasamos todos los cursos para que el popup los filtre
-        loading={loadingSearchData} // Puedes usar el mismo estado de carga si los datos son compartidos
-        error={searchError}        // Puedes usar el mismo estado de error
       />
     </>
   );

@@ -21,15 +21,14 @@ export default function TemporaryDrawer() {
     setOpen(newOpen);
   };
 
-  const handleManageProfileClick = () => { // Nueva función para el botón
-    navigate("/perfil"); // Navega a /perfil
-    setOpen(false); // Cierra el Drawer después de navegar
+  const handleManageProfileClick = () => {
+    navigate("/perfil");
+    setOpen(false);
   };
 
   const drawerContent = (
     <Box sx={{ width: 250, padding: 2 }} role="presentation">
       <br />
-      {/* Box para Avatar y Texto (ahora sin clic para navegar) */}
       <Box
         sx={{
           display: "flex",
@@ -41,32 +40,31 @@ export default function TemporaryDrawer() {
       >
         <Avatar
           sx={{ bgcolor: "primary.main", width: 64, height: 64 }}
-          src={user?.avatar}
+          src={user?.url_foto_perfil} // ¡SOLUCIÓN AQUÍ! Usar 'url_foto_perfil'
         >
-          {!user?.avatar &&
+          {/* La lógica de fallback también debe usar la misma propiedad si no hay URL */}
+          {!user?.url_foto_perfil &&
             `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`}
         </Avatar>
 
-        {/* El Box del nombre ya no tiene onClick para navegar */}
         <Box sx={{ textAlign: "center" }}>
           <Typography variant="h6" fontWeight={600} sx={{ fontSize: "1rem" }}>
             Hola, {user?.nombre} {user?.apellido}
           </Typography>
-          {/* Botón "Gestiona tu perfil" */}
           <Button
-            variant="contained" // o "outlined" si prefieres
+            variant="contained"
             size="small"
-            onClick={handleManageProfileClick} // Asocia la navegación al botón
+            onClick={handleManageProfileClick}
             sx={{
-              mt: 1, // Margen superior
-              borderRadius: 5, // Bordes redondeados para que sea un "cotoncito obajado"
-              backgroundColor: "#6C4DE2", // Color de fondo personalizado
+              mt: 1,
+              borderRadius: 5,
+              backgroundColor: "#6C4DE2",
               '&:hover': {
-                backgroundColor: "#5a3cb8", // Color de fondo al pasar el ratón
+                backgroundColor: "#5a3cb8",
               },
-              color: "white", // Color del texto
-              textTransform: "none", // Evita mayúsculas automáticas
-              px: 2, // Padding horizontal
+              color: "white",
+              textTransform: "none",
+              px: 2,
             }}
           >
             Gestiona tu perfil
@@ -95,9 +93,9 @@ export default function TemporaryDrawer() {
       <IconButton onClick={toggleDrawer(true)} sx={{ padding: 0 }}>
         <Avatar
           sx={{ bgcolor: "primary.main", cursor: "pointer" }}
-          src={user?.avatar}
+          src={user?.url_foto_perfil} // ¡SOLUCIÓN AQUÍ! Usar 'url_foto_perfil'
         >
-          {!user?.avatar &&
+          {!user?.url_foto_perfil &&
             `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`}
         </Avatar>
       </IconButton>

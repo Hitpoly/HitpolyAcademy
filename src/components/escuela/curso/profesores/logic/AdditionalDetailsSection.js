@@ -24,15 +24,16 @@ const AdditionalDetailsSection = ({
   setNewDescription,
   handleAddMarcaPlataforma,
   handleRemoveMarcaPlataforma,
-  newTopicText,
-  setNewTopicText,
-  handleAddTopic,
-  handleRemoveTopic,
-  handleEditTopic,
+  handleEditMarcaPlataforma, // Importar la función de edición de marcas
+  newTemaTitle, // Renombrado de newTopicText
+  setNewTemaTitle, // Renombrado de setNewTopicText
+  handleAddTema, // Renombrado de handleAddTopic
+  handleRemoveTema, // Renombrado de handleRemoveTopic
+  handleEditTema, // Renombrado de handleEditTopic
 }) => {
   // Estado para edición de temas
-  const [editingTopicIndex, setEditingTopicIndex] = useState(null);
-  const [currentEditingTopicText, setCurrentEditingTopicText] = useState('');
+  const [editingTemaIndex, setEditingTemaIndex] = useState(null); // Renombrado
+  const [currentEditingTemaText, setCurrentEditingTemaText] = useState(''); // Renombrado
 
   // Estado para edición de marcas
   const [editingMarcaIndex, setEditingMarcaIndex] = useState(null);
@@ -40,22 +41,22 @@ const AdditionalDetailsSection = ({
   const [editingDescription, setEditingDescription] = useState('');
 
   // Funciones de edición para temas
-  const startEditingTopic = (index, text) => {
-    setEditingTopicIndex(index);
-    setCurrentEditingTopicText(text);
+  const startEditingTema = (index, text) => { // Renombrado
+    setEditingTemaIndex(index);
+    setCurrentEditingTemaText(text);
   };
 
-  const saveEditedTopic = (index) => {
-    if (currentEditingTopicText.trim()) {
-      handleEditTopic(index, currentEditingTopicText.trim());
-      setEditingTopicIndex(null);
-      setCurrentEditingTopicText('');
+  const saveEditedTema = (index) => { // Renombrado
+    if (currentEditingTemaText.trim()) {
+      handleEditTema(index, currentEditingTemaText.trim()); // Usar handleEditTema
+      setEditingTemaIndex(null);
+      setCurrentEditingTemaText('');
     }
   };
 
-  const cancelEditingTopic = () => {
-    setEditingTopicIndex(null);
-    setCurrentEditingTopicText('');
+  const cancelEditingTema = () => { // Renombrado
+    setEditingTemaIndex(null);
+    setCurrentEditingTemaText('');
   };
 
   // Funciones de edición para marcas
@@ -67,15 +68,8 @@ const AdditionalDetailsSection = ({
 
   const saveEditedMarca = () => {
     if (editingLogoText.trim() && editingDescription.trim()) {
-      const updated = [...formData.marca_plataforma];
-           
-      updated[editingMarcaIndex] = {
-        logoText: editingLogoText.trim(),
-        description: editingDescription.trim(),
-      };
-      handleChange({
-        target: { name: 'marca_plataforma', value: updated },
-      });
+      // Usar la función handleEditMarcaPlataforma pasada por props
+      handleEditMarcaPlataforma(editingMarcaIndex, editingLogoText.trim(), editingDescription.trim());
       setEditingMarcaIndex(null);
       setEditingLogoText('');
       setEditingDescription('');
@@ -87,10 +81,6 @@ const AdditionalDetailsSection = ({
     setEditingLogoText('');
     setEditingDescription('');
   };
-
-  
- 
-  
 
   return (
     <Box sx={{ mt: 4, p: 3, border: '1px solid #ddd', borderRadius: '8px' }}>
@@ -160,7 +150,8 @@ const AdditionalDetailsSection = ({
                       <IconButton onClick={() => startEditingMarca(index, marca)}>
                         <EditIcon />
                       </IconButton>
-                      <IconButton onClick={() => handleRemoveMarcaPlataforma(index)}>
+                      {/* Pasar el ID de la marca para eliminar, si existe. Si no, pasar el índice. */}
+                      <IconButton onClick={() => handleRemoveMarcaPlataforma(marca.id || index)}>
                         <DeleteIcon />
                       </IconButton>
                     </ListItemSecondaryAction>
@@ -181,65 +172,65 @@ const AdditionalDetailsSection = ({
           label="Añadir Nuevo Tema"
           fullWidth
           margin="normal"
-          value={newTopicText}
-          onChange={(e) => setNewTopicText(e.target.value)}
+          value={newTemaTitle} // Usar newTemaTitle
+          onChange={(e) => setNewTemaTitle(e.target.value)} // Usar setNewTemaTitle
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              handleAddTopic();
+              handleAddTema(); // Usar handleAddTema
             }
           }}
         />
         <Button
           variant="contained"
           color="secondary"
-          onClick={handleAddTopic}
+          onClick={handleAddTema} // Usar handleAddTema
           sx={{ mt: 1, mb: 2 }}
         >
           Añadir Tema
         </Button>
         {formData.temario && formData.temario.length > 0 && (
           <List dense>
-            {formData.temario.map((topic, index) => (
+            {formData.temario.map((tema, index) => ( // Cambiado topic por tema
               <ListItem key={index} sx={{ borderBottom: '1px dashed #eee' }}>
-                {editingTopicIndex === index ? (
+                {editingTemaIndex === index ? ( // Renombrado
                   <>
                     <TextField
-                      value={currentEditingTopicText}
-                      onChange={(e) => setCurrentEditingTopicText(e.target.value)}
+                      value={currentEditingTemaText} // Renombrado
+                      onChange={(e) => setCurrentEditingTemaText(e.target.value)} // Renombrado
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          saveEditedTopic(index);
+                          saveEditedTema(index); // Renombrado
                         }
                       }}
                       variant="standard"
                       fullWidth
                     />
                     <ListItemSecondaryAction>
-                      <IconButton edge="end" aria-label="save" onClick={() => saveEditedTopic(index)}>
+                      <IconButton edge="end" aria-label="save" onClick={() => saveEditedTema(index)}> {/* Renombrado */}
                         <SaveIcon />
                       </IconButton>
-                      <IconButton edge="end" aria-label="cancel" onClick={cancelEditingTopic}>
+                      <IconButton edge="end" aria-label="cancel" onClick={cancelEditingTema}> {/* Renombrado */}
                         <CancelIcon />
                       </IconButton>
                     </ListItemSecondaryAction>
                   </>
                 ) : (
                   <>
-                    <ListItemText primary={topic} />
+                    <ListItemText primary={tema.titulo || tema} /> {/* Acceder a tema.titulo si existe, o tema directamente */}
                     <ListItemSecondaryAction>
                       <IconButton
                         edge="end"
                         aria-label="edit"
-                        onClick={() => startEditingTopic(index, topic)}
+                        onClick={() => startEditingTema(index, tema.titulo || tema)} // Renombrado y ajustado para tema.titulo
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
                         aria-label="delete"
-                        onClick={() => handleRemoveTopic(index)}
+                        onClick={() => handleRemoveTema(index)} // Usar handleRemoveTema
                       >
                         <DeleteIcon />
                       </IconButton>

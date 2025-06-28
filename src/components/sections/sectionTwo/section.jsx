@@ -137,7 +137,7 @@ const SectionTwo = () => {
             id: curso.id,
             title: curso.titulo,
             subtitle: curso.subtitulo,
-            banner: curso.url_banner,
+            banner: curso.portada_targeta,
             accessLink: `/curso/${curso.id}`,
           });
           return acc;

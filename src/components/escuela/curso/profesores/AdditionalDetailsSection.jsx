@@ -86,7 +86,7 @@ const AdditionalDetailsSection = ({
       setCurrentEditingDescription("");
     } else {
       // Opcional: Mostrar un mensaje al usuario si ambos campos están vacíos
-      console.log("No se puede guardar una marca con campos vacíos.");
+      // console.log("No se puede guardar una marca con campos vacíos.");
       handleCancelEditingMarca(); // Cancelar la edición si no hay nada que guardar
     }
   };
@@ -96,8 +96,6 @@ const AdditionalDetailsSection = ({
     setCurrentEditingLogoText("");
     setCurrentEditingDescription("");
   };
-
-  console.log("FORM DATA EN ADICIONAL DETAIL SECTIONS", formData);
 
   return (
     <>

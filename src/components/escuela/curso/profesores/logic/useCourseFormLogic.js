@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../context/AuthContext";
 import useCourseActions from "../cursosCardsProfesor/useCourseActions";
 import { useTheme, useMediaQuery } from "@mui/material";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 const useCourseFormLogic = () => {
   const { user } = useAuth();
@@ -16,14 +16,21 @@ const useCourseFormLogic = () => {
 
   const courseToEdit = location.state?.courseToEdit || null;
 
+  // --- ESTADO PARA LAS PREGUNTAS FRECUENTES ---
+  const [preguntasFrecuentes, setPreguntasFrecuentes] = useState([]);
+  const [newPregunta, setNewPregunta] = useState("");
+  const [newRespuesta, setNewRespuesta] = useState("");
+  // --- FIN ESTADO PARA LAS PREGUNTAS FRECUENTES ---
+
   const initialFormData = {
-    accion: "curso", // O "insert" para crear
+    accion: "curso",
     id: null,
     titulo: "",
     subtitulo: "",
     descripcion_corta: "",
     descripcion_larga: "",
     url_banner: "",
+    portada_targeta: "", // Nuevo campo para la URL de la portada de tarjeta
     url_video_introductorio: "",
     precio: "",
     moneda: "USD",
@@ -44,6 +51,7 @@ const useCourseFormLogic = () => {
     descripcion_credencial: "",
     marca_plataforma: [],
     temario: [],
+    preguntas_frecuentes: [],
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -55,12 +63,14 @@ const useCourseFormLogic = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newTemaTitle, setNewTemaTitle] = useState("");
   const [bannerFile, setBannerFile] = useState(null);
+  const [cardCoverFile, setCardCoverFile] = useState(null); // Nuevo estado para el archivo de la portada de tarjeta
 
   const [isEditing, setIsEditing] = useState(false);
 
   const {
     loading,
     uploadingBanner,
+    uploadingCardCover, // Nuevo estado de carga para la portada de tarjeta
     responseMessage,
     setResponseMessage,
     submitCourse,
@@ -128,24 +138,17 @@ const useCourseFormLogic = () => {
       let parsedMarcaPlataforma = [];
       try {
         if (typeof courseToEdit.marcas === "string") {
-          
           parsedMarcaPlataforma = JSON.parse(courseToEdit.marcas);
         } else if (Array.isArray(courseToEdit.marcas)) {
-          
           parsedMarcaPlataforma = courseToEdit.marcas;
         }
 
-        // **INICIO DEL CAMBIO**: Normalizar la clave 'logotext' a 'logoText' al cargar
-        // Esto asegura que, sin importar cómo venga del backend, en el frontend siempre sea 'logoText'
-        parsedMarcaPlataforma = parsedMarcaPlataforma.map(marca => ({
-            id: marca.id, 
-            logoText: marca.logoText || marca.logotext, // Preferir 'logoText', si no existe, usar 'logotext'
-            description: marca.description
-        }));
-        // **FIN DEL CAMBIO**
-
+        parsedMarcaPlataforma = parsedMarcaPlataforma.map((marca) => ({
+          id: marca.id,
+          logoText: marca.logoText || marca.logotext,
+          description: marca.description,
+        }));
       } catch (e) {
-        console.error("🐛 Error al parsear marcas de plataforma:", e);
         parsedMarcaPlataforma = [];
       }
 
@@ -157,18 +160,31 @@ const useCourseFormLogic = () => {
           parsedTemario = courseToEdit.curso.temario;
         }
       } catch (e) {
-        console.error("🐛 Error al parsear temario:", e);
         parsedTemario = [];
       }
 
+      let parsedPreguntasFrecuentes = [];
+      try {
+        if (typeof courseToEdit.preguntas_frecuentes === "string") {
+          parsedPreguntasFrecuentes = JSON.parse(
+            courseToEdit.preguntas_frecuentes
+          );
+        } else if (Array.isArray(courseToEdit.preguntas_frecuentes)) {
+          parsedPreguntasFrecuentes = courseToEdit.preguntas_frecuentes;
+        }
+      } catch (e) {
+        parsedPreguntasFrecuentes = [];
+      }
+
       const newFormData = {
-        accion: "update", // <-- ¡Asegúrate de que la acción sea 'update' al editar!
-        id: courseToEdit.curso.id, // <-- ¡VERIFICA QUE EL ID SE CARGUE AQUÍ!
+        accion: "update",
+        id: courseToEdit.curso.id,
         titulo: courseToEdit.curso.titulo || "",
         subtitulo: courseToEdit.curso.subtitulo || "",
         descripcion_corta: courseToEdit.curso.descripcion_corta || "",
         descripcion_larga: courseToEdit.curso.descripcion_larga || "",
         url_banner: courseToEdit.curso.url_banner || "",
+        portada_targeta: courseToEdit.curso.portada_targeta || "", // Cargar URL de portada de tarjeta
         url_video_introductorio:
           courseToEdit.curso.url_video_introductorio || "",
         precio: courseToEdit.curso.precio
@@ -201,16 +217,23 @@ const useCourseFormLogic = () => {
         ritmo_aprendizaje: courseToEdit.curso.ritmo_aprendizaje || "",
         tipo_clase: courseToEdit.curso.tipo_clase || "",
         titulo_credencial: courseToEdit.curso.titulo_credencial || "",
-        descripcion_credencial:
-          courseToEdit.curso.descripcion_credencial || "",
+        descripcion_credencial: courseToEdit.curso.descripcion_credencial || "",
         marca_plataforma: parsedMarcaPlataforma,
         temario: parsedTemario,
+        preguntas_frecuentes: parsedPreguntasFrecuentes,
       };
       setFormData(newFormData);
       setBannerFile(null);
-      console.log("🐛 CourseFormLogic: Curso cargado para edición:", newFormData);
-      console.log("🐛 CourseFormLogic: ID del curso cargado:", newFormData.id);
-      console.log("🐛 CourseFormLogic: Marcas de plataforma cargadas:", newFormData.marca_plataforma);
+      setCardCoverFile(null); // Reiniciar el archivo de portada de tarjeta al editar
+      setPreguntasFrecuentes(parsedPreguntasFrecuentes);
+    console.log("📍 [useCourseFormLogic] formData inicializado/actualizado:", newFormData);
+    if (courseToEdit.curso.portada_targeta) {
+        console.log("📍 [useCourseFormLogic] URL de portada_targeta existente:", courseToEdit.curso.portada_targeta);
+    }
+    if (courseToEdit.curso.id) {
+        console.log("📍 [useCourseFormLogic] ID del curso al editar:", courseToEdit.curso.id);
+    }
+
     } else {
       setIsEditing(false);
       setResponseMessage({ type: "", message: "" });
@@ -221,10 +244,15 @@ const useCourseFormLogic = () => {
         fecha_actualizacion: new Date().toISOString().slice(0, 10),
       });
       setBannerFile(null);
+      setCardCoverFile(null); // Reiniciar el archivo de portada de tarjeta al crear nuevo
       setNewLogoText("");
       setNewDescription("");
       setNewTemaTitle("");
-      console.log("🐛 CourseFormLogic: Formulario inicializado para nuevo curso.");
+      setPreguntasFrecuentes([]);
+      setNewPregunta("");
+      setNewRespuesta("");
+    console.log("📍 [useCourseFormLogic] formData inicializado para nuevo curso:", formData);
+
     }
   }, [location.state, user]);
 
@@ -247,13 +275,25 @@ const useCourseFormLogic = () => {
     }));
   };
 
+  const handleChangeCardCover = (e) => {
+    // Nueva función para manejar el archivo de portada de tarjeta
+    const file =
+      e.target.files && e.target.files.length > 0 ? e.target.files?.[0] : null;
+    setCardCoverFile(file);
+    setResponseMessage({ type: "", message: "" });
+    setFormData((prevData) => ({
+      ...prevData,
+      portada_targeta: "", // Resetea la URL si se selecciona un nuevo archivo
+    }));
+    console.log("📍 [useCourseFormLogic] handleCardCoverChange - Archivo seleccionado:", file ? file.name : "Ninguno");
+    console.log("📍 [useCourseFormLogic] handleCardCoverChange - formData.portada_targeta reseteado a:", "");
+  };
+
   const handleAddMarcaPlataforma = () => {
     if (newLogoText && newDescription) {
-      // **CAMBIO AQUÍ**: Usar 'logoText' con 'L' mayúscula
       const newMarca = { logoText: newLogoText, description: newDescription };
       setFormData((prevData) => {
         const updatedMarcas = [...prevData.marca_plataforma, newMarca];
-        console.log("🐛 CourseFormLogic: Marcas después de añadir:", updatedMarcas);
         return {
           ...prevData,
           marca_plataforma: updatedMarcas,
@@ -271,66 +311,78 @@ const useCourseFormLogic = () => {
     }
   };
 
-  
- const handleRemoveMarcaPlataforma = async (idToRemove) => {
-  if (!idToRemove) {
-    console.warn("⚠️ No se encontró ID para la marca, no se puede eliminar del backend.");
-    return;
-  }
-
-  const result = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: "Esta acción eliminará la marca permanentemente.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar',
-  });
-
-  if (result.isConfirmed) {
-    try {
-      const response = await fetch("https://apiacademy.hitpoly.com/ajax/eliminarMarcaPlataformaController.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          accion: "delete",
-          id: idToRemove,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        Swal.fire('Eliminado!', 'La marca ha sido eliminada.', 'success');
-      
-        setFormData((prevData) => ({
-          ...prevData,
-          marca_plataforma: prevData.marca_plataforma.filter(
-            (marca) => marca.id !== idToRemove
-          ),
-        }));
-      } else {
-        Swal.fire('Error', `No se pudo eliminar: ${data.message}`, 'error');
-      }
-    } catch (error) {
-      Swal.fire('Error', 'Error de red al eliminar la marca.', 'error');
+  const handleRemoveMarcaPlataforma = async (idToRemove) => {
+    if (!idToRemove) {
+      setFormData((prevData) => ({
+        ...prevData,
+        marca_plataforma: prevData.marca_plataforma.filter(
+          (marca) => marca.id !== idToRemove
+        ),
+      }));
+      Swal.fire(
+        "Eliminado!",
+        "La marca ha sido eliminada localmente.",
+        "success"
+      );
+      return;
     }
-  }
-};
 
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Esta acción eliminará la marca permanentemente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
 
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/eliminarMarcaPlataformaController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              accion: "delete",
+              id: idToRemove,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          Swal.fire("Eliminado!", "La marca ha sido eliminada.", "success");
+          setFormData((prevData) => ({
+            ...prevData,
+            marca_plataforma: prevData.marca_plataforma.filter(
+              (marca) => marca.id !== idToRemove
+            ),
+          }));
+        } else {
+          Swal.fire("Error", `No se pudo eliminar: ${data.message}`, "error");
+        }
+      } catch (error) {
+        Swal.fire("Error", "Error de red al eliminar la marca.", "error");
+      }
+    }
+  };
 
   const handleEditMarcaPlataforma = useCallback(
     (indexToEdit, updatedLogoText, updatedDescription) => {
       setFormData((prevData) => {
         const updatedMarcas = prevData.marca_plataforma.map((marca, index) =>
           index === indexToEdit
-            ? { ...marca, logoText: updatedLogoText, description: updatedDescription } // **CAMBIO AQUÍ**: 'logoText' con 'L' mayúscula
+            ? {
+                ...marca,
+                logoText: updatedLogoText,
+                description: updatedDescription,
+              }
             : marca
         );
-        console.log("🐛 CourseFormLogic: Marcas después de editar:", updatedMarcas);
         return { ...prevData, marca_plataforma: updatedMarcas };
       });
     },
@@ -370,13 +422,89 @@ const useCourseFormLogic = () => {
     }));
   };
 
+  // --- FUNCIONES PARA LAS PREGUNTAS FRECUENTES ---
+  const handleAddPreguntaFrecuente = useCallback(() => {
+    if (newPregunta.trim() && newRespuesta.trim()) {
+      const newFaq = {
+        pregunta: newPregunta.trim(),
+        respuesta: newRespuesta.trim(),
+      };
+      setPreguntasFrecuentes((prev) => [...prev, newFaq]);
+      setNewPregunta("");
+      setNewRespuesta("");
+      setResponseMessage({ type: "", message: "" });
+    } else {
+      setResponseMessage({
+        type: "error",
+        message:
+          "Por favor, rellena la pregunta y la respuesta para añadir una FAQ.",
+      });
+    }
+  }, [newPregunta, newRespuesta, setResponseMessage]);
+
+  const handleRemovePreguntaFrecuente = useCallback((indexToRemove) => {
+    setPreguntasFrecuentes((prev) =>
+      prev.filter((_, index) => index !== indexToRemove)
+    );
+  }, []);
+
+  const handleEditPreguntaFrecuente = useCallback((indexToEdit, updatedFaq) => {
+    setPreguntasFrecuentes((prev) =>
+      prev.map((faq, index) => (index === indexToEdit ? updatedFaq : faq))
+    );
+  }, []);
+  // --- FIN FUNCIONES PARA LAS PREGUNTAS FRECUENTES ---
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🐛 CourseFormLogic: FormData FINAL antes de llamar a submitCourse:", formData);
-    console.log("🐛 CourseFormLogic: ID del curso a enviar desde FormData FINAL:", formData.id); // Nuevo console.log
-    const result = await submitCourse(formData, bannerFile, isEditing);
+
+    console.log("🚀 [useCourseFormLogic] handleSubmit: Iniciando envío del formulario.");
+    console.log("➡️ [useCourseFormLogic] handleSubmit: formData antes de enviar:", formData);
+    console.log("➡️ [useCourseFormLogic] handleSubmit: bannerFile antes de enviar:", bannerFile ? bannerFile.name : "No hay archivo de banner");
+    console.log("➡️ [useCourseFormLogic] handleSubmit: cardCoverFile antes de enviar:", cardCoverFile ? cardCoverFile.name : "No hay archivo de portada de tarjeta");
+    console.log("➡️ [useCourseFormLogic] handleSubmit: isEditing:", isEditing);
+    console.log("➡️ [useCourseFormLogic] handleSubmit: preguntasFrecuentes:", preguntasFrecuentes);
+
+
+    const result = await submitCourse(
+      formData,
+      bannerFile,
+      cardCoverFile,
+      isEditing,
+      preguntasFrecuentes
+    );
+
+    console.log("✅ [useCourseFormLogic] handleSubmit: Resultado de submitCourse:", result);
+
+
     if (result.success) {
-      navigate("/mis-cursos", { state: { shouldRefresh: true } });
+      if (!isEditing && result.id) {
+        Swal.fire({
+          title: "¡Curso Creado!",
+          text: "Ahora puedes añadir las preguntas frecuentes para este curso.",
+          icon: "success",
+          showConfirmButton: true,
+          confirmButtonText: "Ir a FAQs",
+          allowOutsideClick: false,
+        }).then(() => {
+          navigate(`/preguntas-frecuentes/${result.id}`);
+        });
+      } else {
+        Swal.fire({
+          title: "Operación Exitosa",
+          text: result.message,
+          icon: "success",
+          confirmButtonText: "Entendido",
+        }).then(() => {
+          navigate("/mis-cursos", { state: { shouldRefresh: true } });
+        });
+      }
+    } else {
+      Swal.fire(
+        "Error",
+        result.message || "Ocurrió un error inesperado.",
+        "error"
+      );
     }
   };
 
@@ -398,13 +526,17 @@ const useCourseFormLogic = () => {
     setNewTemaTitle,
     bannerFile,
     setBannerFile,
+    cardCoverFile,
+    setCardCoverFile,
     isEditing,
     loading,
     uploadingBanner,
+    uploadingCardCover,
     responseMessage,
     setResponseMessage,
     handleChange,
     handleFileChange,
+    handleChangeCardCover,
     handleAddMarcaPlataforma,
     handleRemoveMarcaPlataforma,
     handleEditMarcaPlataforma,
@@ -414,6 +546,14 @@ const useCourseFormLogic = () => {
     handleSubmit,
     handleNavigateToMyCourses,
     isMobile,
+    preguntasFrecuentes,
+    newPregunta,
+    setNewPregunta,
+    newRespuesta,
+    setNewRespuesta,
+    handleAddPreguntaFrecuente,
+    handleRemovePreguntaFrecuente,
+    handleEditPreguntaFrecuente,
   };
 };
 

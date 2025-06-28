@@ -9,43 +9,42 @@ import {
   Alert,
   Divider,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom"; // <-- ¡Importamos useNavigate!
 
-const CATEGORIES_STORAGE_KEY = "cachedCategories"; // Clave para localStorage
-const CACHE_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 horas en milisegundos
+const CATEGORIES_STORAGE_KEY = "cachedCategories";
+const CACHE_EXPIRATION_TIME = 1000 * 60 * 60 * 24;
 
-const ListaDeCategorias = () => {
+// Ahora recibe `onCloseDrawer` como prop
+const ListaDeCategorias = ({ onCloseDrawer }) => { 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate(); // <-- Inicializamos useNavigate
 
   useEffect(() => {
     const fetchCategories = async () => {
       setLoading(true);
       setError(null);
 
-      // 1. Intentar cargar desde localStorage
       const cachedData = localStorage.getItem(CATEGORIES_STORAGE_KEY);
       if (cachedData) {
         try {
           const { data, timestamp } = JSON.parse(cachedData);
-          // Verificar si el caché no ha expirado (ej. 24 horas)
           if (Date.now() - timestamp < CACHE_EXPIRATION_TIME) {
             setCategories(data);
             setLoading(false);
             console.log("Categorías cargadas desde localStorage.");
-            return; // Salir, ya tenemos los datos
+            return;
           } else {
             console.log("Caché de categorías expirado, recargando...");
           }
         } catch (parseError) {
           console.error("Error al parsear datos de localStorage:", parseError);
-          // Si hay un error al parsear, simplemente lo ignoramos y recargamos
         }
       } else {
         console.log("No hay categorías en localStorage, cargando desde API...");
       }
 
-      // 2. Si no hay caché o está expirado, cargar desde la API
       try {
         const response = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
@@ -70,7 +69,6 @@ const ListaDeCategorias = () => {
         }
 
         setCategories(data.categorias);
-        // 3. Guardar en localStorage con timestamp
         localStorage.setItem(
           CATEGORIES_STORAGE_KEY,
           JSON.stringify({ data: data.categorias, timestamp: Date.now() })
@@ -85,7 +83,15 @@ const ListaDeCategorias = () => {
     };
 
     fetchCategories();
-  }, []); // El array de dependencias vacío asegura que se ejecute solo una vez al montar
+  }, []);
+
+  // La función para manejar el clic en una categoría y navegar
+  const handleCategoryClick = (categoryName) => { // <-- Ahora recibe el NOMBRE de la categoría
+    navigate(`/cursos/${categoryName}`); // <-- Navega a la ruta dinámica
+    if (onCloseDrawer) { // <-- Llama a la función para cerrar el Drawer
+      onCloseDrawer();
+    }
+  };
 
   return (
     <Box
@@ -122,7 +128,8 @@ const ListaDeCategorias = () => {
           {categories.length > 0 ? (
             categories.map((categoria, index) => (
               <React.Fragment key={categoria.id}>
-                <ListItem button>
+                {/* Pasa el NOMBRE de la categoría a handleCategoryClick */}
+                <ListItem button onClick={() => handleCategoryClick(categoria.nombre)}> 
                   <ListItemText primary={categoria.nombre} />
                 </ListItem>
                 {index < categories.length - 1 && <Divider component="li" />}

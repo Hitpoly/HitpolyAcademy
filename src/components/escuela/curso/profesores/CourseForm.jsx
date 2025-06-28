@@ -8,12 +8,15 @@ import {
   CircularProgress,
   Grid,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
-import CourseDetailsSection from "./CourseDetailsSection";
+import CourseDetailsSection from "./CourseDetailsSection"; // La ruta puede variar
 import AdditionalDetailsSection from "./AdditionalDetailsSection";
-import useCourseFormLogic from "./logic/useCourseFormLogic"; // Asegúrate de que la ruta sea correcta
+import useCourseFormLogic from "./logic/useCourseFormLogic";
 
 const CourseForm = () => {
+  const navigate = useNavigate();
+
   const {
     formData,
     categorias,
@@ -26,15 +29,18 @@ const CourseForm = () => {
     newTemaTitle,
     setNewTemaTitle,
     bannerFile,
+    cardCoverFile, // <-- Asegúrate de extraerlo aquí
     isEditing,
     loading,
     uploadingBanner,
+    uploadingCardCover, // <-- Asegúrate de extraerlo aquí
     responseMessage,
     handleChange,
-    handleFileChange,
+    handleFileChange, // <-- Función para el banner
+    handleChangeCardCover, // <-- Función para la portada de tarjeta
     handleAddMarcaPlataforma,
     handleRemoveMarcaPlataforma,
-    handleEditMarcaPlataforma, // <--- ¡YA LA ESTÁS EXTRayENDO AQUÍ!
+    handleEditMarcaPlataforma,
     handleAddTema,
     handleRemoveTema,
     handleEditTema,
@@ -42,6 +48,12 @@ const CourseForm = () => {
     handleNavigateToMyCourses,
     isMobile,
   } = useCourseFormLogic();
+
+  const handleNavigateToFaq = () => {
+    if (formData?.id) {
+       navigate(`/preguntas-frecuentes/${formData.id}`); 
+    }
+  };
 
   return (
     <Box
@@ -64,13 +76,33 @@ const CourseForm = () => {
           : "Insertar Nuevo Curso"}
       </Typography>
 
-      <Button
-        onClick={handleNavigateToMyCourses}
-        variant="outlined"
-        sx={{ mb: 2 }}
-      >
-        {isEditing ? "← Volver a Mis Cursos" : "→ Ir a Mis Cursos"}
-      </Button>
+      {isEditing && (
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+          <Button
+            onClick={handleNavigateToFaq}
+            variant="contained"
+            color="secondary"
+          >
+            Editar Preguntas Frecuentes
+          </Button>
+          <Button
+            onClick={handleNavigateToMyCourses}
+            variant="outlined"
+          >
+            ← Volver a Mis Cursos
+          </Button>
+        </Box>
+      )}
+
+      {!isEditing && (
+        <Button
+          onClick={handleNavigateToMyCourses}
+          variant="outlined"
+          sx={{ mb: 2 }}
+        >
+          → Ir a Mis Cursos
+        </Button>
+      )}
 
       {responseMessage.message && (
         <Alert severity={responseMessage.type} sx={{ mb: 2 }}>
@@ -87,12 +119,7 @@ const CourseForm = () => {
             alignItems: "flex-start",
           }}
         >
-          <Box
-            sx={{
-              flex: 1,
-              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" },
-            }}
-          >
+          <Box sx={{ flex: 1, minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" } }}>
             <Typography variant="h6" gutterBottom>
               Datos Principales del Curso
             </Typography>
@@ -102,8 +129,11 @@ const CourseForm = () => {
                   formData={formData}
                   handleChange={handleChange}
                   bannerFile={bannerFile}
-                  handleFileChange={handleFileChange}
+                  cardCoverFile={cardCoverFile} // <-- ¡Pásale el archivo de la portada de tarjeta!
+                  handleFileChange={handleFileChange} // <-- Para el banner
+                  handleChangeCardCover={handleChangeCardCover} // <-- ¡Pásale la función para la portada de tarjeta!
                   uploadingBanner={uploadingBanner}
+                  uploadingCardCover={uploadingCardCover} // <-- Pásale el estado de carga para la portada
                   categorias={categorias}
                   loadingCategories={loadingCategories}
                   categoryErrorMessage={categoryErrorMessage}
@@ -113,12 +143,7 @@ const CourseForm = () => {
             </Grid>
           </Box>
 
-          {/* Columna Derecha (se adapta al 50% de ancho) */}
-          <Box
-            sx={{
-              minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" },
-            }}
-          >
+          <Box sx={{ minWidth: { xs: "100%", md: "calc(50% - 1.5rem)" } }}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <AdditionalDetailsSection
@@ -148,9 +173,9 @@ const CourseForm = () => {
           variant="contained"
           color="primary"
           sx={{ mt: 3, py: 1.5, width: "100%" }}
-          disabled={loading || uploadingBanner}
+          disabled={loading || uploadingBanner || uploadingCardCover}
         >
-          {loading || uploadingBanner ? (
+          {loading || uploadingBanner || uploadingCardCover ? (
             <CircularProgress size={24} color="inherit" />
           ) : isEditing ? (
             "Guardar Cambios"

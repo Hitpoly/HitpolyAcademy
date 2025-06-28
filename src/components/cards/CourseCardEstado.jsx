@@ -78,7 +78,7 @@ const CourseCardEstado = ({
         <CardMedia
           component="img"
           image={
-            curso.url_banner ||
+            curso.portada_targeta ||
             "https://via.placeholder.com/345x180?text=No+Image"
           }
           alt={curso.titulo}

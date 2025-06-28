@@ -15,7 +15,9 @@ import CategoryManager from "./components/escuela/curso/components/categorias/Ca
 import CourseModulesManager from "./components/escuela/curso/profesores/modulos/CourseModulesManager";
 import ModuleClassesManager from "./components/escuela/curso/profesores/clases/ModuleClassesManager";
 import CourseListManager from "./components/escuela/curso/profesores/CourseListManager";
-
+import CourseCategory from "./components/categorias/CourseCategory";
+import FAQSection from "./components/escuela/curso/profesores/FAQSection";
+import AppTestimonios from "./components/admin/AppTestimonios"
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
@@ -34,7 +36,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Inicio />} />
             <Route path="/curso/:id" element={<PaginaDeInformacion />} />
-
             {/* ***** CAMBIO AQUÍ: La ruta /master-full ahora espera un ID de curso ***** */}
             <Route
               path="/master-full/:courseId" // <-- Agrega :courseId
@@ -44,7 +45,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/dashboard-admin"
+              element={
+                <ProtectedRoute>
+                  <AppTestimonios />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/perfil"
               element={
@@ -56,12 +64,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             {/* Mantén la ruta /register que puede o no tener el :id */}
             <Route path="/register" element={<Register />} />
-            <Route path="/curso/:id/register" element={<Register />} /> {/* Esta ruta es la que te permite pasar el ID */}
-
-
+            <Route path="/curso/:id/register" element={<Register />} />{" "}
+            {/* Esta ruta es la que te permite pasar el ID */}
             <Route path="/exam/:examName" element={<ExamComponent />} />
             <Route path="/exam-results" element={<ExamResults />} />
-
             {/* RUTAS DE ADMINISTRACIÓN DE CURSOS */}
             <Route
               path="/datos-de-curso"
@@ -80,6 +86,14 @@ function App() {
               }
             />
             <Route
+              path="/preguntas-frecuentes/:courseId" // ¡Importante! Añadir el parámetro de ruta
+              element={
+                <ProtectedRoute>
+                  <FAQSection />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/categorias"
               element={
                 <ProtectedRoute>
@@ -87,6 +101,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/cursos/:categoryName" element={<CourseCategory />} />
             <Route
               path="/cursos/:courseId/modulos"
               element={<CourseModulesManager />}

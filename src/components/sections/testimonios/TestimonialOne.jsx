@@ -2,30 +2,20 @@ import React from "react";
 import { Box, Typography, Divider, Avatar } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
 
-const reviews = [
-  {
-    text: "Este curso me ayudó a reflexionar sobre la persona que quiero ser. El espacio mental que me brindó me permitió ampliar mis horizontes y pensar en oportunidades que antes no había considerado.",
-    name: "Maggie B.",
-    // Programa actualizado para referirse a HitPoly Academy
-    program: "Programa de Certificación Profesional en Lean Six Sigma - HitPoly Academy",
-  },
-  {
-    text: "Un empleador estaba muy interesado en mi experiencia en el campamento de entrenamiento y no podía creer todo lo que aprendí en tan solo seis meses. Al final conseguí el trabajo.",
-    name: "Danielle D.",
-    // Programa actualizado para referirse a HitPoly Academy
-    program: "Bootcamp de Marketing Digital - HitPoly Academy",
-  },
-  {
-    text: "El programa en línea me ayudó a reorientar mis principales tareas como líder: interactuar con mi equipo y conectar con posibles partes interesadas.",
-    name: "Delgado C.",
-    // Programa actualizado para referirse a HitPoly Academy
-    program: "Programa de Liderazgo Ejecutivo - HitPoly Academy",
-  },
-];
+const TestimoniosSection = ({ reviews }) => {
+  // Añade una verificación aquí: si reviews no es un array o está vacío, muestra un mensaje o no renderices nada
+  if (!reviews || !Array.isArray(reviews) || reviews.length === 0) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6" color="text.secondary">
+          No hay comentarios disponibles en este momento.
+        </Typography>
+      </Box>
+    );
+  }
 
-const TestimoniosSection = () => {
   return (
-    <Box sx={{ backgroundColor: "#fffff" }}>
+    <Box sx={{ backgroundColor: "#ffffff" }}>
       <Typography variant="overline" sx={{ color: "#666", textTransform: "uppercase" }}>
         Lo que dicen los estudiantes
       </Typography>

@@ -1,8 +1,13 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 
+// Estilos de Swiper
+import "swiper/css";
+import "swiper/css/navigation";
+
 import { Box, Typography, Button, TextField } from "@mui/material";
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 const slideData = [
   {
@@ -16,7 +21,7 @@ const slideData = [
     id: 2,
     title: "Máster Full: Closer de Ventas Especializado.",
     description:
-      "Domina las técnicas psicologicas del cosumidor y multiplica tus oportunidades de capitalización tarabajando con empresas internacionales.",
+      "Domina las técnicas psicológicas del consumidor y multiplica tus oportunidades de capitalización trabajando con empresas internacionales.",
     backgroundImage: "/images/Appointment4.jpg",
   },
   {
@@ -30,6 +35,22 @@ const slideData = [
 
 const PortadaOne = () => {
   const swiperRef = useRef(null);
+  const navigationNextRef = useRef(null);
+
+  useEffect(() => {
+    if (
+      swiperRef.current &&
+      swiperRef.current.params &&
+      navigationNextRef.current
+    ) {
+      swiperRef.current.params.navigation = {
+        ...swiperRef.current.params.navigation,
+        nextEl: navigationNextRef.current,
+      };
+      swiperRef.current.navigation.init();
+      swiperRef.current.navigation.update();
+    }
+  }, []);
 
   return (
     <Box
@@ -38,6 +59,11 @@ const PortadaOne = () => {
         height: "100vh",
         position: "relative",
         overflow: "hidden",
+        "@keyframes arrow-pulse-move": {
+          "0%": { opacity: 0.4, transform: "translate(0, -50%)" },
+          "50%": { opacity: 1, transform: "translate(10px, -50%)" },
+          "100%": { opacity: 0.4, transform: "translate(0, -50%)" },
+        },
       }}
     >
       <Swiper
@@ -48,6 +74,7 @@ const PortadaOne = () => {
         autoplay={{
           delay: 5000,
           disableOnInteraction: false,
+          pauseOnMouseEnter: true,
         }}
         speed={800}
         onSwiper={(swiper) => {
@@ -59,7 +86,6 @@ const PortadaOne = () => {
             <Box
               sx={{
                 height: "100vh",
-                minHeight: "100vh",
                 backgroundImage: `url(${slide.backgroundImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
@@ -67,6 +93,7 @@ const PortadaOne = () => {
                 display: "flex",
                 alignItems: "flex-end",
                 justifyContent: "flex-start",
+                position: "relative",
                 "&::before": {
                   content: '""',
                   position: "absolute",
@@ -153,6 +180,33 @@ const PortadaOne = () => {
           </SwiperSlide>
         ))}
       </Swiper>
+
+      {/* Flecha de navegación derecha personalizada */}
+      <Box
+        ref={navigationNextRef}
+        sx={{
+          position: "absolute",
+          top: {xs: "35%", md: "50%"},
+          right: { xs: "5px", md: "20px" },
+          transform: "translateY(-50%)",
+          zIndex: 10,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          animation: "arrow-pulse-move 2s infinite ease-in-out",
+          color: "white",
+          "& svg": {
+            fontSize: { xs: "25px", md: "35px" },
+          },
+          "&:hover": {
+            opacity: 1,
+            transform: "translate(10px, -50%)",
+          },
+        }}
+      >
+        <ArrowForwardIosIcon />
+      </Box>
     </Box>
   );
 };
