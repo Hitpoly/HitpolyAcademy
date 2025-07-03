@@ -10,6 +10,13 @@ import CenteredCallToAction from "../banners/llamadoALaAccion";
 import FaqSection from "./components/FaqSection";
 import CourseDetailPage from "./components/CourseDetailPage";
 
+// Función para extraer el ID numérico de un slug (por ejemplo, "nombre-curso-123" -> "123")
+const extractIdFromSlug = (slug) => {
+  const parts = slug.split('-');
+  const id = parts[parts.length - 1];
+  return /^\d+$/.test(id) ? id : null; // Devuelve el ID si es numérico, de lo contrario null
+};
+
 function PaginaDeInformacion() {
   const [apiData, setApiData] = useState(null);
   const [courseModules, setCourseModules] = useState([]);
@@ -18,12 +25,16 @@ function PaginaDeInformacion() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { id: courseIdFromUrl } = useParams();
+  const { id: courseSlugFromUrl } = useParams();
+
+  const numericCourseId = extractIdFromSlug(courseSlugFromUrl);
+  // ------------------------------------------------------------------
 
   useEffect(() => {
     const fetchCourseAndContentData = async () => {
-      if (!courseIdFromUrl) {
-        setError("ID del curso no proporcionado en la URL.");
+      // Usa numericCourseId que ya está definido arriba
+      if (!numericCourseId) {
+        setError("ID del curso no válido o no proporcionado en la URL.");
         setLoading(false);
         return;
       }
@@ -49,7 +60,7 @@ function PaginaDeInformacion() {
         }
 
         const courseData = await courseResponse.json();
-
+        
         let foundCourse = null;
 
         if (
@@ -58,9 +69,10 @@ function PaginaDeInformacion() {
           Array.isArray(courseData.cursos.cursos)
         ) {
           foundCourse = courseData.cursos.cursos.find(
-            (curso) => String(curso.id) === String(courseIdFromUrl)
+            // Compara con el numericCourseId ya definido
+            (curso) => String(curso.id) === numericCourseId
           );
-
+          
           if (foundCourse) {
             setApiData(foundCourse);
 
@@ -86,13 +98,14 @@ function PaginaDeInformacion() {
                 }
 
                 const professorData = await professorResponse.json();
-
+                
                 if (
                   professorData.status === "success" &&
                   professorData.usuario
                 ) {
                   setProfessorDetails(professorData.usuario);
                 } else {
+                
                   setProfessorDetails(null);
                 }
               } catch (profError) {
@@ -103,7 +116,7 @@ function PaginaDeInformacion() {
             }
           } else {
             setError(
-              `Curso con ID ${courseIdFromUrl} no encontrado en la lista de cursos.`
+              `Curso con ID ${numericCourseId} no encontrado en la lista de cursos.`
             );
             setLoading(false);
             return;
@@ -117,7 +130,7 @@ function PaginaDeInformacion() {
           return;
         }
 
-        // --- INICIO: Lógica para Módulos y Clases (se mantiene) ---
+        // --- Lógica para Módulos y Clases ---
         const modulesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php",
           {
@@ -125,7 +138,7 @@ function PaginaDeInformacion() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               accion: "getModulosCurso",
-              id: courseIdFromUrl,
+              id: numericCourseId, // Usa numericCourseId aquí también
             }),
           }
         );
@@ -138,7 +151,7 @@ function PaginaDeInformacion() {
         }
 
         const modulesData = await modulesResponse.json();
-
+        
         let fetchedModules = [];
 
         if (
@@ -168,6 +181,7 @@ function PaginaDeInformacion() {
         }
 
         const classesData = await classesResponse.json();
+        
 
         if (
           classesData.status === "success" &&
@@ -183,7 +197,6 @@ function PaginaDeInformacion() {
         } else {
           setCourseClasses([]);
         }
-        // --- FIN: Lógica para Módulos y Clases ---
       } catch (err) {
         setError(
           "No se pudo conectar con el servidor o hubo un error al obtener los datos. Por favor, inténtalo de nuevo más tarde."
@@ -193,10 +206,11 @@ function PaginaDeInformacion() {
       }
     };
 
-    if (courseIdFromUrl) {
+
+    if (courseSlugFromUrl) {
       fetchCourseAndContentData();
     }
-  }, [courseIdFromUrl]);
+  }, [courseSlugFromUrl]);
 
   if (loading) {
     return (
@@ -276,7 +290,6 @@ function PaginaDeInformacion() {
     url_banner,
     // eslint-disable-next-line no-unused-vars
     resultados_aprendizaje = [],
-    // Eliminamos callToActionData de la desestructuración, lo construiremos manualmente.
     temario, // Asegúrate de que `temario` exista en apiData
   } = apiData;
 
@@ -356,7 +369,7 @@ function PaginaDeInformacion() {
 
   // Prepara el valor de horas_por_semana para mostrar, si el de la API es null
   const displayHorasPorSemana =
-    horas_por_semana !== null ? horas_por_semana : "No especificado"; // <-- Corregido aquí
+    horas_por_semana !== null ? horas_por_semana : "No especificado";
 
   // Formatea las fechas para una mejor visualización si no son los valores por defecto
   const formattedFechaInicio =
@@ -483,7 +496,7 @@ function PaginaDeInformacion() {
 
       {/* FaqSection - Ahora se encargará de cargar sus propios datos */}
       <Box sx={{ padding: { xs: "20px", md: "0px 170px" } }}>
-        <FaqSection courseId={courseIdFromUrl} />
+        <FaqSection courseId={numericCourseId} /> {/* Usa numericCourseId aquí */}
       </Box>
 
       {/* CenteredCallToAction - Siempre se renderizará con nuestros datos personalizados */}

@@ -1,4 +1,3 @@
-// src/components/CourseCard.jsx
 import React from "react";
 import {
   Box,
@@ -10,42 +9,48 @@ import {
   Button,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { useNavigate } from "react-router-dom"; // Importa useNavigate
 
 const CourseCard = ({ curso }) => {
+  const navigate = useNavigate(); // Inicializa useNavigate
+
+  const handleContinueClick = () => {
+    // Construye la URL con el ID del curso
+    navigate(`/master-full/${curso.id}`);
+  };
+
   return (
     <Card
       sx={{
         display: "flex",
-        flexDirection: "column", // ¡Aquí está la clave! Apila los elementos verticalmente
+        flexDirection: "column",
         boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         borderRadius: 2,
         overflow: "hidden",
-        width: "100%",
+        width: "300px",
         "&:hover": {
           boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
         },
       }}
     >
-      {/* La imagen va primero en el orden del JSX */}
       <CardMedia
         component="img"
         sx={{
-          width: "100%", // La imagen ocupará todo el ancho de la tarjeta
-          height: { xs: 150, sm: 200 }, // Altura fija para la imagen en diferentes tamaños de pantalla
-          objectFit: "cover", // Asegura que la imagen cubra el espacio sin distorsionarse
+          width: "100%",
+          height: { xs: 150, sm: 200 },
+          objectFit: "cover",
         }}
-        image={curso.thumbnail || "/images/default-course-thumbnail.jpg"}
+        image={curso.portada_targeta || "/images/default-course-thumbnail.jpg"}
         alt={curso.titulo}
       />
-      
-      {/* Luego va el Box que contiene el título, descripción, progreso y botón */}
+
       <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
         <CardContent sx={{ flex: "1 0 auto", p: 2 }}>
           <Typography component="div" variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {curso.titulo}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {curso.descripcion}
+            {curso.subtitulo}
           </Typography>
           <LinearProgress
             variant="determinate"
@@ -74,9 +79,9 @@ const CourseCard = ({ curso }) => {
               borderRadius: 2,
               px: 2,
               py: 0.8,
-              textTransform: 'none'
+              textTransform: "none",
             }}
-            onClick={() => console.log(`Continuar curso: ${curso.titulo}`)}
+            onClick={handleContinueClick}
           >
             Continuar
           </Button>

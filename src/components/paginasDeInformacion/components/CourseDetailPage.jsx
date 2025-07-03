@@ -44,12 +44,7 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
     setVisibleModules(visibleModules === 2 ? totalCourseModules : 2); // Usa 2 como límite inicial
   };
 
-  // console.log para depurar y verificar las longitudes y estados
-  console.log("Total Learning Outcomes:", totalLearningOutcomes);
-  console.log("Visible Learning Outcomes:", visibleLearningOutcomes);
-  console.log("Total Modules:", totalCourseModules);
-  console.log("Visible Modules:", visibleModules);
-
+  
   if (!course) {
     return (
       <Typography variant="h6">Cargando información del curso...</Typography>
@@ -77,7 +72,7 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
 
   return (
     <Container sx={{ py: 5 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+      <Paper elevation={3} sx={{ p: {xs: 2, md: 4}, borderRadius: 2 }}>
         <Box
           sx={{
             display: "flex",

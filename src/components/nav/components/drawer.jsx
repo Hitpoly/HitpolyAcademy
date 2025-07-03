@@ -7,6 +7,7 @@ import {
   Avatar,
   Divider,
   IconButton,
+  Tooltip, // ¡Importa Tooltip de Material-UI!
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../../../context/AuthContext";
@@ -40,7 +41,7 @@ export default function TemporaryDrawer() {
       >
         <Avatar
           sx={{ bgcolor: "primary.main", width: 64, height: 64 }}
-          src={user?.url_foto_perfil} // ¡SOLUCIÓN AQUÍ! Usar 'url_foto_perfil'
+          src={user?.url_foto_perfil} // Usar 'url_foto_perfil'
         >
           {/* La lógica de fallback también debe usar la misma propiedad si no hay URL */}
           {!user?.url_foto_perfil &&
@@ -90,15 +91,18 @@ export default function TemporaryDrawer() {
 
   return (
     <div>
-      <IconButton onClick={toggleDrawer(true)} sx={{ padding: 0 }}>
-        <Avatar
-          sx={{ bgcolor: "primary.main", cursor: "pointer" }}
-          src={user?.url_foto_perfil} // ¡SOLUCIÓN AQUÍ! Usar 'url_foto_perfil'
-        >
-          {!user?.url_foto_perfil &&
-            `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`}
-        </Avatar>
-      </IconButton>
+      {/* ¡CAMBIO AQUÍ! Envuelve el IconButton con Tooltip */}
+      <Tooltip title="Perfil">
+        <IconButton onClick={toggleDrawer(true)} sx={{ padding: 0 }}>
+          <Avatar
+            sx={{ bgcolor: "primary.main", cursor: "pointer" }}
+            src={user?.url_foto_perfil} // Usar 'url_foto_perfil'
+          >
+            {!user?.url_foto_perfil &&
+              `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`}
+          </Avatar>
+        </IconButton>
+      </Tooltip>
 
       <Drawer anchor="right" open={open} onClose={toggleDrawer(false)}>
         {drawerContent}

@@ -12,20 +12,77 @@ import {
   useTheme,
   Avatar,
   Tooltip,
+  CircularProgress,
+  Alert,
+  Typography,
 } from "@mui/material";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 
-const CarouselWithSwiper = ({ alumnos }) => {
+const CarouselWithSwiper = () => {
   const swiperRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const [alumnos, setAlumnos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [isHovered, setIsHovered] = useState({});
   const [tooltipOpen, setTooltipOpen] = useState({});
 
+  useEffect(() => {
+    const fetchAlumnos = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "getAllUser" }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP! Estado: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.status === "success" && Array.isArray(data.clases)) {
+          // --- CAMBIO CLAVE AQUÍ: Eliminamos la función filter ---
+          // Ahora mapeamos directamente todos los elementos de 'data.clases'
+          const processedUsers = data.clases.map(user => ({
+            id: user.id,
+            nombre: user.nombre || 'Nombre no disponible',
+            // Usamos 'url_foto_perfil' para la imagen del avatar
+            img: user.url_foto_perfil || '/images/default-avatar.jpg', 
+            // Usamos 'url_linkedin' para el enlace de LinkedIn
+            linkedin: user.url_linkedin || '', 
+          }));
+          
+          setAlumnos(processedUsers);
+        } else {
+          throw new Error(
+            data.message || "No se encontraron datos de usuarios o el formato es incorrecto."
+          );
+        }
+      } catch (err) {
+        setError(`No se pudieron cargar los usuarios: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAlumnos();
+  }, []);
+
   const handleMouseEnter = (idx) => {
     setIsHovered((prev) => ({ ...prev, [idx]: true }));
-    setTooltipOpen((prev) => ({ ...prev, [idx]: true }));
+    if (alumnos[idx] && alumnos[idx].nombre) {
+      setTooltipOpen((prev) => ({ ...prev, [idx]: true }));
+    }
     if (swiperRef.current && swiperRef.current.autoplay) {
       swiperRef.current.autoplay.stop();
     }
@@ -38,6 +95,54 @@ const CarouselWithSwiper = ({ alumnos }) => {
       swiperRef.current.autoplay.start();
     }
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="h6" sx={{ ml: 2 }}>Cargando usuarios para el carrusel...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (alumnos.length === 0) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          No hay usuarios disponibles para mostrar en el carrusel.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -52,7 +157,7 @@ const CarouselWithSwiper = ({ alumnos }) => {
       <Box
         sx={{
           width: { xs: "100%", md: "90%" },
-          padding: {xs: "20px 0 20px 0", md: "20px 0 0px 0"},
+          padding: { xs: "20px 0", md: "20px 0 0px 0" },
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -80,7 +185,7 @@ const CarouselWithSwiper = ({ alumnos }) => {
         >
           {alumnos.map((alumno, idx) => (
             <SwiperSlide
-              key={idx}
+              key={alumno.id || idx}
               style={{
                 padding: "20px 0",
                 display: "flex",

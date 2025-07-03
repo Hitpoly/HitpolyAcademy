@@ -36,8 +36,7 @@ const FaqSection = ({
       setLoading(true);
       setError(null);
       try {
-        console.log("📦 Solicitando FAQs para curso:", id);
-
+        
         const response = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getPreguntasYrespuestasController.php",
           {
@@ -56,21 +55,17 @@ const FaqSection = ({
         }
 
         const rawText = await response.text();
-        console.log("📨 Respuesta cruda del backend (FAQs):", rawText);
-
+        
         const data = JSON.parse(rawText);
-        console.log("✅ Datos parseados (FAQs):", data);
-
+        
         if (data.status === "success") {
           // Asegúrate de que data.preguntasyrespuestas sea un array, incluso si está vacío
           setFaqs(data.preguntasyrespuestas || []);
         } else {
-          console.warn("⚠️ Error de backend (FAQs):", data.message);
           setError(data.message || "No se pudieron cargar las FAQs.");
           setFaqs([]); // En caso de error, limpiar las FAQs existentes
         }
       } catch (err) {
-        console.error("❌ Error de red o parseo (FAQs):", err);
         setError(
           `Error al cargar las FAQs: ${err.message}. Inténtalo de nuevo.`
         );

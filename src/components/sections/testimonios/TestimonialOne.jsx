@@ -1,22 +1,203 @@
-import React from "react";
-import { Box, Typography, Divider, Avatar } from "@mui/material";
+// src/sections/testimonios/TestimonialOne.jsx
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Typography,
+  Divider,
+  Avatar,
+  CircularProgress,
+  Alert,
+  Tooltip, // Importar el componente Tooltip
+} from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
+// Se eliminaron las importaciones de Swiper debido a errores de resolución.
 
-const TestimoniosSection = ({ reviews }) => {
-  // Añade una verificación aquí: si reviews no es un array o está vacío, muestra un mensaje o no renderices nada
-  if (!reviews || !Array.isArray(reviews) || reviews.length === 0) {
+const TestimoniosSection = () => {
+  // Estados locales para los testimonios y su carga
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [usersById, setUsersById] = useState({}); // Para mapear usuarios a comentarios
+  const [courseNamesById, setCourseNamesById] = useState({}); // Nuevo estado para mapear IDs de clase a nombres de cursos
+
+  // swiperRef ya no es necesario sin Swiper, pero se mantiene por si se reintroduce
+  const swiperRef = useRef(null);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // 1. Obtener solo los comentarios destacados
+        const commentsResponse = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/traerComentariosDestacadosController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "getAll" }),
+          }
+        );
+        const commentsData = await commentsResponse.json();
+        console.log("Datos de comentarios destacados (commentsData):", commentsData);
+
+        if (
+          !commentsResponse.ok ||
+          commentsData.status !== "success" ||
+          !Array.isArray(commentsData.comentarios)
+        ) {
+          throw new Error(
+            commentsData.message ||
+              "La API de comentarios destacados no devolvió una lista válida."
+          );
+        }
+
+        // 2. Obtener todos los usuarios para mapear nombres y fotos
+        const allUsersResponse = await fetch(
+          "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "getAllUser" }),
+          }
+        );
+        const allUsersData = await allUsersResponse.json();
+        console.log("Datos de todos los usuarios (allUsersData):", allUsersData);
+
+        let mappedUsers = {};
+        if (allUsersData.status === "success" && Array.isArray(allUsersData.clases)) {
+          mappedUsers = allUsersData.clases.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {});
+        }
+        setUsersById(mappedUsers);
+        console.log("Usuarios mapeados (mappedUsers):", mappedUsers);
+
+        // 3. Obtener nombres de cursos para cada clase_id único
+        const uniqueClassIds = [
+          ...new Set(
+            commentsData.comentarios
+              .map((comment) => comment.clase_id)
+              .filter(id => id != null) // Asegurarse de que no haya IDs nulos
+          ),
+        ];
+        console.log("IDs de clase únicos encontrados:", uniqueClassIds);
+
+        const fetchedCourseNames = {};
+        if (uniqueClassIds.length > 0) {
+          await Promise.all(
+            uniqueClassIds.map(async (classId) => {
+              try {
+                const courseNameResponse = await fetch(
+                  "https://apiacademy.hitpoly.com/ajax/traerNombreCursoPorIdClaseController.php",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ accion: "getCursosPorIdClase", id: classId }),
+                  }
+                );
+                const courseNameData = await courseNameResponse.json();
+                console.log(`Datos del curso para clase_id ${classId} (courseNameData):`, courseNameData);
+
+                if (courseNameResponse.ok && courseNameData.status === "success" && courseNameData.cursos && courseNameData.cursos.titulo) {
+                  fetchedCourseNames[classId] = courseNameData.cursos.titulo;
+                } else {
+                  console.warn(`No se pudo obtener el nombre del curso para clase_id ${classId}. Mensaje: ${courseNameData.message || 'Desconocido'}`);
+                  fetchedCourseNames[classId] = "Curso no especificado";
+                }
+              } catch (courseError) {
+                console.error(`Error al obtener el nombre del curso para clase_id ${classId}:`, courseError);
+                fetchedCourseNames[classId] = "Error al cargar curso";
+              }
+            })
+          );
+        }
+        setCourseNamesById(fetchedCourseNames);
+        console.log("Nombres de cursos mapeados (fetchedCourseNames):", fetchedCourseNames);
+
+
+        // 4. Formatear los comentarios obtenidos, incluyendo el nombre del curso
+        const fetchedReviews = commentsData.comentarios.map((comment) => {
+          const user = mappedUsers[comment.usuario_id];
+          console.log(`Procesando comentario ID ${comment.id} - Usuario asociado:`, user);
+
+          // Lógica para construir el nombre completo
+          let fullName = "Usuario Desconocido";
+          if (user) {
+            if (user.nombre && user.apellido) {
+              fullName = `${user.nombre} ${user.apellido}`;
+            } else if (user.nombre) {
+              fullName = user.nombre;
+            } else if (user.apellido) {
+              fullName = user.apellido;
+            }
+          }
+
+          // Obtener el nombre del programa/curso
+          const programName = fetchedCourseNames[comment.clase_id] || "Programa no especificado";
+
+          return {
+            id: comment.id,
+            text: comment.contenido || "Sin comentario",
+            name: fullName,
+            program: programName,
+            image: user?.url_foto_perfil || null,
+          };
+        });
+        setReviews(fetchedReviews);
+      } catch (err) {
+        console.error("❌ Error al cargar testimonios destacados:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []); // Se ejecuta una vez al montar el componente
+
+  if (loading) {
     return (
-      <Box sx={{ p: 3, textAlign: "center" }}>
+      <Box sx={{ p: 3, textAlign: "left" }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2, display: 'inline-block' }}>Cargando testimonios destacados...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, textAlign: "left" }}>
+        <Alert severity="error">Error al cargar testimonios destacados: {error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <Box sx={{ py: 5, backgroundColor: "#fff", textAlign: "left" }}>
+        <Typography
+          variant="overline"
+          sx={{ color: "#666", textTransform: "uppercase" }}
+        >
+          Lo que dicen los estudiantes
+        </Typography>
+        <Typography variant="h3" sx={{ mb: 4 }}>
+          Opiniones reales sobre nuestros programas
+        </Typography>
         <Typography variant="h6" color="text.secondary">
-          No hay comentarios disponibles en este momento.
+          No hay testimonios destacados disponibles en este momento.
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ backgroundColor: "#ffffff" }}>
-      <Typography variant="overline" sx={{ color: "#666", textTransform: "uppercase" }}>
+    <Box sx={{ py: 5, backgroundColor: "#fff", textAlign: "left" }}>
+      <Typography
+        variant="overline"
+        sx={{ color: "#666", textTransform: "uppercase" }}
+      >
         Lo que dicen los estudiantes
       </Typography>
       <Typography variant="h3" sx={{ mb: 4 }}>
@@ -25,37 +206,69 @@ const TestimoniosSection = ({ reviews }) => {
 
       <Box
         sx={{
+          maxWidth: "1000px",
+          margin: "0 auto",
           display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          gap: 4,
+          flexWrap: "wrap",
+          justifyContent: { xs: "center", sm: "flex-start" },
+          gap: 3,
         }}
       >
         {reviews.map((review, idx) => (
           <Box
-            key={idx}
+            key={review.id || idx}
             sx={{
               backgroundColor: "#f4f4f4",
               borderRadius: 2,
               boxShadow: 1,
               p: 3,
-              flex: 1,
+              height: "auto",
+              minHeight: "200px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              width: { xs: "100%", sm: "calc(50% - 15px)", md: "calc(33.33% - 20px)" },
+              maxWidth: "300px",
+              textAlign: "left",
             }}
           >
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {review.text}
+            <Typography
+              variant="body1"
+              sx={{ mb: 2, fontStyle: "italic", color: "#444" }}
+            >
+              "{review.text}"
             </Typography>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Avatar>
-                <SchoolIcon />
+              <Avatar
+                src={review.image || undefined}
+                sx={{ width: 56, height: 56 }}
+              >
+                {!review.image && <SchoolIcon />}
+                {!review.image &&
+                  review.name &&
+                  review.name.charAt(0).toUpperCase()}
               </Avatar>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                   {review.name}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#666" }}>
-                  {review.program}
-                </Typography>
+                {/* Nuevo: Tooltip y estilo para limitar a 2 líneas */}
+                <Tooltip title={review.program} enterDelay={500}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#666",
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {review.program}
+                  </Typography>
+                </Tooltip>
               </Box>
             </Box>
           </Box>

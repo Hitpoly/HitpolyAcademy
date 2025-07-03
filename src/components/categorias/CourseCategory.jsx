@@ -9,6 +9,17 @@ import {
 import { useParams } from "react-router-dom";
 import CursoCard from "../cards/CursoCard"; // ¡Asegúrate de que esta ruta sea correcta!
 
+// --- SIMULACIÓN DE DATOS DEL PROFESOR (replicado de SectionCardGrid) ---
+// En un caso real, esto vendría de una API o un contexto compartido.
+// Aquí simulamos un mapeo de IDs de profesor a nombres.
+const mockInstructorNames = {
+  1: "Juan Pérez",
+  2: "María García",
+  3: "Profesor Delgado", // Nombre para el profesor_id: 3
+  4: "Ana López",
+  // Agrega más según necesites
+};
+
 const CourseCategory = () => {
   const { categoryName } = useParams(); // Obtiene el nombre de la categoría de la URL
   const [courses, setCourses] = useState([]);
@@ -37,7 +48,6 @@ const CourseCategory = () => {
         }
         const categoriesData = await categoriesResponse.json();
         
-        // **DEBUG**: Imprime la respuesta de categorías
         console.log("Respuesta de API de categorías:", categoriesData);
 
         if (categoriesData.status !== "success" || !Array.isArray(categoriesData.categorias)) {
@@ -54,7 +64,6 @@ const CourseCategory = () => {
           return;
         }
         
-        // **DEBUG**: Imprime la categoría encontrada
         console.log("Categoría encontrada:", foundCategory);
 
         // 2. Cargar todos los cursos
@@ -72,23 +81,17 @@ const CourseCategory = () => {
         }
         const coursesData = await coursesResponse.json();
 
-        // **DEBUG**: Imprime la respuesta de cursos (¡ESTE ES CLAVE!)
         console.log("Respuesta de API de cursos (directa):", coursesData); 
         
         let allFetchedCourses;
 
-        // **CORRECCIÓN CLAVE:** Verificamos la estructura real de tu JSON de cursos
-        // Basado en interacciones previas, a veces `cursos` está directamente, a veces anidado.
         if (coursesData.status === "success" && coursesData.cursos && Array.isArray(coursesData.cursos.cursos)) {
-            // Caso: Los cursos están en `coursesData.cursos.cursos`
             allFetchedCourses = coursesData.cursos.cursos;
             console.log("Cursos encontrados en coursesData.cursos.cursos:", allFetchedCourses);
         } else if (coursesData.status === "success" && Array.isArray(coursesData.cursos)) {
-            // Caso: Los cursos están directamente en `coursesData.cursos`
             allFetchedCourses = coursesData.cursos;
             console.log("Cursos encontrados en coursesData.cursos:", allFetchedCourses);
         } else {
-            // Si ninguna de las estructuras esperadas se cumple, lanza un error claro
             throw new Error(coursesData.message || "Datos de cursos inválidos: La estructura del array de cursos no es la esperada.");
         }
         
@@ -98,10 +101,24 @@ const CourseCategory = () => {
             String(curso.categoria_id) === String(foundCategory.id) &&
             curso.estado === "Publicado"
         );
-        setCourses(filteredCourses);
         
-        // **DEBUG**: Imprime los cursos filtrados
-        console.log("Cursos filtrados por categoría:", filteredCourses);
+        // Mapear los cursos para que coincidan con los props de CursoCard
+        const mappedCourses = filteredCourses.map(curso => ({
+            id: curso.id,
+            title: curso.titulo,
+            subtitle: curso.subtitulo,
+            banner: curso.portada_targeta,
+            accessLink: `/curso/${curso.id}`,
+            instructorName: mockInstructorNames[curso.profesor_id] || "Instructor Desconocido", // Usamos el mock
+            totalHours: curso.duracion_estimada,
+            price: `${curso.precio} ${curso.moneda}`,
+            level: curso.nivel,
+            classType: curso.tipo_clase || null, // Incluimos el tipo de clase
+        }));
+
+        setCourses(mappedCourses);
+        
+        console.log("Cursos filtrados y mapeados por categoría:", mappedCourses);
 
       } catch (err) {
         console.error("Error en CourseCategory:", err);
@@ -114,8 +131,8 @@ const CourseCategory = () => {
     if (categoryName) { // Solo ejecuta la carga si hay un categoryName en la URL
         fetchCategoryCourses();
     } else {
-        setLoading(false);
-        setError("Nombre de categoría no proporcionado en la URL.");
+      setLoading(false);
+      setError("Nombre de categoría no proporcionado en la URL.");
     }
   }, [categoryName]); // Vuelve a ejecutar este efecto cuando el `categoryName` en la URL cambia
 
@@ -155,12 +172,17 @@ const CourseCategory = () => {
       {courses.length > 0 ? (
         <Grid container spacing={3} justifyContent="center">
           {courses.map((curso) => (
-            <Grid item key={curso.id}> {/* Asegúrate de usar la key correcta, si tu API devuelve 'id_curso', úsalo */}
+            <Grid item key={curso.id}> 
               <CursoCard
-                title={curso.titulo}
-                subtitle={curso.descripcion_corta}
-                banner={curso.portada_targeta} // ¡Aquí la corrección! Usa 'url_banner'
-                accessLink={`/curso/${curso.id}`} // Ajusta si el ID del curso es diferente (ej. 'curso.id_curso')
+                title={curso.title}
+                subtitle={curso.subtitle}
+                banner={curso.banner}
+                accessLink={curso.accessLink}
+                instructorName={curso.instructorName}
+                totalHours={curso.totalHours}
+                price={curso.price}
+                level={curso.level}
+                classType={curso.classType} // Pasamos el tipo de clase
               />
             </Grid>
           ))}

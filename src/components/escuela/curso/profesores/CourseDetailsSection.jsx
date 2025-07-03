@@ -202,7 +202,7 @@ const CourseDetailsSection = ({
                 </TextField>
 
                 <TextField
-                    label="Duración Estimada"
+                    label="Duración"
                     name="duracion_estimada_valor"
                     value={formData.duracion_estimada_valor}
                     onChange={handleChange}

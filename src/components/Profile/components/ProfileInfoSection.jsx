@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -8,12 +8,8 @@ import {
   Stack,
   Link,
   IconButton,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  CircularProgress, // Para el indicador de carga
-  Alert, // Para mostrar mensajes de error/éxito
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -24,14 +20,12 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import SchoolIcon from "@mui/icons-material/School";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera"; // Icono para subir foto
-import Swal from "sweetalert2"; // Para alertas más amigables
-import axios from "axios"; // Asegúrate de tener axios instalado: npm install axios
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import Swal from "sweetalert2";
+import axios from "axios";
 
-// Importamos el hook de autenticación
-import { useAuth } from "../../../context/AuthContext"; // Ajusta la ruta si es necesario
+import { useAuth } from "../../../context/AuthContext";
 
-// Función auxiliar para validar URLs
 const isValidUrl = (string) => {
   try {
     new URL(string);
@@ -42,141 +36,116 @@ const isValidUrl = (string) => {
 };
 
 const ProfileInfoSection = () => {
-  const { user } = useAuth(); // Obtenemos el usuario del contexto
+  // Obtenemos el usuario y la función de login del contexto
+  const { user, login } = useAuth();
   const userId = user?.id; // Extraemos el id_usuario
 
-  const [profile, setProfile] = useState(null);
-  const [tempProfile, setTempProfile] = useState(null);
+  // Inicializamos 'profile' directamente con los datos del 'user' del AuthContext
+  // Si user es null (no autenticado), profile será null inicialmente.
+  // Mapeamos los nombres para que coincidan con la estructura interna del componente
+  const initialProfile = user
+    ? {
+        ...user,
+        bio: user.biografia || "", // 'bio' en el componente es 'biografia' en el contexto
+        avatar: user.url_foto_perfil || "/images/default-avatar.png", // 'avatar' en el componente es 'url_foto_perfil' en el contexto
+        cursosCulminados: user.cursosCulminados || [], // Asumir array vacío si no existe
+        url_linkedin: user.url_linkedin || "",
+        url_facebook: user.url_facebook || "",
+        url_instagram: user.url_instagram || "",
+        url_tiktok: user.url_tiktok || "",
+      }
+    : null;
+
+  const [profile, setProfile] = useState(initialProfile);
+  const [tempProfile, setTempProfile] = useState(null); // Usado para el modo edición
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // No hay carga inicial de API
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  // Estados para la carga de imagen de perfil
-  const [newAvatarFile, setNewAvatarFile] = useState(null); // Almacena el archivo de imagen seleccionado
-  const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null); // URL para previsualizar la nueva imagen
-  const [uploadingAvatar, setUploadingAvatar] = useState(false); // Indicador de carga para el avatar
+  const [newAvatarFile, setNewAvatarFile] = useState(null);
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Estados para errores de validación de URLs de redes sociales
   const [urlLinkedinError, setUrlLinkedinError] = useState(null);
   const [urlFacebookError, setUrlFacebookError] = useState(null);
   const [urlInstagramError, setUrlInstagramError] = useState(null);
+  const [urlTiktokError, setUrlTiktokError] = useState(null);
 
-  // Función para traer la información del alumno/profesor
-  const fetchProfile = useCallback(async () => {
-    if (!userId) {
-      setError("ID de usuario no disponible. Inicie sesión.");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      const response = await fetch(
-        "https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accion: "getAlumnoProfesor", id: userId }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error de red: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log("Datos del perfil recibidos:", data);
-
-      if (data.status === "success" && data.usuario) {
-        // Aseguramos que los campos existan y sean cadenas vacías si no vienen de la API
-        const fetchedProfile = {
-          ...data.usuario,
-          url_linkedin: data.usuario.url_linkedin || "",
-          url_facebook: data.usuario.url_facebook || "",
-          url_instagram: data.usuario.url_instagram || "",
-          bio: data.usuario.biografia || "", // Aquí asumo que "biografia" es el campo para la bio
-          avatar: data.usuario.url_foto_perfil || "/images/default-avatar.png",
-          cursosCulminados: [], // Mantener vacío si la API no los provee
-        };
-        setProfile(fetchedProfile);
-      } else {
-        setError(data.message || "No se encontró información del usuario.");
-      }
-    } catch (err) {
-      console.error("Error al obtener el perfil:", err);
-      setError(`No se pudo cargar el perfil: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]); // Dependencia del userId para que se ejecute cuando esté disponible
-
+  // Efecto para actualizar el 'profile' si el 'user' del contexto cambia
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (user) {
+      setProfile({
+        ...user,
+        bio: user.biografia || "",
+        avatar: user.url_foto_perfil || "/images/default-avatar.png",
+        cursosCulminados: user.cursosCulminados || [],
+        url_linkedin: user.url_linkedin || "",
+        url_facebook: user.url_facebook || "",
+        url_instagram: user.url_instagram || "",
+        url_tiktok: user.url_tiktok || "",
+      });
+    } else {
+      setProfile(null); // Si no hay usuario, el perfil es nulo
+    }
+  }, [user]); // Dependencia del objeto 'user' del AuthContext
 
-  // Función para subir el nuevo avatar a Cloudinary
   const uploadAvatarToCloudinary = async (file) => {
     const formDataImg = new FormData();
-    formDataImg.append('file', file);
+    formDataImg.append("file", file);
 
     try {
       setUploadingAvatar(true);
       const response = await axios.post(
-        'https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php',
+        "https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php",
         formDataImg,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      console.log('Cloudinary response:', response.data);
-
       if (response.data?.url) {
         return response.data.url;
       } else {
-        throw new Error('No se recibió una URL válida desde el backend de Cloudinary.');
+        throw new Error("No se recibió una URL válida desde el backend de Cloudinary.");
       }
     } catch (error) {
-      console.error('Error al subir el avatar:', error);
       Swal.fire({
-        icon: 'error',
-        title: 'Error al subir imagen',
-        text: 'Ocurrió un error al intentar subir la imagen de perfil.',
+        icon: "error",
+        title: "Error al subir imagen",
+        text: "Ocurrió un error al intentar subir la imagen de perfil.",
       });
-      throw error; // Propaga el error para que handleSaveClick lo capture
+      throw error;
     } finally {
       setUploadingAvatar(false);
     }
   };
 
   const handleEditClick = () => {
+    // Al entrar en modo edición, copiamos el perfil actual (que viene del contexto)
     setTempProfile({ ...profile });
     setEditMode(true);
     setSuccessMessage(null);
-    setNewAvatarFile(null); // Reiniciar el archivo de avatar cuando se entra en modo edición
-    setPreviewAvatarUrl(null); // Reiniciar la previsualización
-    // Limpiar errores de validación de URLs al entrar en modo edición
+    setNewAvatarFile(null);
+    setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
     setUrlFacebookError(null);
     setUrlInstagramError(null);
+    setUrlTiktokError(null);
   };
 
   const handleCancelClick = () => {
     setEditMode(false);
     setTempProfile(null);
     setError(null);
-    setNewAvatarFile(null); // Limpiar el archivo seleccionado
-    setPreviewAvatarUrl(null); // Limpiar la previsualización
-    // Limpiar errores de validación de URLs al cancelar
+    setNewAvatarFile(null);
+    setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
     setUrlFacebookError(null);
     setUrlInstagramError(null);
+    setUrlTiktokError(null);
   };
 
   const handleChange = (e) => {
@@ -186,18 +155,17 @@ const ProfileInfoSection = () => {
       [name]: value,
     }));
 
-    // Limpiar el error específico al escribir en el campo
     if (name === "url_linkedin") setUrlLinkedinError(null);
     if (name === "url_facebook") setUrlFacebookError(null);
     if (name === "url_instagram") setUrlInstagramError(null);
+    if (name === "url_tiktok") setUrlTiktokError(null);
   };
 
-  // Manejar la selección de un nuevo archivo de avatar
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setNewAvatarFile(file);
-      setPreviewAvatarUrl(URL.createObjectURL(file)); // Crear URL para previsualización
+      setPreviewAvatarUrl(URL.createObjectURL(file));
     } else {
       setNewAvatarFile(null);
       setPreviewAvatarUrl(null);
@@ -210,12 +178,11 @@ const ProfileInfoSection = () => {
       return;
     }
 
-    // --- Validación de URLs de redes sociales ---
     let hasValidationError = false;
-    // Limpiar errores previos
     setUrlLinkedinError(null);
     setUrlFacebookError(null);
     setUrlInstagramError(null);
+    setUrlTiktokError(null);
 
     if (tempProfile.url_linkedin && !isValidUrl(tempProfile.url_linkedin)) {
       setUrlLinkedinError("URL de LinkedIn inválida. Debe incluir 'http://' o 'https://'.");
@@ -229,43 +196,46 @@ const ProfileInfoSection = () => {
       setUrlInstagramError("URL de Instagram inválida. Debe incluir 'http://' o 'https://'.");
       hasValidationError = true;
     }
+    if (tempProfile.url_tiktok && !isValidUrl(tempProfile.url_tiktok)) {
+      setUrlTiktokError("URL de TikTok inválida. Debe incluir 'http://' o 'https://'.");
+      hasValidationError = true;
+    }
 
     if (hasValidationError) {
       Swal.fire({
-        icon: 'error',
-        title: 'Error de validación',
-        text: 'Por favor, corrige las URLs de redes sociales inválidas.',
+        icon: "error",
+        title: "Error de validación",
+        text: "Por favor, corrige las URLs de redes sociales inválidas.",
       });
-      return; // Detener el guardado si hay errores de validación
+      return;
     }
-    // --- Fin de validación ---
 
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
-    let finalAvatarUrl = tempProfile.avatar; // Por defecto, usa el avatar actual
+    let finalAvatarUrl = tempProfile.avatar;
 
     if (newAvatarFile) {
-      // Si se seleccionó un nuevo archivo de avatar, súbelo a Cloudinary
       try {
         finalAvatarUrl = await uploadAvatarToCloudinary(newAvatarFile);
       } catch (uploadError) {
         setLoading(false);
-        return; // Detener el proceso si la subida del avatar falla
+        return;
       }
     }
 
     try {
       const payload = {
         accion: "editar",
-        id: userId, // Usamos el ID del usuario logueado
+        id: userId,
         nombre: tempProfile.nombre,
         email: tempProfile.email,
-        url_linkedin: tempProfile.url_linkedin, // Usando el nombre correcto
-        url_facebook: tempProfile.url_facebook, // Usando el nombre correcto
-        url_instagram: tempProfile.url_instagram, // Usando el nombre correcto
+        url_linkedin: tempProfile.url_linkedin,
+        url_facebook: tempProfile.url_facebook,
+        url_instagram: tempProfile.url_instagram,
+        url_tiktok: tempProfile.url_tiktok,
         biografia: tempProfile.bio,
-        url_foto_perfil: finalAvatarUrl, // Usar la URL de Cloudinary o la URL existente
+        url_foto_perfil: finalAvatarUrl,
       };
 
       const response = await fetch(
@@ -283,48 +253,69 @@ const ProfileInfoSection = () => {
       }
 
       const data = await response.json();
-      console.log("Respuesta de edición:", data);
 
       if (data.status === "success") {
-        // Actualizar el perfil con los cambios guardados, incluyendo la nueva URL del avatar
+        // Actualizar el perfil en el estado local del componente
         setProfile({ ...tempProfile, avatar: finalAvatarUrl });
+
+        // AHORA: Actualizar el usuario en el AuthContext también
+        const updatedUserInContext = {
+          ...user, // Mantenemos los datos que no se editan (ej. id_tipo_usuario)
+          nombre: tempProfile.nombre,
+          email: tempProfile.email,
+          url_linkedin: tempProfile.url_linkedin,
+          url_facebook: tempProfile.url_facebook,
+          url_instagram: tempProfile.url_instagram,
+          url_tiktok: tempProfile.url_tiktok,
+          biografia: tempProfile.bio, // Asegurarse de que coincida con el nombre del contexto
+          url_foto_perfil: finalAvatarUrl, // Asegurarse de que coincida con el nombre del contexto
+        };
+        login(updatedUserInContext); // Esto actualizará el contexto y el localStorage
+
         setEditMode(false);
-        setNewAvatarFile(null); // Limpiar el archivo una vez guardado
-        setPreviewAvatarUrl(null); // Limpiar la previsualización
+        setNewAvatarFile(null);
+        setPreviewAvatarUrl(null);
         setSuccessMessage("¡Perfil actualizado con éxito!");
+        Swal.fire({
+          icon: "success",
+          title: "¡Éxito!",
+          text: "Perfil actualizado correctamente.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
         setError(data.message || "Hubo un error al guardar los cambios.");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.message || "No se pudieron guardar los cambios.",
+        });
       }
     } catch (err) {
-      console.error("Error al guardar el perfil:", err);
       setError(`Error al guardar: ${err.message}`);
+      Swal.fire({
+        icon: "error",
+        title: "Error de conexión",
+        text: "No se pudo conectar con el servidor para guardar los cambios.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', p: 3 }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Cargando perfil...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3, width: '100%', textAlign: 'center' }}>
-        <Alert severity="error">{error}</Alert>
-        <Button variant="outlined" sx={{ mt: 2 }} onClick={fetchProfile}>Reintentar</Button>
-      </Box>
-    );
-  }
-
+  // Si no hay usuario en el AuthContext, muestra un mensaje
   if (!profile) {
     return (
-      <Box sx={{ p: 3, width: '100%', textAlign: 'center' }}>
-        <Alert severity="warning">No se pudo cargar la información del perfil.</Alert>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+          p: 3,
+        }}
+      >
+        <Alert severity="info">Cargando información del usuario o no hay sesión iniciada.</Alert>
       </Box>
     );
   }
@@ -351,10 +342,9 @@ const ProfileInfoSection = () => {
           width: "100%",
         }}
       >
-        {/* Avatar y botón de subida */}
-        <Box sx={{ position: 'relative', mb: 3 }}>
+        <Box sx={{ position: "relative", mb: 3 }}>
           <Avatar
-            src={previewAvatarUrl || profile.avatar} // Muestra la previsualización si hay un nuevo archivo
+            src={previewAvatarUrl || profile.avatar}
             alt={profile.nombre}
             sx={{
               width: { xs: 150, sm: 150 },
@@ -365,16 +355,16 @@ const ProfileInfoSection = () => {
           />
           {editMode && (
             <IconButton
-              component="label" // Hacer que el botón actúe como label para el input file
+              component="label"
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: 0,
                 right: 0,
-                backgroundColor: '#6C4DE2',
-                color: 'white',
-                '&:hover': { backgroundColor: '#5a3bbd' },
+                backgroundColor: "#6C4DE2",
+                color: "white",
+                "&:hover": { backgroundColor: "#5a3bbd" },
               }}
-              disabled={uploadingAvatar} // Deshabilitar si se está subiendo una imagen
+              disabled={uploadingAvatar}
             >
               {uploadingAvatar ? (
                 <CircularProgress size={20} color="inherit" />
@@ -403,7 +393,10 @@ const ProfileInfoSection = () => {
               value={tempProfile.nombre}
               onChange={handleChange}
               variant="standard"
-              sx={{ '.MuiInput-underline:before': { borderBottom: 'none' }, '.MuiInput-underline:after': { borderBottom: 'none' } }}
+              sx={{
+                ".MuiInput-underline:before": { borderBottom: "none" },
+                ".MuiInput-underline:after": { borderBottom: "none" },
+              }}
             />
           ) : (
             profile.nombre
@@ -453,7 +446,7 @@ const ProfileInfoSection = () => {
                 {profile.email}
               </Typography>
             </Box>
-            {profile.url_linkedin && ( // Usando url_linkedin
+            {profile.url_linkedin && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <LinkedInIcon color="action" sx={{ fontSize: 24, color: "#6C4DE2" }} />
                 <Typography variant="body1">
@@ -461,7 +454,7 @@ const ProfileInfoSection = () => {
                     LinkedIn:
                   </Typography>{" "}
                   <Link
-                    href={profile.url_linkedin} // Usando url_linkedin
+                    href={profile.url_linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
@@ -470,12 +463,12 @@ const ProfileInfoSection = () => {
                       "&:hover": { textDecoration: "underline" },
                     }}
                   >
-                    {profile.url_linkedin.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")} {/* Usando url_linkedin para visualización */}
+                    {profile.url_linkedin.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")}
                   </Link>
                 </Typography>
               </Box>
             )}
-            {profile.url_facebook && ( // Usando url_facebook
+            {profile.url_facebook && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <FacebookIcon color="action" sx={{ fontSize: 24, color: "#6C4DE2" }} />
                 <Typography variant="body1">
@@ -483,7 +476,7 @@ const ProfileInfoSection = () => {
                     Facebook:
                   </Typography>{" "}
                   <Link
-                    href={profile.url_facebook} // Usando url_facebook
+                    href={profile.url_facebook}
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
@@ -492,12 +485,12 @@ const ProfileInfoSection = () => {
                       "&:hover": { textDecoration: "underline" },
                     }}
                   >
-                    {profile.url_facebook.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")} {/* Usando url_facebook para visualización */}
+                    {profile.url_facebook.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")}
                   </Link>
                 </Typography>
               </Box>
             )}
-            {profile.url_instagram && ( // Usando url_instagram
+            {profile.url_instagram && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <InstagramIcon color="action" sx={{ fontSize: 24, color: "#6C4DE2" }} />
                 <Typography variant="body1">
@@ -505,7 +498,7 @@ const ProfileInfoSection = () => {
                     Instagram:
                   </Typography>{" "}
                   <Link
-                    href={profile.url_instagram} // Usando url_instagram
+                    href={profile.url_instagram}
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
@@ -514,7 +507,33 @@ const ProfileInfoSection = () => {
                       "&:hover": { textDecoration: "underline" },
                     }}
                   >
-                    {profile.url_instagram.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")} {/* Usando url_instagram para visualización */}
+                    {profile.url_instagram.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")}
+                  </Link>
+                </Typography>
+              </Box>
+            )}
+            {profile.url_tiktok && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <img
+                  src="/images/tiktok-icon.png"
+                  alt="TikTok"
+                  style={{ width: 24, height: 24, filter: 'grayscale(100%) brightness(0) invert(1) sepia(1) saturate(5000%) hue-rotate(250deg)' }}
+                />
+                <Typography variant="body1">
+                  <Typography component="span" fontWeight="bold">
+                    TikTok:
+                  </Typography>{" "}
+                  <Link
+                    href={profile.url_tiktok}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      color: "#1976d2",
+                      textDecoration: "none",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    {profile.url_tiktok.replace(/(^\w+:|^)\/\//, "").replace(/\/$/, "")}
                   </Link>
                 </Typography>
               </Box>
@@ -536,7 +555,7 @@ const ProfileInfoSection = () => {
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#333" }}>
                   Cursos Culminados
                 </Typography>
-                <List dense>
+                {/* <List dense>
                   {profile.cursosCulminados.map((course) => (
                     <ListItem key={course.id} disablePadding>
                       <ListItemIcon sx={{ minWidth: 36 }}>
@@ -545,7 +564,8 @@ const ProfileInfoSection = () => {
                       <ListItemText primary={course.titulo} />
                     </ListItem>
                   ))}
-                </List>
+                </List> */}
+                <Alert severity="info">La lista de cursos culminados no está implementada en este perfil.</Alert>
               </Box>
             )}
           </Stack>
@@ -562,36 +582,47 @@ const ProfileInfoSection = () => {
             />
             <TextField
               label="Perfil de LinkedIn"
-              name="url_linkedin" // Nombre correcto
-              value={tempProfile.url_linkedin} // Valor correcto
+              name="url_linkedin"
+              value={tempProfile.url_linkedin}
               onChange={handleChange}
               fullWidth
               type="url"
               variant="outlined"
-              error={!!urlLinkedinError} // Error correcto
-              helperText={urlLinkedinError} // Mensaje de error correcto
+              error={!!urlLinkedinError}
+              helperText={urlLinkedinError}
             />
             <TextField
               label="Perfil de Facebook"
-              name="url_facebook" // Nombre correcto
-              value={tempProfile.url_facebook} // Valor correcto
+              name="url_facebook"
+              value={tempProfile.url_facebook}
               onChange={handleChange}
               fullWidth
               type="url"
               variant="outlined"
-              error={!!urlFacebookError} // Error correcto
-              helperText={urlFacebookError} // Mensaje de error correcto
+              error={!!urlFacebookError}
+              helperText={urlFacebookError}
             />
             <TextField
               label="Perfil de Instagram"
-              name="url_instagram" // Nombre correcto
-              value={tempProfile.url_instagram} // Valor correcto
+              name="url_instagram"
+              value={tempProfile.url_instagram}
               onChange={handleChange}
               fullWidth
               type="url"
               variant="outlined"
-              error={!!urlInstagramError} // Error correcto
-              helperText={urlInstagramError} // Mensaje de error correcto
+              error={!!urlInstagramError}
+              helperText={urlInstagramError}
+            />
+            <TextField
+              label="Perfil de TikTok"
+              name="url_tiktok"
+              value={tempProfile.url_tiktok || ""}
+              onChange={handleChange}
+              fullWidth
+              type="url"
+              variant="outlined"
+              error={!!urlTiktokError}
+              helperText={urlTiktokError}
             />
             <TextField
               label="Biografía"

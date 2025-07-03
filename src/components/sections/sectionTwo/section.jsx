@@ -51,6 +51,8 @@ const SectionTwo = () => {
   const [coursesByCategory, setCoursesByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Añadido: Estado para almacenar los nombres de los profesores
+  const [instructorNamesMap, setInstructorNamesMap] = useState({});
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -79,6 +81,7 @@ const SectionTwo = () => {
           ),
         ]);
 
+        // --- Procesamiento de Categorías ---
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           throw new Error(
@@ -95,6 +98,7 @@ const SectionTwo = () => {
           );
         }
 
+        // --- Procesamiento de Cursos ---
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
           throw new Error(
@@ -102,14 +106,16 @@ const SectionTwo = () => {
           );
         }
         const coursesData = await coursesResponse.json();
-        
-        // **CORRECCIÓN CLAVE AQUÍ:** Validar la estructura anidada de `cursos`
+
         if (
           coursesData.status !== "success" ||
-          !coursesData.cursos || // Asegura que la propiedad 'cursos' exista como objeto
-          !Array.isArray(coursesData.cursos.cursos) // Accede a la propiedad anidada 'cursos' que contiene el array
+          !coursesData.cursos ||
+          !Array.isArray(coursesData.cursos.cursos)
         ) {
-          throw new Error(coursesData.message || "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada.");
+          throw new Error(
+            coursesData.message ||
+              "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada."
+          );
         }
 
         const categoryMap = categoriesData.categorias.reduce((map, cat) => {
@@ -117,14 +123,55 @@ const SectionTwo = () => {
           return map;
         }, {});
 
-        // **CORRECCIÓN CLAVE AQUÍ:** Filtrar el array anidado `cursos`
-        const publishedShortCourses = coursesData.cursos.cursos.filter( // Accede a la propiedad anidada 'cursos'
+        // Filtrar por estado "Publicado" Y por duración (un mes o menos)
+        const publishedShortCourses = coursesData.cursos.cursos.filter(
           (curso) => {
             const isPublished = curso.estado === "Publicado";
             const durationInDays = parseDurationToDays(curso.duracion_estimada);
-            return isPublished && (durationInDays === null || durationInDays <= 30);
+            // Si durationInDays es null (formato no reconocido), se excluye.
+            // Si es un número, se comprueba que sea menor o igual a 30 días.
+            return isPublished && (durationInDays !== null && durationInDays <= 30);
           }
         );
+
+        // --- Recolectar IDs de profesores únicos y cargar sus nombres ---
+        const uniqueInstructorIds = [...new Set(publishedShortCourses.map(curso => curso.profesor_id))];
+        const instructorPromises = uniqueInstructorIds.map(async (id) => {
+          try {
+            const instructorResponse = await fetch(
+              "https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accion: "getAlumnoProfesor", id: id }),
+              }
+            );
+            if (!instructorResponse.ok) {
+              console.error(`Error al cargar el profesor con ID ${id}: ${instructorResponse.statusText}`);
+              return { id, name: "Instructor Desconocido" };
+            }
+            const instructorData = await instructorResponse.json();
+            if (instructorData.status === "success" && instructorData.usuario) {
+              return {
+                id,
+                name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`
+              };
+            } else {
+              console.warn(`Datos de profesor inválidos para ID ${id}:`, instructorData.message);
+              return { id, name: "Instructor Desconocido" };
+            }
+          } catch (fetchErr) {
+            console.error(`Fallo en la petición del profesor con ID ${id}:`, fetchErr);
+            return { id, name: "Instructor Desconocido" };
+          }
+        });
+
+        const resolvedInstructors = await Promise.all(instructorPromises);
+        const newInstructorNamesMap = resolvedInstructors.reduce((map, instructor) => {
+          map[instructor.id] = instructor.name;
+          return map;
+        }, {});
+        setInstructorNamesMap(newInstructorNamesMap); // Guarda el mapa de nombres de profesores
 
         const organizedCourses = publishedShortCourses.reduce((acc, curso) => {
           const categoryName =
@@ -133,12 +180,21 @@ const SectionTwo = () => {
           if (!acc[categoryName]) {
             acc[categoryName] = [];
           }
+
           acc[categoryName].push({
             id: curso.id,
             title: curso.titulo,
             subtitle: curso.subtitulo,
             banner: curso.portada_targeta,
             accessLink: `/curso/${curso.id}`,
+            instructorName: newInstructorNamesMap[curso.profesor_id] || "Instructor Desconocido",
+            // Los siguientes campos se extraen directamente del objeto 'curso' de la API
+            rating: curso.valoracion || null, // Asumiendo que 'valoracion' es el campo del rating
+            reviews: curso.numero_resenas || null, // Asumiendo que 'numero_resenas' es el campo de reviews
+            students: curso.total_estudiantes || null, // Asumiendo que 'total_estudiantes' es el campo de estudiantes
+            totalHours: curso.duracion_estimada, // Este ya estaba correcto
+            price: `${curso.precio} ${curso.moneda}`, // Este ya estaba correcto
+            level: curso.nivel || null, // Asumiendo que 'nivel' es el campo de nivel
           });
           return acc;
         }, {});
@@ -157,7 +213,7 @@ const SectionTwo = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // El efecto se ejecuta una sola vez al montar el componente
 
   const categoryNames = useMemo(
     () => Object.keys(coursesByCategory),

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 
@@ -6,36 +6,89 @@ import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { Box, Typography, Button, TextField } from "@mui/material";
+import { Box, Typography, Button, CircularProgress, Tooltip } from "@mui/material"; // Eliminado TextField ya que no se usa directamente aquí
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
-const slideData = [
-  {
-    id: 1,
-    title: "Máster Full: Setter de Élite internacional.",
-    description:
-      "Conviértete en un Setter de Élite, genera ganancias mientras aprendes y asegura un empleo 100% remoto, con empresas de nivel internacional.",
-    backgroundImage: "/images/Appointment1.jpg",
-  },
-  {
-    id: 2,
-    title: "Máster Full: Closer de Ventas Especializado.",
-    description:
-      "Domina las técnicas psicológicas del consumidor y multiplica tus oportunidades de capitalización trabajando con empresas internacionales.",
-    backgroundImage: "/images/Appointment4.jpg",
-  },
-  {
-    id: 3,
-    title: "Máster Full: Desarrollo Web con IA (Avanzado)",
-    description:
-      "Aprende a construir soluciones web innovadoras con Inteligencia Artificial y trabaja con empresas de nivel Internacional.",
-    backgroundImage: "/images/Appointment2.jpg",
-  },
-];
+// Importa el nuevo componente
+import EmailSubscriptionForm from "../forms/EmailSubscriptionForm"; // Asegúrate de que la ruta sea correcta
 
 const PortadaOne = () => {
   const swiperRef = useRef(null);
   const navigationNextRef = useRef(null);
+
+  const [slideData, setSlideData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchFeaturedCourses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log("fetchFeaturedCourses: Iniciando carga de cursos destacados desde la API...");
+      const response = await fetch(
+        "https://apiacademy.hitpoly.com/ajax/traerCursosDestacadosController.php",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accion: "getCursosDestacados" }),
+        }
+      );
+
+      console.log("fetchFeaturedCourses: Respuesta HTTP recibida:", response);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `fetchFeaturedCourses (ERROR HTTP): La respuesta de la red no fue OK. Estado: ${response.status}, Texto:`,
+          errorText
+        );
+        throw new Error(
+          `Error al cargar cursos destacados: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("fetchFeaturedCourses: Datos JSON parseados de la respuesta:", data);
+
+      if (data.status === "success" && Array.isArray(data.cursos)) {
+        const formattedSlides = data.cursos.map((curso) => ({
+          id: curso.id,
+          title: curso.titulo,
+          description: curso.subtitulo,
+          backgroundImage: curso.portada_targeta,
+        }));
+        setSlideData(formattedSlides);
+        console.log("fetchFeaturedCourses: Cursos destacados cargados y formateados exitosamente.", formattedSlides);
+      } else {
+        console.error(
+          "fetchFeaturedCourses: Formato de respuesta inesperado para cursos destacados. data.status:",
+          data.status,
+          "Array.isArray(data.cursos):",
+          Array.isArray(data.cursos),
+          "Mensaje:",
+          data.message,
+          "Contenido completo de data:",
+          data
+        );
+        throw new Error(
+          data.message || "Formato de respuesta de cursos destacados inválido."
+        );
+      }
+    } catch (err) {
+      console.error(
+        "fetchFeaturedCourses (Catch): Error inesperado durante la carga de cursos destacados:",
+        err
+      );
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      console.log("fetchFeaturedCourses: Proceso de carga finalizado. Loading: false.");
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeaturedCourses();
+  }, [fetchFeaturedCourses]);
 
   useEffect(() => {
     if (
@@ -50,7 +103,58 @@ const PortadaOne = () => {
       swiperRef.current.navigation.init();
       swiperRef.current.navigation.update();
     }
-  }, []);
+  }, [slideData]);
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        sx={{ backgroundColor: "rgba(0, 0, 0, 0.85)", color: "white" }}
+      >
+        <CircularProgress color="inherit" />
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          Cargando cursos destacados...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        sx={{ backgroundColor: "rgba(0, 0, 0, 0.85)", color: "white", p: 3 }}
+      >
+        <Typography color="error" variant="h6" textAlign="center">
+          Error al cargar los cursos destacados: {error}
+        </Typography>
+        <Button onClick={fetchFeaturedCourses} variant="contained" sx={{ mt: 2 }}>
+          Reintentar
+        </Button>
+      </Box>
+    );
+  }
+
+  if (slideData.length === 0) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        sx={{ backgroundColor: "rgba(0, 0, 0, 0.85)", color: "white" }}
+      >
+        <Typography variant="h6">No hay cursos destacados disponibles en este momento.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -88,7 +192,11 @@ const PortadaOne = () => {
                 height: "100vh",
                 backgroundImage: `url(${slide.backgroundImage})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center",
+                backgroundPosition: {
+                  xs: "center 20%",
+                  sm: "center 30%",
+                  md: "center",
+                },
                 backgroundRepeat: "no-repeat",
                 display: "flex",
                 alignItems: "flex-end",
@@ -121,60 +229,55 @@ const PortadaOne = () => {
                   mr: { xs: 2, md: 0 },
                 }}
               >
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: "1.8rem", sm: "2.2rem", md: "2.5rem" },
-                    color: "#333",
-                  }}
-                >
-                  {slide.title}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: "1rem", sm: "1.1rem" },
-                    color: "#555",
-                  }}
-                >
-                  {slide.description}
-                </Typography>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: { xs: "column", sm: "row" },
-                    gap: 2,
-                    mt: 2,
-                    alignItems: { xs: "stretch", sm: "flex-start" },
-                    justifyContent: { xs: "center", sm: "flex-start" },
-                  }}
-                >
-                  <TextField
-                    label="Tu correo electrónico"
-                    variant="outlined"
-                    type="email"
-                    size="small"
+                {/* Título con límite de líneas y Tooltip */}
+                <Tooltip title={slide.title} placement="top">
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    gutterBottom
                     sx={{
-                      flexGrow: 1,
-                      maxWidth: { xs: "100%", sm: 250 },
-                    }}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    sx={{
-                      backgroundColor: "#F21C63",
-                      minWidth: { xs: "100%", sm: "auto" },
+                      fontSize: { xs: "1.8rem", sm: "2.2rem", md: "2.5rem" },
+                      color: "#333",
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2, // ¡CAMBIO AQUÍ: de 3 a 2 líneas!
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: "1.2em",
+                      minHeight: "2.4em", // Ajustar minHeight para 2 líneas (1.2em * 2)
                     }}
                   >
-                    Regístrate ahora
-                  </Button>
-                </Box>
+                    {slide.title}
+                  </Typography>
+                </Tooltip>
+
+                {/* Subtítulo con límite de líneas y Tooltip */}
+                {slide.description && (
+                  <Tooltip title={slide.description} placement="bottom">
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{
+                        fontSize: { xs: "1rem", sm: "1.1rem" },
+                        color: "#555",
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 3,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        lineHeight: "1.4em",
+                        minHeight: "4.2em",
+                      }}
+                    >
+                      {slide.description}
+                    </Typography>
+                  </Tooltip>
+                )}
+
+                {/* Pasamos slide.id como prop */}
+                <EmailSubscriptionForm idCursoDestacado={slide.id} />
+
               </Box>
             </Box>
           </SwiperSlide>

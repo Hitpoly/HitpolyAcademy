@@ -13,53 +13,57 @@ import {
   Divider,
   Paper,
   Alert,
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import BookIcon from '@mui/icons-material/Book'; // Importa BookIcon
 import ListaDeCategorias from "./components/MenuHamburguesa";
 import TemporaryDrawer from "./components/drawer";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import SequencePopup from "../../components/popups/SequencePopup";
 
-// Define los pasos específicos para la secuencia del popup "Soy Afiliado"
-const affiliateSteps = [
-  {
-    title: "¡Bienvenido al Panel de Afiliados!",
-    description: "Aquí te explicaremos cómo funciona nuestro programa de afiliados y cómo puedes empezar a ganar comisiones.",
-    videoUrl: "/videos/afiliado_intro.mp4"
-  },
-  {
-    title: "Genera tu Enlace Único",
-    description: "Cada afiliado tiene un enlace de referencia personal. Asegúrate de usarlo para que podamos rastrear tus ventas.",
-    videoUrl: "/videos/afiliado_link.mp4"
-  },
-  {
-    title: "Materiales de Marketing",
-    description: "Accede a nuestros recursos de marketing: banners, textos preescritos y guías para maximizar tus conversiones.",
-    videoUrl: "/videos/afiliado_marketing.mp4"
-  },
-  {
-    title: "Preguntas Frecuentes y Soporte",
-    description: "Si tienes dudas, consulta nuestra sección de FAQ o contacta a nuestro equipo de soporte para ayuda personalizada.",
-    videoUrl: "/videos/afiliado_faq.mp4"
-  },
-  {
-    title: "¡Comienza a Ganar!",
-    description: "Estás listo para promover y monetizar tu influencia. ¡Te deseamos mucho éxito en tu camino como afiliado!",
-    videoUrl: "/videos/afiliado_final.mp4"
-  },
-];
+// ... (resto de tu código, affiliateSteps, y funciones)
 
 const MenuDeNavegacion = () => {
+
+ const affiliateSteps = [ // ¡ESTA ES LA CLAVE!
+    {
+      title: "¡Bienvenido al Panel de Afiliados!",
+      description: "Aquí te explicaremos cómo funciona nuestro programa de afiliados y cómo puedes empezar a ganar comisiones.",
+      videoUrl: "/videos/afiliado_intro.mp4"
+    },
+    {
+      title: "Genera tu Enlace Único",
+      description: "Cada afiliado tiene un enlace de referencia personal. Asegúrate de usarlo para que podamos rastrear tus ventas.",
+      videoUrl: "/videos/afiliado_link.mp4"
+    },
+    {
+      title: "Materiales de Marketing",
+      description: "Accede a nuestros recursos de marketing: banners, textos preescritos y guías para maximizar tus conversiones.",
+      videoUrl: "/videos/afiliado_marketing.mp4"
+    },
+    {
+      title: "Preguntas Frecuentes y Soporte",
+      description: "Si tienes dudas, consulta nuestra sección de FAQ o contacta a nuestro equipo de soporte para ayuda personalizada.",
+      videoUrl: "/videos/afiliado_faq.mp4"
+    },
+    {
+      title: "¡Comienza a Ganar!",
+      description: "Estás listo para promover y monetizar tu influencia. ¡Te deseamos mucho éxito en tu camino como afiliado!",
+      videoUrl: "/videos/afiliado_final.mp4"
+    },
+  ];
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAffiliatePopupOpen, setIsAffiliatePopupOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- Estados y Refs para la Búsqueda ---
   const [searchTerm, setSearchTerm] = useState('');
   const [allCourses, setAllCourses] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
@@ -68,9 +72,9 @@ const MenuDeNavegacion = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
 
-  const searchBoxRef = useRef(null);
+  // Eliminamos searchBoxRef ya que usaremos onBlur/onFocus del TextField
+  // const searchBoxRef = useRef(null); 
 
-  // --- Funciones del Menú Principal ---
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
   };
@@ -96,16 +100,21 @@ const MenuDeNavegacion = () => {
   };
 
   const handleAffiliateSequenceComplete = () => {
-    // Aquí puedes añadir lógica adicional si es necesario después de completar la secuencia
     handleCloseAffiliatePopup();
   };
 
-  // Función para navegar a la página de inicio
   const handleGoHome = () => {
     navigate('/');
   };
 
-  // --- Lógica para la Carga de Datos de Búsqueda (Cursos y Categorías) ---
+  const handleCreateCourseClick = () => {
+    navigate("/datos-de-curso");
+  };
+
+  const handleMyCoursesClick = () => {
+    navigate("/mis-cursos");
+  };
+
   useEffect(() => {
     const fetchDataForSearch = async () => {
       setLoadingSearchData(true);
@@ -147,7 +156,7 @@ const MenuDeNavegacion = () => {
           );
         }
         const newCategoryMap = categoriesData.categorias.reduce((map, cat) => {
-          map[cat.id] = cat.nombre; 
+          map[cat.id] = cat.nombre;
           return map;
         }, {});
         setCategoryMap(newCategoryMap);
@@ -160,15 +169,14 @@ const MenuDeNavegacion = () => {
           );
         }
         const coursesData = await coursesResponse.json();
-        
+
         let fetchedCoursesArray;
-        // La lógica para extraer los cursos es más robusta aquí
         if (coursesData.status === "success" && coursesData.cursos && Array.isArray(coursesData.cursos.cursos)) {
-            fetchedCoursesArray = coursesData.cursos.cursos;
+          fetchedCoursesArray = coursesData.cursos.cursos;
         } else if (coursesData.status === "success" && Array.isArray(coursesData.cursos)) {
-            fetchedCoursesArray = coursesData.cursos;
+          fetchedCoursesArray = coursesData.cursos;
         } else {
-            throw new Error(coursesData.message || "Datos de cursos inválidos para búsqueda: La estructura del array de cursos no es la esperada.");
+          throw new Error(coursesData.message || "Datos de cursos inválidos para búsqueda: La estructura del array de cursos no es la esperada.");
         }
 
         const publishedCourses = fetchedCoursesArray.filter(
@@ -186,7 +194,6 @@ const MenuDeNavegacion = () => {
     fetchDataForSearch();
   }, []);
 
-  // --- Lógica de Filtrado de Búsqueda ---
   useEffect(() => {
     if (loadingSearchData) return;
 
@@ -213,43 +220,56 @@ const MenuDeNavegacion = () => {
     }
   }, [searchTerm, allCourses, categoryMap, loadingSearchData]);
 
+
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
-    setIsSearchActive(true);
+    setIsSearchActive(true); // Activar cuando se escribe
   };
 
   const handleSearchFocus = () => {
-    if (searchTerm !== '') {
-        setIsSearchActive(true);
-    }
+    setIsSearchActive(true); // Activar cuando el input gana foco
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
-        setIsSearchActive(false);
-        setSearchTerm(''); 
-        setFilteredCourses([]);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  const handleSearchBlur = () => {
+    // Retrasa el cierre para dar tiempo al clic en los resultados.
+    // Si no haces esto, al hacer clic en un ListItem, el TextField pierde el foco
+    // antes de que el onClick del ListItem se dispare, cerrando el Paper.
+    setTimeout(() => {
+      setIsSearchActive(false);
+      // Opcional: No limpiar searchTerm y filteredCourses aquí si quieres que
+      // los resultados permanezcan visibles hasta que se escriba algo nuevo
+      // o se haga focus de nuevo. Si quieres limpiar siempre, mantenlos.
+      setSearchTerm('');
+      setFilteredCourses([]);
+    }, 100); // Pequeño retraso, ajustable si es necesario
+  };
+
+  // Eliminamos el useEffect que manejaba el clic fuera
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
+  //       setIsSearchActive(false);
+  //       setSearchTerm('');
+  //       setFilteredCourses([]);
+  //     }
+  //   };
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //   };
+  // }, []);
 
   const getCategoryName = (categoryId) => {
     return categoryMap[categoryId] || 'Categoría Desconocida';
   };
 
   const handleCourseClick = (course) => {
-      navigate(`/curso/${course.id}`);
-      setIsSearchActive(false); 
-      setSearchTerm(''); 
-      setFilteredCourses([]); 
+    navigate(`/curso/${course.id}`);
+    setIsSearchActive(false); // Cierra los resultados al navegar
+    setSearchTerm(''); // Limpia el término de búsqueda
+    setFilteredCourses([]); // Limpia los resultados
   };
 
-  // Determinar si NO estamos en la página de inicio
   const isNotHomePage = location.pathname !== '/';
 
   return (
@@ -271,18 +291,15 @@ const MenuDeNavegacion = () => {
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
-          {/* Ícono de Casa - Visible solo si NO estamos en la página de inicio */}
           {isNotHomePage && (
             <IconButton onClick={handleGoHome} color="primary" aria-label="ir al inicio">
               <HomeIcon />
             </IconButton>
           )}
-          {/* Ícono de Menú Hamburguesa */}
           <IconButton onClick={toggleDrawer(true)} color="inherit">
             <MenuIcon />
           </IconButton>
-          {/* Campo de Búsqueda */}
-          <Box sx={{ position: 'relative' }} ref={searchBoxRef}>
+          <Box sx={{ position: 'relative' }}> {/* searchBoxRef ya no es necesario aquí */}
             <TextField
               sx={{ display: { xs: "none", md: "flex" } }}
               size="small"
@@ -290,7 +307,8 @@ const MenuDeNavegacion = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={handleSearchChange}
-              onFocus={handleSearchFocus}
+              onFocus={handleSearchFocus} // <-- Agregado onFocus
+              onBlur={handleSearchBlur}   // <-- Agregado onBlur
             />
             {isSearchActive && (searchTerm !== '' || (filteredCourses.length > 0 && !loadingSearchData)) && (
                 <Paper
@@ -304,7 +322,7 @@ const MenuDeNavegacion = () => {
                       overflowY: 'auto',
                       boxShadow: 3,
                       backgroundColor: 'white',
-                      minWidth: 550,
+                      minWidth: 600,
                       width: 'auto',
                     }}
                 >
@@ -334,6 +352,8 @@ const MenuDeNavegacion = () => {
                                     <ListItem
                                         alignItems="flex-start"
                                         onClick={() => handleCourseClick(course)}
+                                        // Importante: para que el onBlur no se dispare y cierre antes de hacer clic
+                                        onMouseDown={(e) => e.preventDefault()}
                                     >
                                         <ListItemText
                                             primary={
@@ -405,30 +425,79 @@ const MenuDeNavegacion = () => {
             <Box
               sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 2 }}
             >
-              <IconButton
-                color="secondary"
-                onClick={handleOpenAffiliatePopup}
-                sx={{
-                  border: '1px solid #1976d2',
-                  borderRadius: '50%',
-                  width: 40,
-                  height: 40,
-                  p: 0,
-                  '&:hover': {
-                    backgroundColor: '#e3f2fd',
-                  }
-                }}
-              >
-                <EmojiEventsIcon fontSize="small" />
-              </IconButton>
-              <TemporaryDrawer />
+              {(userRole === 1 || userRole === 2) && (
+                <Tooltip title="Crear curso">
+                  <IconButton
+                    color="primary"
+                    onClick={handleCreateCourseClick}
+                    sx={{
+                      border: '1px solid #1976d2',
+                      borderRadius: '50%',
+                      width: 40,
+                      height: 40,
+                      p: 0,
+                      '&:hover': {
+                        backgroundColor: '#e3f2fd',
+                      }
+                    }}
+                    aria-label="Crear nuevo curso"
+                  >
+                    <AddCircleOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {(userRole === 1 || userRole === 2) && (
+                <Tooltip title="Mis cursos">
+                  <IconButton
+                    color="primary"
+                    onClick={handleMyCoursesClick}
+                    sx={{
+                      border: '1px solid #1976d2',
+                      borderRadius: '50%',
+                      width: 40,
+                      height: 40,
+                      p: 0,
+                      '&:hover': {
+                        backgroundColor: '#e3f2fd',
+                      }
+                    }}
+                    aria-label="Ir a mis cursos"
+                  >
+                    <BookIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              <Tooltip title="Afiliado">
+                <IconButton
+                  color="secondary"
+                  onClick={handleOpenAffiliatePopup}
+                  sx={{
+                    border: '1px solid #1976d2',
+                    borderRadius: '50%',
+                    width: 40,
+                    height: 40,
+                    p: 0,
+                    '&:hover': {
+                      backgroundColor: '#e3f2fd',
+                    }
+                  }}
+                >
+                  <EmojiEventsIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Perfil">
+                <TemporaryDrawer />
+              </Tooltip>
             </Box>
           )}
         </Box>
       </Box>
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         <Box
-          sx={{ width:250 }}
+          sx={{ width: 250 }}
           role="presentation"
         >
           <ListaDeCategorias onCloseDrawer={handleCloseDrawer} />

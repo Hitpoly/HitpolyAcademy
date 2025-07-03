@@ -11,78 +11,6 @@ import CenteredCallToAction from "../../components/banners/llamadoALaAccion";
 import Footer from "../../components/footer/pieDePagina";
 import InteractiveBoxes from "../../components/sections/seccionesEducativas/InteractiveBoxes";
 
-const alumnosData = [
-  {
-    img: "/images/Foto1.jpg",
-    nombre: "Sofía García",
-    linkedin: "https://www.linkedin.com/in/sofia-garcia-ejemplo1",
-  },
-  {
-    img: "/images/Foto2.png",
-    nombre: "Mateo Sánchez",
-    linkedin: "https://www.linkedin.com/in/mateo-sanchez-ejemplo2",
-  },
-  {
-    img: "/images/Foto3.jpg",
-    nombre: "Valentina Díaz",
-    linkedin: "https://www.linkedin.com/in/isabella-vargas-ejemplo4",
-  },
-  {
-    img: "/images/Foto4.png",
-    nombre: "Sebastián Ruiz",
-    linkedin: "https://www.linkedin.com/in/sebastian-ruiz-ejemplo3",
-  },
-  {
-    img: "/images/Foto5.png",
-    nombre: "Isabella Vargas",
-    linkedin: "https://www.linkedin.com/in/isabella-vargas-ejemplo4",
-  },
-  {
-    img: "/images/Foto6.png",
-    nombre: "Diego Torres",
-    linkedin: "https://www.linkedin.com/in/isabella-vargas-ejemplo4",
-  },
-  {
-    img: "/images/Foto7.png",
-    nombre: "Camila López",
-    linkedin: "https://www.linkedin.com/in/camila-lopez-ejemplo5",
-  },
-  {
-    img: "/images/Foto8.png",
-    nombre: "Daniel Castro",
-    linkedin: "https://www.linkedin.com/in/daniel-castro-ejemplo6",
-  },
-  {
-    img: "/images/Foto9.png",
-    nombre: "Luciana Morales",
-    linkedin: "https://www.linkedin.com/in/isabella-vargas-ejemplo4",
-  },
-  {
-    img: "/images/Foto10.png",
-    nombre: "Javier Herrera",
-    linkedin: "https://www.linkedin.com/in/javier-herrera-ejemplo7",
-  },
-  {
-    img: "/images/Foto13.jpg",
-    nombre: "Mariana Gómez",
-    linkedin: "https://www.linkedin.com/in/mariana-gomez-ejemplo8",
-  },
-  {
-    img: "/images/Foto14.png",
-    nombre: "Alejandro Flores",
-    linkedin: "https://www.linkedin.com/in/isabella-vargas-ejemplo4",
-  },
-  {
-    img: "/images/Foto12.png",
-    nombre: "Valeria Rojas",
-    linkedin: "https://www.linkedin.com/in/valeria-rojas-ejemplo9",
-  },
-  {
-    img: "/images/Foto11.jpg",
-    nombre: "Emiliano Pérez",
-    linkedin: "https://www.linkedin.com/in/emiliano-perez-ejemplo10",
-  },
-];
 
 function Inicio() {
   return (
@@ -122,7 +50,7 @@ function Inicio() {
               textAlign: { xs: "center", sm: "left" }, // Centrar texto en móvil, alinear a la izquierda en desktop
             }}
           >
-            Alumnos Activos
+            Comunidad Activa
           </Typography>
         </Box>
         <Box
@@ -132,7 +60,7 @@ function Inicio() {
             paddingY: { xs: "20px", sm: 0 }, // Añadir padding vertical en móvil para el carrusel
           }}
         >
-          <CarouselWithSwiper alumnos={alumnosData} />
+          <CarouselWithSwiper/>
         </Box>
       </Box>
       <Box

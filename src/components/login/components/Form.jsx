@@ -13,9 +13,7 @@ import { FONT_COLOR_GRAY } from "../../constant/Colors";
 const fontFamily = "Inter";
 
 const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email("Correo electrónico inválido")
-    .required("Campo requerido"),
+  email: Yup.string().email("Correo electrónico inválido").required("Campo requerido"),
   password: Yup.string().required("Campo requerido"),
 });
 
@@ -50,7 +48,13 @@ const TextGrayBold = styled(Typography)({
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // navigate("/"); // Esta línea está comentada en tu código original, la mantengo así.
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
@@ -73,8 +77,8 @@ const LoginForm = () => {
 
       if (data.status === "success") {
         const userData = data.user;
-
         login(userData);
+
         Swal.fire({
           icon: "success",
           title: "¡Bienvenido al master de hitpoly!",
@@ -86,15 +90,14 @@ const LoginForm = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Correo o contraseña incorrectos",
+          text: data.message || "Correo o contraseña incorrectos",
         });
       }
     } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Error del servidor",
-        title: "Error del servidor",
-        text: "Hubo un problema al conectar con el servidor.",
+        text: "Hubo un problema al conectar con el servidor. Por favor, revisa tu conexión a internet o intenta más tarde.",
       });
     } finally {
       setSubmitting(false);
@@ -175,14 +178,10 @@ const LoginForm = () => {
                     alignItems: "baseline",
                   }}
                 >
-                  <TextGray sx={{ marginRight: "20px" }}>
-                    ¿No tienes cuenta?
-                  </TextGray>
+                  <TextGray sx={{ marginRight: "20px" }}>¿No tienes cuenta?</TextGray>
 
                   <Link to="/register" style={{ textDecoration: "none" }}>
-                    <TextGrayBold sx={{ marginLeft: "100px" }}>
-                      Crear cuenta
-                    </TextGrayBold>
+                    <TextGrayBold sx={{ marginLeft: "100px" }}>Crear cuenta</TextGrayBold>
                   </Link>
                 </Box>
 

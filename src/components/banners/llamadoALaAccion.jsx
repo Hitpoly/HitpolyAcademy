@@ -23,10 +23,10 @@ const CenteredCallToAction = ({
         backgroundColor: backgroundColor,
       }}
     >
-      <Typography variant="h2" sx={{ mb: 2 }}>
+      <Typography sx={{ mb: 2, fontSize: {xs: "2rem", md: "3rem"} }}>
         {title}
       </Typography>
-      <Typography variant="subtitle1" sx={{ color: "#555", mb: 4 }}>
+      <Typography sx={{ color: "#555", mb: 4, fontSize: {xs: "1.2rem", md: "1.3rem"}}}>
         {subtitle}
       </Typography>
       <Button

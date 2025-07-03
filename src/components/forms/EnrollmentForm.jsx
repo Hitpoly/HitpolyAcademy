@@ -15,6 +15,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const DEFAULT_USER_TYPE_ID = 3;
+const DEFAULT_COURSE_ID = "70"; // Mantener como string para consistencia inicial
+
+// --- Función para extraer el ID numérico de la URL ---
+const extractCourseIdFromSlug = (slug) => {
+  if (!slug) return null; // Retorna null si no hay slug
+
+  // Busca el último segmento numérico en la cadena (ej: -119)
+  const match = slug.match(/-(\d+)$/);
+  if (match && match[1]) {
+    return match[1]; // Retorna solo el número como string
+  }
+  return null; // Retorna null si no se encuentra un ID numérico
+};
 
 // Esquema de validación para el registro inicial
 const EnrollmentSchema = Yup.object().shape({
@@ -44,9 +57,9 @@ const InterestSchema = Yup.object().shape({
 });
 
 const EnrollmentForm = () => {
-  const { isAuthenticated, login, user } = useAuth(); // Obtener el objeto de usuario del contexto de autenticación
+  const { isAuthenticated, login, user } = useAuth();
   const navigate = useNavigate();
-  const { id: urlCourseIdFromParams } = useParams();
+  const { id: urlSlugFromParams } = useParams(); // Cambiado a urlSlugFromParams
 
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -63,58 +76,82 @@ const EnrollmentForm = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // Si ya está autenticado, no lo redirigimos inmediatamente.
-      // Permitimos que el componente cargue el formulario de intereses.
-      // La redirección ocurrirá después de que envíe los datos de interés.
-    }
   }, [isAuthenticated]);
 
-  // Función para inscribir al usuario en un curso
-  const enrollUserInCourse = async (userId, courseId) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const dataToEnrollCourse = {
-      accion: "inscripciones",
-      usuario_id: userId,
-      curso_id: parseInt(courseId, 10),
-      fecha_inscripcion: today,
-      progreso: 0,
-      completado: 0,
-      fecha_completado: null,
-    };
+const parseApiResponse = async (response) => {
+  try {
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    const text = await response.text();
 
-    const enrollResponse = await fetch(
-      "https://apiacademy.hitpoly.com/ajax/cargarInscripcionController.php",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToEnrollCourse),
-      }
+    if (text.trim() === "") {
+      throw new Error("La API devolvió una respuesta vacía.");
+    }
+    throw new Error(
+      `La API devolvió un formato inesperado o JSON inválido. Contenido: "${text.substring(
+        0,
+        200
+      )}..."`
     );
+  }
+};
 
-    if (!enrollResponse.ok) {
-      const enrollErrorText = await enrollResponse.text();
-      let enrollErrorMessage =
-        "Error desconocido al inscribir al usuario en el curso.";
-      try {
-        const enrollErrorJson = JSON.parse(enrollErrorText);
-        enrollErrorMessage = enrollErrorJson.message || enrollErrorMessage;
-      } catch (parseError) {
-        enrollErrorMessage = `La API de inscripción devolvió un error inesperado (no JSON). Respuesta: "${enrollErrorText.substring(0, 150)}..."`;
-      }
-      throw new Error(enrollErrorMessage);
-    }
 
-    const enrollResultData = await enrollResponse.json();
-    if (enrollResultData.status !== "success") {
-      throw new Error(
-        enrollResultData.message || "La inscripción al curso no fue exitosa."
-      );
-    }
-    return enrollResultData;
+const enrollUserInCourse = async (userId, courseId) => {
+  // Asegurarse de que courseId es un número válido antes de enviar
+  const parsedCourseId = parseInt(courseId, 10);
+  if (isNaN(parsedCourseId)) {
+    throw new Error("El ID del curso para inscripción no es un número válido.");
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dataToEnrollCourse = {
+    accion: "inscripciones",
+    usuario_id: userId,
+    curso_id: parsedCourseId, // Usar el ID parseado
+    fecha_inscripcion: today,
+    progreso: 0,
+    completado: 0,
+    fecha_completado: null,
   };
+
+  
+  const enrollResponse = await fetch(
+    "https://apiacademy.hitpoly.com/ajax/cargarInscripcionController.php",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(dataToEnrollCourse),
+    }
+  );
+
+  if (!enrollResponse.ok) {
+    const errorData = await parseApiResponse(enrollResponse);
+    const errorMessage =
+      errorData.message ||
+      `Error ${enrollResponse.status}: Fallo al inscribir al usuario en el curso.`;
+    throw new Error(errorMessage);
+  }
+
+  const enrollResultData = await parseApiResponse(enrollResponse);
+  if (
+    enrollResultData.status === "success" ||
+    enrollResultData.status === "warning"
+  ) {
+    // Si es warning, podemos mostrar una alerta diferente si quieres, o simplemente proceder.
+    if (enrollResultData.status === "warning") {
+      }
+    return enrollResultData; // Retornamos el resultado para que el flujo continúe
+  } else {
+    // Cualquier otro status que no sea success o warning es un error real
+    throw new Error(
+      enrollResultData.message || "La inscripción al curso no fue exitosa."
+    );
+  }
+};
 
   // Manejador para el registro de nuevos usuarios
   const handleRegisterAndEnroll = async (
@@ -136,6 +173,7 @@ const EnrollmentForm = () => {
       telefono: values.telefono,
     };
 
+    
     try {
       const registerResponse = await fetch(
         "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php",
@@ -149,19 +187,13 @@ const EnrollmentForm = () => {
       );
 
       if (!registerResponse.ok) {
-        const errorText = await registerResponse.text();
-        let errorMessage = "Error desconocido al registrar el usuario.";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorMessage;
-        } catch (parseError) {
-          errorMessage = `La API devolvió un error inesperado (no JSON). Respuesta: "${errorText.substring(0, 150)}..."`;
-        }
+        const errorData = await parseApiResponse(registerResponse);
+        const errorMessage = errorData.message || `Error ${registerResponse.status}: Fallo al registrar el usuario.`;
         throw new Error(errorMessage);
       }
 
-      const registerResult = await registerResponse.json();
-
+      const registerResult = await parseApiResponse(registerResponse);
+      
       if (registerResult.status !== "success") {
         throw new Error(
           registerResult.message || "Fallo en el registro del usuario."
@@ -186,32 +218,37 @@ const EnrollmentForm = () => {
         }
       );
 
-      const loginResult = await loginResponse.json();
+      if (!loginResponse.ok) {
+        const errorData = await parseApiResponse(loginResponse);
+        const errorMessage = errorData.message || `Error ${loginResponse.status}: Fallo en el inicio de sesión automático.`;
+        throw new Error(errorMessage);
+      }
 
+      const loginResult = await parseApiResponse(loginResponse);
+      
       if (loginResult.status === "success") {
         const userData = loginResult.user;
         login(userData); // Actualizar el contexto de autenticación
 
-        // Redirigir al formulario de intereses si el registro es exitoso
         Swal.fire({
           icon: "success",
           title: "¡Registro exitoso!",
           text: "Ahora, por favor, completa algunos datos adicionales para tu inscripción al curso.",
         }).then(() => {
-          // No redirigimos a master-full aquí, sino que esperamos los datos de interés.
-          // El componente se renderizará con el formulario de intereses debido a `isAuthenticated`
+          // El componente se re-renderizará con el formulario de intereses debido a `isAuthenticated`
+          // No es necesario navegar aquí, el estado `isAuthenticated` lo controla
         });
       } else {
         Swal.fire({
           icon: "error",
           title: "Error de inicio de sesión automático",
           text:
-            loginResult.text ||
+            loginResult.message ||
             "No se pudo iniciar sesión automáticamente después del registro. Inténtelo manualmente.",
         });
         setSnackbar({
           open: true,
-          message: loginResult.text || "Error al iniciar sesión automáticamente.",
+          message: loginResult.message || "Error al iniciar sesión automáticamente.",
           severity: "error",
         });
       }
@@ -241,15 +278,30 @@ const EnrollmentForm = () => {
     setSubmitting(true);
     setSnackbar({ open: false, message: "", severity: "success" });
 
-    // Usamos el ID del curso de la URL de registro si está disponible, sino un predeterminado (70)
-    const courseToEnrollId = urlCourseIdFromParams || "70";
+    // --- CAMBIO CLAVE AQUÍ: Extraer el ID numérico del slug ---
+    const extractedCourseId = extractCourseIdFromSlug(urlSlugFromParams);
+    const courseToEnrollId = extractedCourseId || DEFAULT_COURSE_ID; // Usar el ID extraído o el default
+
+    // Convertir a número aquí para el objeto a enviar, y también para el enrollment
+    const parsedCourseToEnrollId = parseInt(courseToEnrollId, 10);
+    if (isNaN(parsedCourseToEnrollId)) {
+        Swal.fire({
+            icon: "error",
+            title: "Error de ID de Curso",
+            text: "No se pudo determinar un ID de curso válido para la inscripción.",
+        });
+        setLoading(false);
+        setSubmitting(false);
+        return;
+    }
+
     const today = new Date();
     const formattedDate = today.toISOString().slice(0, 19).replace("T", " "); // Formato "YYYY-MM-DD HH:MM:SS"
 
     const dataToRegisterInterest = {
       accion: "registrarIntereses",
       usuario_id: user.id, // ID del usuario autenticado
-      curso_id: parseInt(courseToEnrollId, 10),
+      curso_id: parsedCourseToEnrollId, // ¡Usar el ID parseado aquí!
       objetivo_curso: values.objetivo_curso,
       industria_actual: values.industria_actual,
       horas_dedicacion_semanal: parseInt(values.horas_dedicacion_semanal, 10),
@@ -257,6 +309,7 @@ const EnrollmentForm = () => {
       fecha_registro_interes: formattedDate,
     };
 
+    
     try {
       // 1. Enviar datos de interés
       const interestResponse = await fetch(
@@ -271,20 +324,13 @@ const EnrollmentForm = () => {
       );
 
       if (!interestResponse.ok) {
-        const errorText = await interestResponse.text();
-        let errorMessage =
-          "Error desconocido al registrar los datos de interés.";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorMessage;
-        } catch (parseError) {
-          errorMessage = `La API de intereses devolvió un error inesperado (no JSON). Respuesta: "${errorText.substring(0, 150)}..."`;
-        }
+        const errorData = await parseApiResponse(interestResponse); // Usa la función mejorada
+        const errorMessage = errorData.message || `Error ${interestResponse.status}: Fallo al registrar los datos de interés.`;
         throw new Error(errorMessage);
       }
 
-      const interestResult = await interestResponse.json();
-
+      const interestResult = await parseApiResponse(interestResponse);
+      
       if (interestResult.status !== "success") {
         throw new Error(
           interestResult.message || "Fallo al registrar los datos de interés."
@@ -292,14 +338,14 @@ const EnrollmentForm = () => {
       }
 
       // 2. Inscribir al usuario en el curso
-      await enrollUserInCourse(user.id, courseToEnrollId);
+      await enrollUserInCourse(user.id, parsedCourseToEnrollId); // Asegúrate de pasar el ID numérico
 
       Swal.fire({
         icon: "success",
         title: "¡Información y curso asignados exitosamente!",
         text: "Tus datos han sido guardados y el curso ha sido asignado. ¡Bienvenido!",
       }).then(() => {
-        navigate(`/master-full/${courseToEnrollId}`); // Redirigir a master-full
+        navigate(`/master-full/${parsedCourseToEnrollId}`); // Redirigir a master-full con el ID numérico
       });
 
       resetForm();
@@ -327,11 +373,7 @@ const EnrollmentForm = () => {
 
   // Si el usuario ya está autenticado, muestra el formulario de intereses
   if (isAuthenticated) {
-    // Si no hay un ID de curso en la URL y el usuario ya está autenticado,
-    // significa que llegó a esta página sin un curso específico para registrarse/inscribirse.
-    // Podrías redirigirlo a una página de cursos o al dashboard.
-    // Para este caso, vamos a asumir que siempre hay un courseId relevante o el default 70.
-    const courseIdForTitle = urlCourseIdFromParams || '70';
+    const courseIdForTitle = extractCourseIdFromSlug(urlSlugFromParams) || DEFAULT_COURSE_ID; // Usar el ID numérico para el título
 
     return (
       <Box
@@ -341,6 +383,8 @@ const EnrollmentForm = () => {
           margin: "auto",
           maxWidth: "500px",
           borderRadius: "8px",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+          backgroundColor: "white",
           display: "flex",
           flexDirection: "column",
         }}
@@ -552,6 +596,8 @@ const EnrollmentForm = () => {
         margin: "auto",
         maxWidth: "500px",
         borderRadius: "8px",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+        backgroundColor: "white",
         display: "flex",
         flexDirection: "column",
       }}

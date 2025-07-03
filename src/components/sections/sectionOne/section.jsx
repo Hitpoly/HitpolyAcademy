@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import CursoCard from "../../../components/cards/CursoCard";
 
-
 const createSlug = (title) => {
   return title
     .toLowerCase()
@@ -25,6 +24,8 @@ const SectionCardGrid = () => {
   const [coursesByCategory, setCoursesByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Añadido: Estado para almacenar los nombres de los profesores
+  const [instructorNamesMap, setInstructorNamesMap] = useState({});
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -53,10 +54,9 @@ const SectionCardGrid = () => {
           ),
         ]);
 
-        // --- Depuración de Categorías ---
+        // --- Procesamiento de Categorías ---
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
-          
           throw new Error(
             `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`
           );
@@ -71,21 +71,21 @@ const SectionCardGrid = () => {
           );
         }
 
-        // --- Depuración de Cursos ---
+        // --- Procesamiento de Cursos ---
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
-        
           throw new Error(
             `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`
           );
         }
         const coursesData = await coursesResponse.json();
-        
-        // **ACTUALIZACIÓN CLAVE AQUÍ:** Verificar coursesData.cursos.cursos
+        // LOG: Datos brutos de los cursos recibidos de la API
+
+        // Verificación de la estructura de coursesData
         if (
           coursesData.status !== "success" ||
-          !coursesData.cursos || // Asegurarse de que 'cursos' exista como objeto
-          !Array.isArray(coursesData.cursos.cursos) // <-- CORRECCIÓN: Acceder a la propiedad anidada 'cursos'
+          !coursesData.cursos ||
+          !Array.isArray(coursesData.cursos.cursos)
         ) {
           throw new Error(
             coursesData.message ||
@@ -98,33 +98,85 @@ const SectionCardGrid = () => {
           return map;
         }, {});
 
-        // **ACTUALIZACIÓN CLAVE AQUÍ:** Acceder a coursesData.cursos.cursos
         const publishedCourses = coursesData.cursos.cursos.filter(
-          // <-- CORRECCIÓN: Acceder a la propiedad anidada 'cursos'
-          (curso) => {
-            const isPublished = curso.estado === "Publicado";
-            return isPublished;
-          }
+          (curso) => curso.estado === "Publicado"
         );
+        // LOG: Cursos filtrados que están publicados
+        
+
+        // --- Recolectar IDs de profesores únicos y cargar sus nombres ---
+        const uniqueInstructorIds = [
+          ...new Set(publishedCourses.map((curso) => curso.profesor_id)),
+        ];
+        const instructorPromises = uniqueInstructorIds.map(async (id) => {
+          try {
+            const instructorResponse = await fetch(
+              "https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accion: "getAlumnoProfesor", id: id }),
+              }
+            );
+            if (!instructorResponse.ok) {
+              
+              return { id, name: "Instructor Desconocido" };
+            }
+            const instructorData = await instructorResponse.json();
+            if (instructorData.status === "success" && instructorData.usuario) {
+              return {
+                id,
+                name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`,
+              };
+            } else {
+              
+              return { id, name: "Instructor Desconocido" };
+            }
+          } catch (fetchErr) {
+            
+            return { id, name: "Instructor Desconocido" };
+          }
+        });
+
+        const resolvedInstructors = await Promise.all(instructorPromises);
+        const newInstructorNamesMap = resolvedInstructors.reduce(
+          (map, instructor) => {
+            map[instructor.id] = instructor.name;
+            return map;
+          },
+          {}
+        );
+        setInstructorNamesMap(newInstructorNamesMap); // Guarda el mapa de nombres de profesores
+        // LOG: Mapa final de nombres de instructores
 
         const organizedCourses = publishedCourses.reduce((acc, curso) => {
           const categoryName =
             categoryMap[curso.categoria_id] || "Sin Categoría";
 
-          if (!categoryMap[curso.categoria_id]) {
-          }
-
           if (!acc[categoryName]) {
             acc[categoryName] = [];
           }
-          const courseSlug = createSlug(curso.titulo);
-          acc[categoryName].push({
+
+          const mappedCourse = {
             id: curso.id,
             title: curso.titulo,
             subtitle: curso.subtitulo,
             banner: curso.portada_targeta,
-            accessLink: `/curso/${curso.id}`,
-          });
+            accessLink: `/curso/${createSlug(curso.titulo)}-${curso.id}`, // Usar createSlug para el link
+            // Utiliza el mapa de nombres de profesores aquí
+            instructorName:
+              newInstructorNamesMap[curso.profesor_id] ||
+              "Instructor Desconocido",
+            rating: curso.valoracion || null, // Asumiendo que 'valoracion' es el campo del rating
+            reviews: curso.numero_resenas || null, // Asumiendo que 'numero_resenas' es el campo de reviews
+            students: curso.total_estudiantes || null, // Asumiendo que 'total_estudiantes' es el campo de estudiantes
+            totalHours: curso.duracion_estimada,
+            price: `${curso.precio} ${curso.moneda}`,
+            level: curso.nivel || null, // Asumiendo que 'nivel' es el campo de nivel
+          };
+
+          
+          acc[categoryName].push(mappedCourse);
           return acc;
         }, {});
 
@@ -133,7 +185,6 @@ const SectionCardGrid = () => {
         if (Object.keys(organizedCourses).length > 0) {
           const firstCategory = Object.keys(organizedCourses)[0];
           setActiveCategoryName(firstCategory);
-        } else {
         }
       } catch (err) {
         setError(err.message);
