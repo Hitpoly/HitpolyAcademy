@@ -9,13 +9,12 @@ import {
   Button,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import { useNavigate } from "react-router-dom"; // Importa useNavigate
+import { useNavigate } from "react-router-dom";
 
 const CourseCard = ({ curso }) => {
-  const navigate = useNavigate(); // Inicializa useNavigate
+  const navigate = useNavigate();
 
   const handleContinueClick = () => {
-    // Construye la URL con el ID del curso
     navigate(`/master-full/${curso.id}`);
   };
 

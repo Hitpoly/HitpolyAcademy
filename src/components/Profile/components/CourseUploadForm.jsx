@@ -30,8 +30,6 @@ const saveCourseToSimulatedDB = (courseData) => {
     setTimeout(() => {
       const newCourse = { ...courseData, id: nextCourseId++ };
       simulatedDatabase.push(newCourse);
-      console.log("Curso guardado en la DB simulada:", newCourse);
-      console.log("Estado actual de la DB simulada:", simulatedDatabase);
       resolve({ success: true, message: "Curso guardado exitosamente.", course: newCourse });
     }, 1500); // Simula una latencia de red
   });
@@ -160,7 +158,6 @@ const CourseUploadForm = () => {
         setSnackbarOpen(true);
       }
     } catch (error) {
-      console.error("Error al enviar el formulario:", error);
       setSnackbarMessage("Ocurrió un error inesperado al guardar el curso.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);

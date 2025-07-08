@@ -52,8 +52,7 @@ const LoginForm = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // navigate("/"); // Esta línea está comentada en tu código original, la mantengo así.
-    }
+      }
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (values, { setSubmitting }) => {

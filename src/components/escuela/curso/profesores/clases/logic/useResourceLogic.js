@@ -1,21 +1,16 @@
-// useResourceLogic.js
-import { useState, useEffect } from "react"; // Ya no necesitamos useRef si eliminamos hasResourceListChanged
+import { useState, useEffect } from "react"; 
 
 const useResourceLogic = (setGlobalResponseMessage) => {
   const [resources, setResources] = useState([]);
   const [newResourceTitle, setNewResourceTitle] = useState("");
   const [newResourceFile, setNewResourceFile] = useState(null);
   const [newResourceUrl, setNewResourceUrl] = useState("");
-  const [newResourceType, setNewResourceType] = useState("pdf"); // 'pdf' o 'url'
+  const [newResourceType, setNewResourceType] = useState("pdf"); 
   const [deletedResourceIds, setDeletedResourceIds] = useState([]);
   const [resourceResponseMessage, setResourceResponseMessage] = useState({
     type: "",
     message: "",
   });
-
-  // El useEffect para initialResourcesRef.current ya no es necesario aquí.
-  // La lógica de comparación de recursos se maneja en useClassFormLogic.js.
-
 
   const handleFileChange = (e) => {
     setNewResourceFile(e.target.files[0]);
@@ -41,11 +36,11 @@ const useResourceLogic = (setGlobalResponseMessage) => {
         return;
       }
       newResource = {
-        nombre: newResourceTitle.trim(), // CAMBIADO: usar 'nombre'
+        nombre: newResourceTitle.trim(), 
         tipo: "pdf",
-        url: "", // La URL real se obtendrá después de la subida
+        url: "",
         file: newResourceFile,
-        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // ID temporal para recursos nuevos
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         clase_id: null,
       };
     } else if (newResourceType === "url") {
@@ -57,7 +52,7 @@ const useResourceLogic = (setGlobalResponseMessage) => {
         return;
       }
       try {
-        new URL(newResourceUrl.trim()); // Validación básica de URL
+        new URL(newResourceUrl.trim());
       } catch (e) {
         setResourceResponseMessage({
           type: "error",
@@ -66,11 +61,11 @@ const useResourceLogic = (setGlobalResponseMessage) => {
         return;
       }
       newResource = {
-        nombre: newResourceTitle.trim(), // CAMBIADO: usar 'nombre'
-        tipo: "enlace", // Revisa si tu backend espera 'url' o 'enlace', lo mantengo como estaba.
+        nombre: newResourceTitle.trim(),
+        tipo: "enlace",
         url: newResourceUrl.trim(),
-        file: null, // No hay archivo para recursos de URL
-        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // ID temporal
+        file: null, 
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
         clase_id: null,
       };
     }
@@ -80,9 +75,8 @@ const useResourceLogic = (setGlobalResponseMessage) => {
       setNewResourceTitle("");
       setNewResourceFile(null);
       setNewResourceUrl("");
-      setResourceResponseMessage({ type: "", message: "" }); // Limpia el mensaje de error/éxito al añadir
-      console.log(`Recurso ${newResourceType} añadido localmente:`, newResource); // LOG
-    }
+      setResourceResponseMessage({ type: "", message: "" }); 
+      }
   };
 
   const handleDeleteResource = async (resourceToDelete) => {
@@ -90,33 +84,29 @@ const useResourceLogic = (setGlobalResponseMessage) => {
       return;
     }
 
-    // Si el recurso tiene un ID real (no es temporal)
     if (resourceToDelete.id && !String(resourceToDelete.id).startsWith("temp-")) {
-      setDeletedResourceIds((prev) => [...prev, resourceToDelete.id]); // Márcalo para eliminación en el backend
+      setDeletedResourceIds((prev) => [...prev, resourceToDelete.id]); 
       setResources((prevResources) =>
-        prevResources.filter((res) => res.id !== resourceToDelete.id) // Elimínalo visualmente
+        prevResources.filter((res) => res.id !== resourceToDelete.id) 
       );
       setResourceResponseMessage({
         type: "info",
         message: "Recurso marcado para eliminación. Los cambios se aplicarán al guardar la clase.",
       });
-      console.log("Recurso existente marcado para eliminación:", resourceToDelete); // LOG
-    } else {
-      // Si es un recurso temporal (recién añadido y aún no guardado)
+      } else {
       setResources((prevResources) =>
-        prevResources.filter((res) => res.id !== resourceToDelete.id) // Solo elimínalo localmente
+        prevResources.filter((res) => res.id !== resourceToDelete.id)
       );
       setResourceResponseMessage({
         type: "info",
         message: "Recurso temporal eliminado localmente.",
       });
-      console.log("Recurso temporal eliminado localmente:", resourceToDelete); // LOG
-    }
+      }
   };
 
   return {
     resources,
-    setResources, // Exporta el setter directo para que useClassFormLogic pueda establecer los recursos iniciales
+    setResources,
     newResourceTitle,
     setNewResourceTitle,
     newResourceFile,
@@ -126,9 +116,9 @@ const useResourceLogic = (setGlobalResponseMessage) => {
     newResourceType,
     setNewResourceType,
     deletedResourceIds,
-    setDeletedResourceIds, // Necesario para que useClassFormLogic pueda reiniciarlo
+    setDeletedResourceIds, 
     handleAddResource,
-    handleFileChange, // Exporta handleFileChange
+    handleFileChange,
     handleDeleteResource,
     resourceResponseMessage,
     setResourceResponseMessage,

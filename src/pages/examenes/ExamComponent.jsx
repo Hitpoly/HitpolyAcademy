@@ -36,7 +36,6 @@ const ExamComponent = () => {
     }
   }, [examName]);
 
-  // Si hay un error (examen no encontrado), mostrar la alerta a pantalla completa
   if (hasError) {
     return (
       <Box sx={{
@@ -68,7 +67,6 @@ const ExamComponent = () => {
     );
   }
 
-  // Si examData aún es nulo (cargando), no renderizamos nada
   if (!examData) {
     return null;
   }
@@ -103,7 +101,6 @@ const ExamComponent = () => {
     navigate('/exam-results', { state: { answers: results, questions, examTitle } });
   };
 
-  // Si no hay preguntas, mostrar alerta
   if (!questions || questions.length === 0) {
     return (
       <Box sx={{
@@ -161,10 +158,6 @@ const ExamComponent = () => {
           mb: 4,
         }}
       >
-        {/*
-          Aquí es donde el título del examen usa la imagen como fondo.
-          El componente `Box` que contenía la imagen ha sido eliminado.
-        */}
         <Typography
           variant="h5"
           component="h2"
@@ -172,14 +165,14 @@ const ExamComponent = () => {
           align="center"
           sx={{
             mb: 2,
-            py: 15, // Añade padding vertical para que el fondo sea visible
-            color: 'white', // Color de texto para que sea legible sobre la imagen
-            textShadow: '1px 1px 3px rgba(0, 0, 0, 0.7)', // Sombra para mejor legibilidad
-            backgroundImage: `url("/images/setters.jpg")`, // La URL de la imagen como fondo
-            backgroundSize: 'cover', // La imagen cubrirá todo el espacio disponible
-            backgroundRepeat: 'no-repeat', // La imagen no se repetirá
-            backgroundPosition: 'center', // Centra la imagen de fondo
-            borderRadius: 1, // Borde redondeado, opcional
+            py: 15, 
+            color: 'white', 
+            textShadow: '1px 1px 3px rgba(0, 0, 0, 0.7)',
+            backgroundImage: `url("/images/setters.jpg")`, 
+            backgroundSize: 'cover',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            borderRadius: 1,
           }}
         >
           {examTitle}
@@ -206,10 +199,8 @@ const ExamComponent = () => {
           </>
         )}
 
-        {/* --- Separador visual --- */}
         <hr style={{ width: '100%', border: 'none', borderTop: '1px solid #eee', margin: '20px 0' }} />
 
-        {/* Sección del examen (progreso y preguntas) */}
         <LinearProgress variant="determinate" value={progress} sx={{ mb: 2 }} />
         <Typography variant="body2" color="text.secondary" align="right" sx={{ mb: 2 }}>
           Preguntas contestadas: {answeredQuestionsCount} de {totalQuestions}

@@ -43,14 +43,14 @@ function CategoryCreator({ onCategoryCreated }) {
         throw new Error(`Error HTTP: ${response.status}`);
       }
 
-      await response.json(); // Asume que la respuesta puede ser importante, aunque no se use directamente aquí
+      await response.json(); 
       setSnackbarCreacionMessage('Categoría creada exitosamente.');
       setSnackbarCreacionSeverity('success');
       setSnackbarCreacionOpen(true);
       setNombre('');
       setDescripcion('');
       if (onCategoryCreated) {
-        onCategoryCreated(); // Notifica al padre que se ha creado una categoría
+        onCategoryCreated(); 
       }
 
     } catch (error) {

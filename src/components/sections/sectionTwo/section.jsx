@@ -38,7 +38,7 @@ const parseDurationToDays = (durationString) => {
       return value / 24;
     case 'mes':
     case 'meses':
-      return value * 30; // Considerando un mes de 30 días para simplificar
+      return value * 30;
     default:
       return null;
   }
@@ -51,7 +51,6 @@ const SectionTwo = () => {
   const [coursesByCategory, setCoursesByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // Añadido: Estado para almacenar los nombres de los profesores
   const [instructorNamesMap, setInstructorNamesMap] = useState({});
 
   const theme = useTheme();
@@ -81,7 +80,6 @@ const SectionTwo = () => {
           ),
         ]);
 
-        // --- Procesamiento de Categorías ---
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           throw new Error(
@@ -98,7 +96,6 @@ const SectionTwo = () => {
           );
         }
 
-        // --- Procesamiento de Cursos ---
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
           throw new Error(
@@ -123,18 +120,14 @@ const SectionTwo = () => {
           return map;
         }, {});
 
-        // Filtrar por estado "Publicado" Y por duración (un mes o menos)
         const publishedShortCourses = coursesData.cursos.cursos.filter(
           (curso) => {
             const isPublished = curso.estado === "Publicado";
             const durationInDays = parseDurationToDays(curso.duracion_estimada);
-            // Si durationInDays es null (formato no reconocido), se excluye.
-            // Si es un número, se comprueba que sea menor o igual a 30 días.
             return isPublished && (durationInDays !== null && durationInDays <= 30);
           }
         );
 
-        // --- Recolectar IDs de profesores únicos y cargar sus nombres ---
         const uniqueInstructorIds = [...new Set(publishedShortCourses.map(curso => curso.profesor_id))];
         const instructorPromises = uniqueInstructorIds.map(async (id) => {
           try {
@@ -147,7 +140,6 @@ const SectionTwo = () => {
               }
             );
             if (!instructorResponse.ok) {
-              console.error(`Error al cargar el profesor con ID ${id}: ${instructorResponse.statusText}`);
               return { id, name: "Instructor Desconocido" };
             }
             const instructorData = await instructorResponse.json();
@@ -157,11 +149,9 @@ const SectionTwo = () => {
                 name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`
               };
             } else {
-              console.warn(`Datos de profesor inválidos para ID ${id}:`, instructorData.message);
               return { id, name: "Instructor Desconocido" };
             }
           } catch (fetchErr) {
-            console.error(`Fallo en la petición del profesor con ID ${id}:`, fetchErr);
             return { id, name: "Instructor Desconocido" };
           }
         });
@@ -188,13 +178,12 @@ const SectionTwo = () => {
             banner: curso.portada_targeta,
             accessLink: `/curso/${curso.id}`,
             instructorName: newInstructorNamesMap[curso.profesor_id] || "Instructor Desconocido",
-            // Los siguientes campos se extraen directamente del objeto 'curso' de la API
-            rating: curso.valoracion || null, // Asumiendo que 'valoracion' es el campo del rating
-            reviews: curso.numero_resenas || null, // Asumiendo que 'numero_resenas' es el campo de reviews
-            students: curso.total_estudiantes || null, // Asumiendo que 'total_estudiantes' es el campo de estudiantes
-            totalHours: curso.duracion_estimada, // Este ya estaba correcto
-            price: `${curso.precio} ${curso.moneda}`, // Este ya estaba correcto
-            level: curso.nivel || null, // Asumiendo que 'nivel' es el campo de nivel
+            rating: curso.valoracion || null, 
+            reviews: curso.numero_resenas || null, 
+            students: curso.total_estudiantes || null, 
+            totalHours: curso.duracion_estimada,
+            price: `${curso.precio} ${curso.moneda}`,
+            level: curso.nivel || null,
           });
           return acc;
         }, {});
@@ -213,7 +202,7 @@ const SectionTwo = () => {
     };
 
     fetchData();
-  }, []); // El efecto se ejecuta una sola vez al montar el componente
+  }, []);
 
   const categoryNames = useMemo(
     () => Object.keys(coursesByCategory),
@@ -281,7 +270,6 @@ const SectionTwo = () => {
           </Alert>
         ) : (
           <>
-            {/* Botones de Categoría */}
             <Box
               sx={{ display: "flex", width: "100%", mb: 4, overflowX: "auto" }}
             >
@@ -313,7 +301,6 @@ const SectionTwo = () => {
               ))}
             </Box>
 
-            {/* Contenedor de Tarjetas de Cursos */}
             <Box
               sx={{
                 overflowX: { xs: "auto", md: "visible" },

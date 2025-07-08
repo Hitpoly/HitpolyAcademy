@@ -65,7 +65,6 @@ const UserProfile = () => {
   };
 
   const handleSaveClick = () => {
-    console.log("Guardando datos en la 'base de datos':", tempProfile);
     setProfile(tempProfile);
     setEditMode(false);
   };

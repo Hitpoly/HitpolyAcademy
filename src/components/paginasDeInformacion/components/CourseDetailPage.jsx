@@ -24,24 +24,20 @@ import VideoPlayerWithControls from "../../videos/VideoPlayerWithControls";
 import CountdownBanner from "../../cronometro/CountdownBanner";
 
 const CourseDetailPage = ({ course, countdownTargetDate }) => {
-  // Cantidad inicial de elementos visibles para el temario
-  const [visibleLearningOutcomes, setVisibleLearningOutcomes] = useState(3); // Cambiado a 3 para una demostración más clara
-  // Cantidad inicial de elementos visibles para los módulos
-  const [visibleModules, setVisibleModules] = useState(2); // Cambiado a 2 para una demostración más clara
+  const [visibleLearningOutcomes, setVisibleLearningOutcomes] = useState(3); 
+   const [visibleModules, setVisibleModules] = useState(2); 
 
-  // Longitud total del temario (learningOutcomes)
   const totalLearningOutcomes = course.learningOutcomes?.length || 0;
-  // Longitud total de los módulos (course.modules)
   const totalCourseModules = course.modules?.length || 0;
 
   const handleToggleLearningOutcomes = () => {
     setVisibleLearningOutcomes(
       visibleLearningOutcomes === 3 ? totalLearningOutcomes : 3
-    ); // Usa 3 como límite inicial
+    );
   };
 
   const handleToggleModules = () => {
-    setVisibleModules(visibleModules === 2 ? totalCourseModules : 2); // Usa 2 como límite inicial
+    setVisibleModules(visibleModules === 2 ? totalCourseModules : 2);
   };
 
   
@@ -61,7 +57,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
     },
   ];
 
-  // Añade el chip de precio si está disponible
   if (course.price) {
     courseInfoChips.push({
       icon: <MonetizationOnIcon />,
@@ -81,7 +76,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
             height: "100%",
           }}
         >
-          {/* Columna izquierda (Video e Chips de información) */}
           <Box sx={{ flex: 1 }}>
             <Box sx={{ paddingBottom: { xs: "20px", md: "30px 0px" } }}>
               <VideoPlayerWithControls videoUrl={course.inductionVideoUrl} />
@@ -130,8 +124,7 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
 
         <Divider sx={{ my: 3 }} />
 
-        {/* Sección de Temario del Curso (learningOutcomes) y CountdownBanner */}
-        <Box
+       <Box
           sx={{
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
@@ -140,7 +133,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
             mb: 5,
           }}
         >
-          {/* Columna para el Temario (learningOutcomes) */}
           <Box sx={{ width: { xs: "100%", md: "60%" } }}>
             <Typography variant="h6" gutterBottom>
               ¿Qué aprenderás en este curso?
@@ -155,7 +147,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
                         <ListItem disablePadding>
                           <ListItemIcon>
                             <CheckCircleOutlineIcon color="primary" />{" "}
-                            {/* Ícono para el temario */}
                           </ListItemIcon>
                           <ListItemText
                             primary={item}
@@ -165,7 +156,7 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
                       </Paper>
                     ))}
                 </List>
-                {totalLearningOutcomes > 3 && ( // Si hay más de 3 elementos, muestra el botón
+                {totalLearningOutcomes > 3 && ( 
                   <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
                     <Button
                       onClick={handleToggleLearningOutcomes}
@@ -195,7 +186,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
             )}
           </Box>
 
-          {/* Columna para el CountdownBanner */}
           <Box
             sx={{
               width: { xs: "100%", md: "40%" },
@@ -222,8 +212,6 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
         </Box>
 
         <Divider sx={{ my: 3 }} />
-
-        {/* Sección de Contenido del Curso (Módulos) */}
         {course.modules && course.modules.length > 0 && (
           <Box>
             <Typography variant="h6" gutterBottom>
@@ -236,22 +224,18 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
                 sx={{ mb: 2, p: 2, borderRadius: 1 }}
               >
                 <ListItem disablePadding sx={{ mb: 1 }}>
-                  {" "}
-                  {/* Añadido ListItem para el ícono del módulo */}
                   <ListItemIcon>
-                    <LibraryBooksIcon color="action" /> {/* Ícono para el Módulo */}
+                    <LibraryBooksIcon color="action" /> 
                   </ListItemIcon>
                   <Typography variant="subtitle1" component="span" gutterBottom sx={{ fontWeight: 'bold' }}>
                     Módulo {index + 1}: {module.title}
                   </Typography>
                 </ListItem>
                 <List dense sx={{ pl: 2 }}>
-                  {" "}
-                  {/* Añadido pl para indentar las clases */}
                   {module.topics?.map((topic, topicIndex) => (
                     <ListItem key={topicIndex} disablePadding>
                       <ListItemIcon>
-                        <ClassIcon color="secondary" /> {/* Ícono para la Clase */}
+                        <ClassIcon color="secondary" /> 
                       </ListItemIcon>
                       <ListItemText
                         primary={topic}
@@ -263,7 +247,7 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
               </Paper>
             ))}
 
-            {totalCourseModules > 2 && ( // Si hay más de 2 módulos, muestra el botón
+            {totalCourseModules > 2 && ( 
               <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
                 <Button
                   onClick={handleToggleModules}

@@ -6,7 +6,7 @@ import {
     MenuItem,
     CircularProgress,
     InputAdornment,
-    Grid, // Aunque no se usa directamente en este snippet, lo mantengo por si lo tienes en tu archivo completo
+    Grid,
 } from "@mui/material";
 
 const CourseDetailsSection = ({
@@ -15,9 +15,9 @@ const CourseDetailsSection = ({
     bannerFile,
     handleFileChange,
     uploadingBanner,
-    cardCoverFile, // <-- Nueva prop
-    handleChangeCardCover, // <-- Nueva prop
-    uploadingCardCover, // <-- Nueva prop
+    cardCoverFile, 
+    handleChangeCardCover, 
+    uploadingCardCover,
     categorias,
     loadingCategories,
     categoryErrorMessage,
@@ -91,20 +91,17 @@ const CourseDetailsSection = ({
                     </Typography>
                 </Box>
             )}
-
-            {/* Nuevo campo para la portada de la tarjeta */}
             <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
                 Subir Imagen de Portada de Tarjeta:
             </Typography>
             <TextField
                 type="file"
-                name="portada_tarjeta_file" // Nombre del input para el archivo
-                onChange={handleChangeCardCover} // Usar el nuevo manejador
+                name="portada_tarjeta_file"
+                onChange={handleChangeCardCover} 
                 fullWidth
                 margin="normal"
                 inputProps={{ accept: "image/*" }}
-                // ***** CAMBIO CLAVE AQUÍ: Usar formData.portada_targeta (con 'g') *****
-                required={!formData.portada_targeta && !cardCoverFile} // Requerido si no hay URL o archivo
+                required={!formData.portada_targeta && !cardCoverFile}
                 helperText="Selecciona una imagen para la portada de la tarjeta (JPG, PNG, GIF, etc.)"
             />
             {cardCoverFile && (

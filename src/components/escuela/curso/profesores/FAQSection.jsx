@@ -21,17 +21,15 @@ const FAQSection = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --- Estados para la edición ---
-  const [editingFaq, setEditingFaq] = useState(null); // Contiene la FAQ que se está editando
+  const [editingFaq, setEditingFaq] = useState(null); 
   const [editPregunta, setEditPregunta] = useState('');
   const [editRespuesta, setEditRespuesta] = useState('');
-  const [openEditDialog, setOpenEditDialog] = useState(false); // Controla la apertura del diálogo de edición
+  const [openEditDialog, setOpenEditDialog] = useState(false); 
 
   const fetchFaqs = useCallback(async (id) => {
     setLoading(true);
     setError('');
     try {
-      console.log("📦 Solicitando FAQs para curso:", id);
 
       const response = await fetch('https://apiacademy.hitpoly.com/ajax/getPreguntasYrespuestasController.php', {
         method: 'POST',
@@ -40,21 +38,13 @@ const FAQSection = () => {
       });
 
       const rawText = await response.text();
-      console.log("📨 Respuesta cruda del backend:", rawText);
-
       const data = JSON.parse(rawText);
-      console.log("✅ Datos parseados:", data);
-
       if (data.status === 'success') {
-        console.log("📋 FAQs obtenidas:", data.preguntasyrespuestas);
-        // Asegúrate de que cada FAQ tenga un 'id' para la edición/eliminación
         setFaqs(data.preguntasyrespuestas.map(faq => ({ ...faq, id: faq.id || Math.random() })) || []);
       } else {
-        console.warn("⚠️ Error de backend:", data.message);
         setError(data.message || 'No se pudieron cargar las FAQs.');
       }
     } catch (err) {
-      console.error("❌ Error de red o parseo:", err);
       setError(`Error: ${err.message}`);
     } finally {
       setLoading(false);
@@ -65,7 +55,6 @@ const FAQSection = () => {
     if (courseId) {
       fetchFaqs(courseId);
     } else {
-      console.warn("⚠️ No se recibió courseId desde useParams.");
     }
   }, [courseId, fetchFaqs]);
 
@@ -93,41 +82,35 @@ const FAQSection = () => {
     setLoading(true);
     setError('');
     try {
-      console.log("🚀 Enviando preguntas nuevas:", preguntasPendientes);
 
       const response = await fetch('https://apiacademy.hitpoly.com/ajax/cargarPreguntasyRespuestacontroller.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accion: 'preguntasYrespuestas',
-          id: courseId, // Asegúrate de que el backend espere 'id' como id_curso
+          id: courseId, 
           items: preguntasPendientes,
         }),
       });
 
       const rawText = await response.text();
-      console.log("📨 Respuesta cruda al enviar preguntas:", rawText);
 
       const data = JSON.parse(rawText);
-      console.log("✅ Resultado envío:", data);
 
       if (data.status === 'success') {
         Swal.fire('¡Enviado!', 'Preguntas frecuentes guardadas exitosamente.', 'success');
-        setPreguntasPendientes([]); // Limpiar preguntas pendientes
-        fetchFaqs(courseId); // Recargar las FAQs para ver las nuevas
+        setPreguntasPendientes([]);
+        fetchFaqs(courseId);
       } else {
-        console.warn("⚠️ Error al guardar:", data.message);
         setError(data.message || 'Error al guardar las preguntas.');
       }
     } catch (err) {
-      console.error("❌ Error al enviar preguntas:", err);
       setError(`Error al enviar: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Funciones para la edición ---
   const handleOpenEditDialog = (faq) => {
     setEditingFaq(faq);
     setEditPregunta(faq.pregunta);
@@ -157,40 +140,34 @@ const FAQSection = () => {
     setLoading(true);
     setError('');
     try {
-      console.log("🛠️ Editando FAQ con ID:", editingFaq.id);
       const response = await fetch('https://apiacademy.hitpoly.com/ajax/editarPreguntasYrespuestasController.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accion: 'update',
-          id: editingFaq.id, // ID de la pregunta/respuesta
-          id_curso: courseId, // ID del curso
+          id: editingFaq.id,
+          id_curso: courseId,
           pregunta: editPregunta.trim(),
           respuesta: editRespuesta.trim(),
         }),
       });
 
       const data = await response.json();
-      console.log("✅ Resultado edición:", data);
 
       if (data.status === 'success') {
         Swal.fire('¡Actualizado!', 'Pregunta frecuente actualizada exitosamente.', 'success');
         setOpenEditDialog(false);
-        fetchFaqs(courseId); // Recargar las FAQs para ver el cambio
+        fetchFaqs(courseId);
       } else {
-        console.warn("⚠️ Error al actualizar:", data.message);
         setError(data.message || 'Error al actualizar la pregunta.');
       }
     } catch (err) {
-      console.error("❌ Error al actualizar FAQ:", err);
       setError(`Error de red o servidor: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // ELIMINADAS FUNCIONES DE ELIMINACIÓN Y BOTONES ASOCIADOS
-  // const handleDeleteFaq = async (faqId) => { ... }
 
 
   const handleBackToEdit = () => navigate(-1);
@@ -206,8 +183,6 @@ const FAQSection = () => {
 
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: 'auto', backgroundColor: 'white', boxShadow: 3, borderRadius: '8px' }}>
-
-      {/* Botones de navegación superiores */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Button variant="outlined" color="secondary" onClick={handleBackToEdit}>
           ← Formulario del curso
@@ -256,7 +231,7 @@ const FAQSection = () => {
           color="primary"
           onClick={handleAddToList}
           sx={{ mt: 1 }}
-          disabled={loading || openEditDialog} // Deshabilitar si se está editando o cargando
+          disabled={loading || openEditDialog}
         >
           Agregar a la lista
         </Button>
@@ -269,10 +244,7 @@ const FAQSection = () => {
             <List dense>
               {preguntasPendientes.map((item, index) => (
                 <ListItem key={`nueva-${index}`} secondaryAction={
-                    // Botón de eliminar para preguntas pendientes
                     <IconButton edge="end" aria-label="delete" onClick={() => setPreguntasPendientes(prev => prev.filter((_, i) => i !== index))}>
-                        {/* Se mantiene este ícono para eliminar de la lista *pendiente*, no del backend */}
-                        {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
                         <img src={require('@mui/icons-material/Delete').default} alt="Delete" style={{ width: 24, height: 24 }} />
                     </IconButton>
                 }>
@@ -287,7 +259,7 @@ const FAQSection = () => {
               variant="contained"
               color="success"
               onClick={handleSubmitAll}
-              disabled={loading || openEditDialog} // Deshabilitar si se está editando o cargando
+              disabled={loading || openEditDialog}
             >
               Enviar todas las nuevas FAQs
             </Button>
@@ -303,17 +275,13 @@ const FAQSection = () => {
           <List dense>
             {faqs.map((faq) => (
               <ListItem
-                key={faq.id} // Usar el ID real de la FAQ para la clave
+                key={faq.id}
                 sx={{ borderBottom: '1px dashed #eee', alignItems: 'flex-start', py: 1 }}
                 secondaryAction={
                   <Box>
                     <IconButton edge="end" aria-label="edit" onClick={() => handleOpenEditDialog(faq)} disabled={loading}>
                       <EditIcon />
                     </IconButton>
-                    {/* Botón de eliminar FAQ de las existentes ELIMINADO */}
-                    {/* <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteFaq(faq.id)} disabled={loading}>
-                      <DeleteIcon />
-                    </IconButton> */}
                   </Box>
                 }
               >
@@ -327,7 +295,6 @@ const FAQSection = () => {
         </>
       )}
 
-      {/* Diálogo de Edición */}
       <Dialog open={openEditDialog} onClose={handleCloseEditDialog} fullWidth maxWidth="sm">
         <DialogTitle>
           Editar Pregunta Frecuente

@@ -9,17 +9,16 @@ import {
   Alert,
   Divider,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom"; // <-- ¡Importamos useNavigate!
+import { useNavigate } from "react-router-dom"; 
 
 const CATEGORIES_STORAGE_KEY = "cachedCategories";
 const CACHE_EXPIRATION_TIME = 1000 * 60 * 60 * 24;
 
-// Ahora recibe `onCloseDrawer` como prop
 const ListaDeCategorias = ({ onCloseDrawer }) => { 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); // <-- Inicializamos useNavigate
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -33,17 +32,13 @@ const ListaDeCategorias = ({ onCloseDrawer }) => {
           if (Date.now() - timestamp < CACHE_EXPIRATION_TIME) {
             setCategories(data);
             setLoading(false);
-            console.log("Categorías cargadas desde localStorage.");
             return;
           } else {
-            console.log("Caché de categorías expirado, recargando...");
-          }
+            }
         } catch (parseError) {
-          console.error("Error al parsear datos de localStorage:", parseError);
-        }
+          }
       } else {
-        console.log("No hay categorías en localStorage, cargando desde API...");
-      }
+        }
 
       try {
         const response = await fetch(
@@ -73,9 +68,7 @@ const ListaDeCategorias = ({ onCloseDrawer }) => {
           CATEGORIES_STORAGE_KEY,
           JSON.stringify({ data: data.categorias, timestamp: Date.now() })
         );
-        console.log("Categorías cargadas desde API y guardadas en localStorage.");
-      } catch (err) {
-        console.error("Error al cargar las categorías desde la API:", err);
+        } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
@@ -85,10 +78,9 @@ const ListaDeCategorias = ({ onCloseDrawer }) => {
     fetchCategories();
   }, []);
 
-  // La función para manejar el clic en una categoría y navegar
-  const handleCategoryClick = (categoryName) => { // <-- Ahora recibe el NOMBRE de la categoría
-    navigate(`/cursos/${categoryName}`); // <-- Navega a la ruta dinámica
-    if (onCloseDrawer) { // <-- Llama a la función para cerrar el Drawer
+  const handleCategoryClick = (categoryName) => { 
+    navigate(`/cursos/${categoryName}`); 
+    if (onCloseDrawer) { 
       onCloseDrawer();
     }
   };
@@ -128,7 +120,6 @@ const ListaDeCategorias = ({ onCloseDrawer }) => {
           {categories.length > 0 ? (
             categories.map((categoria, index) => (
               <React.Fragment key={categoria.id}>
-                {/* Pasa el NOMBRE de la categoría a handleCategoryClick */}
                 <ListItem button onClick={() => handleCategoryClick(categoria.nombre)}> 
                   <ListItemText primary={categoria.nombre} />
                 </ListItem>

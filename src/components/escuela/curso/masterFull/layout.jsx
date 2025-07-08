@@ -7,7 +7,7 @@ import VideoList from "./components/VideoList.jsx";
 import Footer from "../../../footer/pieDePagina.jsx";
 import Resources from "./components/resources.jsx";
 import CommentSection from "./components/comentarios/CommentSection.jsx";
-import useCourseVideoLogic from "./logic/useCourseVideoLogic"; // Importa el nuevo hook
+import useCourseVideoLogic from "./logic/useCourseVideoLogic"; 
 
 const VideoLayout = ({ courseId }) => {
   const {
@@ -23,7 +23,7 @@ const VideoLayout = ({ courseId }) => {
     handleVideoChange,
     handleVideoEnd,
     toggleCompletedVideo,
-  } = useCourseVideoLogic(courseId); // Consume el hook
+  } = useCourseVideoLogic(courseId);
 
   if (loading) {
     return (

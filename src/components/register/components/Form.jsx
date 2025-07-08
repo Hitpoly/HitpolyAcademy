@@ -20,7 +20,7 @@ import Swal from "sweetalert2";
 import Ray from "../../UI/Ray";
 import { FONT_COLOR_GRAY } from "../../constant/Colors";
 import axios from "axios";
-import { useAuth } from "../../../context/AuthContext"; // ¡Importa useAuth!
+import { useAuth } from "../../../context/AuthContext";
 
 const fontFamily = "Inter";
 
@@ -54,11 +54,10 @@ const RegisterSchema = Yup.object().shape({
     )
     .test("fileSize", "La imagen es demasiado grande (máx. 5MB)", (value) => {
       if (!value) return true;
-      return value.size <= 5 * 1024 * 1024; // 5 MB
+      return value.size <= 5 * 1024 * 1024;
     }),
 });
 
-// ---
 
 const Title = styled.p({
   fontSize: 32,
@@ -93,7 +92,7 @@ const TextGrayBold = styled(Typography)({
 
 const RegisterUserForm = () => {
   const navigate = useNavigate();
-  const { login } = useAuth(); // ¡Obtén la función login del AuthContext!
+  const { login } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -135,8 +134,6 @@ const RegisterUserForm = () => {
         }
       );
 
-      console.log("Cloudinary response:", response.data);
-
       if (response.data?.url) {
         return response.data.url;
       } else {
@@ -145,7 +142,6 @@ const RegisterUserForm = () => {
         );
       }
     } catch (error) {
-      console.error("Error al subir el avatar:", error);
       Swal.fire({
         icon: "error",
         title: "Error al subir imagen",
@@ -212,7 +208,6 @@ const RegisterUserForm = () => {
     };
 
     try {
-      // 1. Intentar registrar al usuario
       const registerResponse = await fetch(registerUrl, {
         method: "POST",
         headers: {
@@ -235,17 +230,15 @@ const RegisterUserForm = () => {
       resetForm();
       setNewAvatarFile(null);
       setPreviewAvatarUrl(null);
-
-      // 2. Si el registro fue exitoso, intentar loguear al usuario
       const loginResponse = await fetch(loginUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          funcion: "login", // Asegúrate de que tu endpoint de login espera 'funcion: "login"'
+          funcion: "login", 
           email: values.email,
-          pass: values.pass, // Usa la contraseña del formulario de registro
+          pass: values.pass,
         }),
       });
 
@@ -253,24 +246,22 @@ const RegisterUserForm = () => {
 
       if (loginData.status === "success") {
         const userData = loginData.user;
-        login(userData); // Usa la función login de tu AuthContext
+        login(userData);
         Swal.fire({
           icon: "success",
           title: "¡Bienvenido al master de hitpoly!",
           text: "Has iniciado sesión correctamente",
         });
-        navigate("/"); // Redirige al inicio después del login exitoso
+        navigate("/");
       } else {
-        // Si el login falla después del registro exitoso, notifica al usuario
         Swal.fire({
           icon: "warning",
           title: "Registro exitoso, pero no se pudo iniciar sesión automáticamente",
           text: "Por favor, inicia sesión manualmente con tus nuevas credenciales.",
         });
-        navigate("/login"); // Envía al usuario a la página de login
+        navigate("/login");
       }
     } catch (error) {
-      // Manejo de errores generales (registro o subida de avatar fallida)
       setSnackbar({
         open: true,
         message: `Error: ${error.message}`,

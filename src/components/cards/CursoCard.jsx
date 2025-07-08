@@ -7,7 +7,7 @@ import {
   Button,
   Box,
   Rating,
-  Tooltip, // Importa el componente Tooltip
+  Tooltip,
 } from "@mui/material";
 
 const CursoCard = ({
@@ -63,7 +63,6 @@ const CursoCard = ({
         }}
       >
         <Box>
-          {/* Tooltip para el título */}
           <Tooltip title={title} placement="top">
             <Typography
               gutterBottom
@@ -97,7 +96,6 @@ const CursoCard = ({
             </Typography>
           )}
 
-          {/* Tooltip para el subtítulo */}
           {subtitle && (
             <Tooltip title={subtitle} placement="bottom">
               <Typography

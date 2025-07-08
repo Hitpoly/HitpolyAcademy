@@ -149,7 +149,7 @@ const ModuleClassesManager = ({ onBack }) => {
     navigate(`/cursos/${courseId}/modulos`);
   };
 
-  if (loading && classes.length === 0) { // Mostrar spinner solo si es la carga inicial y no hay clases
+  if (loading && classes.length === 0) { 
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
         <CircularProgress size={24} />

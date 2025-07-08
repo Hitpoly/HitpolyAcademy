@@ -5,34 +5,27 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
-const VideoList = ({ // Renombrado a VideoList para consistencia
+const VideoList = ({
   modules = [],
   onSelectVideo,
   completedVideos,
   toggleCompletedVideo,
   selectedVideoId,
-  // Ya no necesitamos expandedModuleId ni setExpandedModuleId directamente aquí
-  // si el control del 'primer módulo abierto' se maneja internamente.
-  // Pero si quieres que VideoLayout siga teniendo la capacidad de forzar un módulo abierto,
-  // podríamos mantenerlos. Para esta solicitud específica, lo haremos internamente.
-}) => {
+  }) => {
   const [openModules, setOpenModules] = useState({});
 
-  // Efecto para inicializar el primer módulo como abierto
   useEffect(() => {
     if (modules.length > 0) {
       const firstModuleId = modules[0].id;
       setOpenModules(prev => ({
         ...prev,
-        [firstModuleId]: true // Establece el primer módulo como abierto
+        [firstModuleId]: true 
       }));
     }
-  }, [modules]); // Se ejecuta cuando los módulos cambian (es decir, cuando se cargan)
-
+  }, [modules]); 
   const handleModuleClick = (moduleId) => {
     setOpenModules(prev => ({
       ...prev,
-      // Esto permite alternar, pero el primer módulo se reabrirá en la carga inicial
       [moduleId]: !prev[moduleId]
     }));
   };
@@ -67,7 +60,6 @@ const VideoList = ({ // Renombrado a VideoList para consistencia
         <List component="nav">
           {modules.map((module) => (
             <React.Fragment key={module.id}>
-              {/* Encabezado del Módulo */}
               <ListItem
                 sx={{
                   backgroundColor: "#e0f2f7",
@@ -82,9 +74,6 @@ const VideoList = ({ // Renombrado a VideoList para consistencia
               >
                 <ListItemText
                   primary={`Módulo ${module.order || 'N/A'}: ${module.title}`}
-                  // Puedes hacer que el texto del módulo también sea cliqueable si lo deseas:
-                  // onClick={() => handleModuleClick(module.id)}
-                  // sx={{ cursor: 'pointer' }}
                 />
                 <IconButton
                   onClick={() => handleModuleClick(module.id)}
@@ -95,7 +84,6 @@ const VideoList = ({ // Renombrado a VideoList para consistencia
                 </IconButton>
               </ListItem>
 
-              {/* Clases dentro del Módulo (Colapsable) */}
               <Collapse in={openModules[module.id]} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {module.classes?.map((clase) => {

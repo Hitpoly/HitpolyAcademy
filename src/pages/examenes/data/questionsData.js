@@ -1,9 +1,5 @@
-// src/data/questionsData.js
-
 export const allExams = {
-  // --- Examen: Master Full - Examen Final ---
   "master-full-examen-final": {
-    // Identificador único para la ruta dinámica
     title: "Examen Final de Master Full - Appointment Setting",
     description:
       "Este examen evalúa tus conocimientos fundamentales en el rol de Appointment Setter, desde la prospección hasta la mentalidad necesaria para el éxito.", 
@@ -13,9 +9,9 @@ export const allExams = {
       "Responde todas las preguntas.",
       "Una vez que avanzas a la siguiente pregunta, no puedes cambiar tu respuesta anterior.",
     ],
-    imageUrl: "/images/setters.jpg", // URL de la imagen de portada
+    imageUrl: "/images/setters.jpg",
     questions: [
-      // Preguntas de Respuesta Breve (convertidas a Múltiple Opción para el componente actual)
+  
       {
         id: 1,
         questionText: "¿Cuál es la función principal de un Setter Digital?",
@@ -47,7 +43,6 @@ export const allExams = {
           "Un Setter Digital debe evaluar la rentabilidad del servicio ofrecido por la empresa y su posicionamiento en el mercado para asegurar que haya una base sólida para la prospección.",
       },
 
-      // Preguntas Verdadero o Falso (convertidas a Múltiple Opción)
       {
         id: 3,
         questionText:

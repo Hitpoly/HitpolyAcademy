@@ -26,11 +26,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import SequencePopup from "../../components/popups/SequencePopup";
 
-// ... (resto de tu código, affiliateSteps, y funciones)
-
 const MenuDeNavegacion = () => {
 
- const affiliateSteps = [ // ¡ESTA ES LA CLAVE!
+ const affiliateSteps = [ 
     {
       title: "¡Bienvenido al Panel de Afiliados!",
       description: "Aquí te explicaremos cómo funciona nuestro programa de afiliados y cómo puedes empezar a ganar comisiones.",
@@ -71,9 +69,6 @@ const MenuDeNavegacion = () => {
   const [searchError, setSearchError] = useState(null);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
-
-  // Eliminamos searchBoxRef ya que usaremos onBlur/onFocus del TextField
-  // const searchBoxRef = useRef(null); 
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -139,7 +134,6 @@ const MenuDeNavegacion = () => {
           ),
         ]);
 
-        // Procesamiento de Categorías
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           throw new Error(
@@ -160,8 +154,6 @@ const MenuDeNavegacion = () => {
           return map;
         }, {});
         setCategoryMap(newCategoryMap);
-
-        // Procesamiento de Cursos
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
           throw new Error(
@@ -223,41 +215,21 @@ const MenuDeNavegacion = () => {
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
-    setIsSearchActive(true); // Activar cuando se escribe
+    setIsSearchActive(true);
   };
 
   const handleSearchFocus = () => {
-    setIsSearchActive(true); // Activar cuando el input gana foco
+    setIsSearchActive(true);
   };
 
   const handleSearchBlur = () => {
-    // Retrasa el cierre para dar tiempo al clic en los resultados.
-    // Si no haces esto, al hacer clic en un ListItem, el TextField pierde el foco
-    // antes de que el onClick del ListItem se dispare, cerrando el Paper.
     setTimeout(() => {
       setIsSearchActive(false);
-      // Opcional: No limpiar searchTerm y filteredCourses aquí si quieres que
-      // los resultados permanezcan visibles hasta que se escriba algo nuevo
-      // o se haga focus de nuevo. Si quieres limpiar siempre, mantenlos.
       setSearchTerm('');
       setFilteredCourses([]);
-    }, 100); // Pequeño retraso, ajustable si es necesario
+    }, 100);
   };
 
-  // Eliminamos el useEffect que manejaba el clic fuera
-  // useEffect(() => {
-  //   const handleClickOutside = (event) => {
-  //     if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
-  //       setIsSearchActive(false);
-  //       setSearchTerm('');
-  //       setFilteredCourses([]);
-  //     }
-  //   };
-  //   document.addEventListener('mousedown', handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener('mousedown', handleClickOutside);
-  //   };
-  // }, []);
 
   const getCategoryName = (categoryId) => {
     return categoryMap[categoryId] || 'Categoría Desconocida';
@@ -265,9 +237,9 @@ const MenuDeNavegacion = () => {
 
   const handleCourseClick = (course) => {
     navigate(`/curso/${course.id}`);
-    setIsSearchActive(false); // Cierra los resultados al navegar
-    setSearchTerm(''); // Limpia el término de búsqueda
-    setFilteredCourses([]); // Limpia los resultados
+    setIsSearchActive(false); 
+    setSearchTerm(''); 
+    setFilteredCourses([]); 
   };
 
   const isNotHomePage = location.pathname !== '/';
@@ -299,7 +271,7 @@ const MenuDeNavegacion = () => {
           <IconButton onClick={toggleDrawer(true)} color="inherit">
             <MenuIcon />
           </IconButton>
-          <Box sx={{ position: 'relative' }}> {/* searchBoxRef ya no es necesario aquí */}
+          <Box sx={{ position: 'relative' }}> 
             <TextField
               sx={{ display: { xs: "none", md: "flex" } }}
               size="small"
@@ -307,8 +279,8 @@ const MenuDeNavegacion = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={handleSearchChange}
-              onFocus={handleSearchFocus} // <-- Agregado onFocus
-              onBlur={handleSearchBlur}   // <-- Agregado onBlur
+              onFocus={handleSearchFocus} 
+              onBlur={handleSearchBlur}  
             />
             {isSearchActive && (searchTerm !== '' || (filteredCourses.length > 0 && !loadingSearchData)) && (
                 <Paper
@@ -352,7 +324,6 @@ const MenuDeNavegacion = () => {
                                     <ListItem
                                         alignItems="flex-start"
                                         onClick={() => handleCourseClick(course)}
-                                        // Importante: para que el onBlur no se dispare y cierre antes de hacer clic
                                         onMouseDown={(e) => e.preventDefault()}
                                     >
                                         <ListItemText

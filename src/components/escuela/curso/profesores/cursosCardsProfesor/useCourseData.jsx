@@ -1,9 +1,8 @@
-// src/hooks/useCourseData.jsx
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../../../../context/AuthContext'; // Asegúrate de que esta ruta sea correcta
+import { useAuth } from '../../../../../context/AuthContext'; 
 
 const useCourseData = (refreshTrigger) => {
-  const { user } = useAuth(); // Obtén el objeto 'user' del contexto de autenticación
+  const { user } = useAuth(); 
 
   const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +13,6 @@ const useCourseData = (refreshTrigger) => {
     { value: '', label: 'Todos los Estados' }
   ]);
 
-  // --- useEffect para cargar categorías ---
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
@@ -43,24 +41,19 @@ const useCourseData = (refreshTrigger) => {
       }
     };
     fetchCategorias();
-  }, []); // Se ejecuta solo una vez al montar
+  }, []); 
 
-  // --- useEffect para cargar todos los cursos y recolectar estados ---
   useEffect(() => {
     const fetchAllCourses = async () => {
       setLoading(true);
-      setError(null); // Limpiar errores anteriores
-
-      // --- VERIFICACIÓN DEL ID DEL USUARIO ---
+      setError(null);
       if (!user || !user.id) {
         setLoading(false);
         setError("Usuario no autenticado o ID de usuario no disponible. No se pueden cargar los cursos.");
         setAllCourses([]);
         setDynamicEstadosDisponibles([{ value: '', label: 'Todos los Estados' }]);
-        return; // Detiene la ejecución si no hay ID de usuario
+        return; 
       }
-      // --- FIN VERIFICACIÓN DEL ID DEL USUARIO ---
-
       try {
         const response = await fetch('https://apiacademy.hitpoly.com/ajax/traerCursoYmarcaController.php', {
           method: 'POST',
@@ -73,20 +66,16 @@ const useCourseData = (refreshTrigger) => {
           throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
         }
 
-        const data = await response.json();
-      
-        
+        const data = await response.json();      
 
-        // --- CAMBIO CLAVE AQUÍ: Acceder a data.cursos.cursos ---
-        // Verificamos que 'data.cursos' sea un objeto y que dentro tenga la propiedad 'cursos' que sea un array
         if (data.status === 'success' && data.cursos && Array.isArray(data.cursos.cursos)) {
-          const coursesArray = data.cursos.cursos; // ¡Accedemos al array real!
+          const coursesArray = data.cursos.cursos; 
 
           setAllCourses(coursesArray);
 
           const uniqueEstados = new Set();
-          coursesArray.forEach(item => { // Iteramos sobre el array de cursos
-            if (item.curso && item.curso.estado) { // Accede al estado dentro del objeto 'curso'
+          coursesArray.forEach(item => {
+            if (item.curso && item.curso.estado) { 
               const estadoNormalizado = String(item.curso.estado).trim().toLowerCase();
               uniqueEstados.add(estadoNormalizado);
             }
@@ -100,7 +89,6 @@ const useCourseData = (refreshTrigger) => {
           setDynamicEstadosDisponibles([{ value: '', label: 'Todos los Estados' }, ...estadosParaFiltro]);
 
         } else {
-          // Esto se ejecuta si 'data.status' no es 'success' o si 'data.cursos.cursos' no es un array válido
           const message = data.message || 'Error al cargar los cursos o formato de datos inesperado (verifique la estructura "data.cursos.cursos").';
           setError(message);
           setAllCourses([]);
@@ -118,7 +106,7 @@ const useCourseData = (refreshTrigger) => {
     if (!loadingCategories) {
       fetchAllCourses();
     }
-  }, [refreshTrigger, loadingCategories, user]); // Añade 'user' a las dependencias para que se ejecute cuando el usuario cambie/cargue
+  }, [refreshTrigger, loadingCategories, user]);
 
   return {
     allCourses,

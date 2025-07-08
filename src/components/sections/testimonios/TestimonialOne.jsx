@@ -7,20 +7,17 @@ import {
   Avatar,
   CircularProgress,
   Alert,
-  Tooltip, // Importar el componente Tooltip
+  Tooltip,
 } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
-// Se eliminaron las importaciones de Swiper debido a errores de resolución.
 
 const TestimoniosSection = () => {
-  // Estados locales para los testimonios y su carga
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [usersById, setUsersById] = useState({}); // Para mapear usuarios a comentarios
-  const [courseNamesById, setCourseNamesById] = useState({}); // Nuevo estado para mapear IDs de clase a nombres de cursos
+  const [usersById, setUsersById] = useState({}); 
+  const [courseNamesById, setCourseNamesById] = useState({}); 
 
-  // swiperRef ya no es necesario sin Swiper, pero se mantiene por si se reintroduce
   const swiperRef = useRef(null);
 
   useEffect(() => {
@@ -28,7 +25,6 @@ const TestimoniosSection = () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Obtener solo los comentarios destacados
         const commentsResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/traerComentariosDestacadosController.php",
           {
@@ -38,8 +34,7 @@ const TestimoniosSection = () => {
           }
         );
         const commentsData = await commentsResponse.json();
-        console.log("Datos de comentarios destacados (commentsData):", commentsData);
-
+        
         if (
           !commentsResponse.ok ||
           commentsData.status !== "success" ||
@@ -51,7 +46,6 @@ const TestimoniosSection = () => {
           );
         }
 
-        // 2. Obtener todos los usuarios para mapear nombres y fotos
         const allUsersResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
           {
@@ -61,8 +55,7 @@ const TestimoniosSection = () => {
           }
         );
         const allUsersData = await allUsersResponse.json();
-        console.log("Datos de todos los usuarios (allUsersData):", allUsersData);
-
+       
         let mappedUsers = {};
         if (allUsersData.status === "success" && Array.isArray(allUsersData.clases)) {
           mappedUsers = allUsersData.clases.reduce((acc, user) => {
@@ -71,18 +64,15 @@ const TestimoniosSection = () => {
           }, {});
         }
         setUsersById(mappedUsers);
-        console.log("Usuarios mapeados (mappedUsers):", mappedUsers);
-
-        // 3. Obtener nombres de cursos para cada clase_id único
+        
         const uniqueClassIds = [
           ...new Set(
             commentsData.comentarios
               .map((comment) => comment.clase_id)
-              .filter(id => id != null) // Asegurarse de que no haya IDs nulos
+              .filter(id => id != null) 
           ),
         ];
-        console.log("IDs de clase únicos encontrados:", uniqueClassIds);
-
+        
         const fetchedCourseNames = {};
         if (uniqueClassIds.length > 0) {
           await Promise.all(
@@ -97,31 +87,23 @@ const TestimoniosSection = () => {
                   }
                 );
                 const courseNameData = await courseNameResponse.json();
-                console.log(`Datos del curso para clase_id ${classId} (courseNameData):`, courseNameData);
-
+                
                 if (courseNameResponse.ok && courseNameData.status === "success" && courseNameData.cursos && courseNameData.cursos.titulo) {
                   fetchedCourseNames[classId] = courseNameData.cursos.titulo;
                 } else {
-                  console.warn(`No se pudo obtener el nombre del curso para clase_id ${classId}. Mensaje: ${courseNameData.message || 'Desconocido'}`);
                   fetchedCourseNames[classId] = "Curso no especificado";
                 }
               } catch (courseError) {
-                console.error(`Error al obtener el nombre del curso para clase_id ${classId}:`, courseError);
                 fetchedCourseNames[classId] = "Error al cargar curso";
               }
             })
           );
         }
         setCourseNamesById(fetchedCourseNames);
-        console.log("Nombres de cursos mapeados (fetchedCourseNames):", fetchedCourseNames);
+        
 
-
-        // 4. Formatear los comentarios obtenidos, incluyendo el nombre del curso
         const fetchedReviews = commentsData.comentarios.map((comment) => {
           const user = mappedUsers[comment.usuario_id];
-          console.log(`Procesando comentario ID ${comment.id} - Usuario asociado:`, user);
-
-          // Lógica para construir el nombre completo
           let fullName = "Usuario Desconocido";
           if (user) {
             if (user.nombre && user.apellido) {
@@ -133,7 +115,6 @@ const TestimoniosSection = () => {
             }
           }
 
-          // Obtener el nombre del programa/curso
           const programName = fetchedCourseNames[comment.clase_id] || "Programa no especificado";
 
           return {
@@ -146,7 +127,6 @@ const TestimoniosSection = () => {
         });
         setReviews(fetchedReviews);
       } catch (err) {
-        console.error("❌ Error al cargar testimonios destacados:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -154,7 +134,7 @@ const TestimoniosSection = () => {
     };
 
     fetchTestimonials();
-  }, []); // Se ejecuta una vez al montar el componente
+  }, []);
 
   if (loading) {
     return (
@@ -253,7 +233,6 @@ const TestimoniosSection = () => {
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                   {review.name}
                 </Typography>
-                {/* Nuevo: Tooltip y estilo para limitar a 2 líneas */}
                 <Tooltip title={review.program} enterDelay={500}>
                   <Typography
                     variant="body2"

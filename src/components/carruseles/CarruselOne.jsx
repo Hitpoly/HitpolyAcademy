@@ -51,14 +51,12 @@ const CarouselWithSwiper = () => {
         const data = await response.json();
         
         if (data.status === "success" && Array.isArray(data.clases)) {
-          // --- CAMBIO CLAVE AQUÍ: Eliminamos la función filter ---
-          // Ahora mapeamos directamente todos los elementos de 'data.clases'
+
           const processedUsers = data.clases.map(user => ({
             id: user.id,
             nombre: user.nombre || 'Nombre no disponible',
-            // Usamos 'url_foto_perfil' para la imagen del avatar
+
             img: user.url_foto_perfil || '/images/default-avatar.jpg', 
-            // Usamos 'url_linkedin' para el enlace de LinkedIn
             linkedin: user.url_linkedin || '', 
           }));
           

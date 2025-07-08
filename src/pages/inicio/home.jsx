@@ -19,7 +19,7 @@ function Inicio() {
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" }, // Columna en xs, fila en sm y superiores
+          flexDirection: { xs: "column", sm: "row" },
           overflow: "hidden",
           backgroundColor: "#f0f0f0",
         }}
@@ -27,18 +27,17 @@ function Inicio() {
         <Box
           sx={{
             position: "relative",
-            flex: { xs: "0 0 100%", sm: "0 0 40%" }, // 100% de ancho en xs, 40% en sm y superiores
+            flex: { xs: "0 0 100%", sm: "0 0 40%" }, 
             display: "flex",
-            justifyContent: { xs: "center", sm: "flex-start" }, // Centrar horizontalmente en móvil, izquierda en desktop
+            justifyContent: { xs: "center", sm: "flex-start" }, 
             alignItems: "center",
-            padding: { xs: "20px 16px", sm: 0 }, // Padding para móviles, reiniciado en desktop
-            paddingLeft: { xs: 0, sm: "40px" }, // Mantener padding izquierdo en desktop
+            padding: { xs: "20px 16px", sm: 0 },
+            paddingLeft: { xs: 0, sm: "40px" },
             backgroundColor: "#6C4DE2",
             color: "white",
-            // ¡Aquí el cambio clave para el corte diagonal en móviles!
             clipPath: {
-              xs: "none", // Sin clip-path en móvil
-              sm: "polygon(0 0, 100% 0, 60% 100%, 0 100%)", // Con clip-path en sm y superiores
+              xs: "none",
+              sm: "polygon(0 0, 100% 0, 60% 100%, 0 100%)", 
             },
           }}
         >
@@ -47,7 +46,7 @@ function Inicio() {
             sx={{
               fontSize: { xs: "1.2rem", sm: "1.5rem", md: "2rem" },
               fontWeight: "bold",
-              textAlign: { xs: "center", sm: "left" }, // Centrar texto en móvil, alinear a la izquierda en desktop
+              textAlign: { xs: "center", sm: "left" }, 
             }}
           >
             Comunidad Activa
@@ -55,9 +54,9 @@ function Inicio() {
         </Box>
         <Box
           sx={{
-            flex: { xs: "0 0 100%", sm: "0 0 60%" }, // 100% de ancho en xs, 60% en sm y superiores
+            flex: { xs: "0 0 100%", sm: "0 0 60%" }, 
             paddingLeft: { xs: 0, sm: 2 },
-            paddingY: { xs: "20px", sm: 0 }, // Añadir padding vertical en móvil para el carrusel
+            paddingY: { xs: "20px", sm: 0 },
           }}
         >
           <CarouselWithSwiper/>

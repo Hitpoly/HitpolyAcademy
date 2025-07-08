@@ -13,37 +13,31 @@ function CategoryManager() {
   return (
     <Box
       sx={{
-        p: 4, // Padding alrededor del contenido
-        width: '100%', // Asegura que el contenedor principal ocupe todo el ancho disponible
-        boxSizing: 'border-box', // Incluye el padding en el ancho total
-        mx: 'auto', // Centra el contenido si el padre tiene un ancho limitado (aunque aquí será 100%)
+        p: 4,
+        width: '100%', 
+        boxSizing: 'border-box', 
+        mx: 'auto', 
         bgcolor: 'background.paper',
         borderRadius: 2,
         boxShadow: 3,
         fontFamily: 'Roboto, sans-serif',
-        display: 'flex', // Habilita Flexbox para organizar los elementos hijos
-        flexDirection: { xs: 'column', md: 'row' }, // Columnas en extra-pequeño, filas en mediano y más grande
-        gap: { xs: 4, md: 4 }, // Espacio entre los elementos hijos. En 'md', será horizontal.
-                               // Manteniendo el mismo gap para la consistencia vertical/horizontal.
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' }, 
+        gap: { xs: 4, md: 4 },                                
       }}
     >
-      {/* Panel de Creación de Categoría */}
       <Box
         sx={{
-          width: { xs: '100%', md: '40%' }, // 100% en móviles, 40% en PC
-          flexShrink: 0, // Evita que se encoja si el otro Box necesita más espacio
-          // Si necesitas un estilo de "panel" como Paper, envuélvelo en Paper dentro de este Box.
-          // Por ahora, solo estamos aplicando el layout flex.
-        }}
+          width: { xs: '100%', md: '40%' }, 
+          flexShrink: 0, }}
       >
         <CategoryCreator onCategoryCreated={handleCategoryCreated} />
       </Box>
 
-      {/* Panel de Gestión (Listar, Editar, Eliminar) de Categorías */}
       <Box
         sx={{
-          width: { xs: '100%', md: '60%' }, // 100% en móviles, 60% en PC
-          flexGrow: 1, // Permite que crezca para ocupar el espacio restante
+          width: { xs: '100%', md: '60%' }, 
+          flexGrow: 1, 
         }}
       >
         <CategoryListManager refreshCategoriesTrigger={refreshTrigger} />

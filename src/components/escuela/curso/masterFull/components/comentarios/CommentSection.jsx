@@ -1,4 +1,3 @@
-// Este componente reemplaza CommentSection con soporte para respuestas anidadas por lotes
 import React, { useState } from 'react';
 import {
     Avatar,
@@ -36,13 +35,13 @@ const CommentSection = ({ claseId }) => {
         newCommentContent,
         setNewCommentContent,
         replyingTo,
-        editingComment, // <--- Este estado es clave
+        editingComment,
         usersNamesMap,
         usersLoading,
         isAuthenticated,
         currentUser,
         handlePostComment,
-        handleEditComment, // <--- Esta función debe ser llamada
+        handleEditComment,
         handleDeleteComment,
         handleReplyClick,
         handleEditButtonClick,
@@ -110,10 +109,10 @@ const CommentSection = ({ claseId }) => {
 
     const getBackgroundColorForLevel = (level) => {
         const colors = [
-            '#f0f2f5', // Nivel 0 (Comentario principal)
-            '#e8ebef', // Nivel 1 (Primera respuesta)
-            '#e0e3e7', // Nivel 2 (Segunda respuesta)
-            '#d8dbe0', // Nivel 3 y subsiguientes
+            '#f0f2f5', 
+            '#e8ebef', 
+            '#e0e3e7', 
+            '#d8dbe0', 
         ];
         return colors[Math.min(level, colors.length - 1)];
     };
@@ -126,8 +125,6 @@ const CommentSection = ({ claseId }) => {
         const replies = comment.replies || [];
         const visibleCount = expandedReplies[comment.id] || 0;
         const isVisible = visibleReplies[comment.id];
-
-        // Determinar el placeholder para el TextField de respuesta anidada
         const replyPlaceholder = replyingTo === comment.id
             ? `Responder a @${commenterName}`
             : "Escribe tu respuesta...";
@@ -214,7 +211,6 @@ const CommentSection = ({ claseId }) => {
         <Box>
             <Typography variant="h6" mb={2}>Comentarios</Typography>
 
-            {/* Este es el bloque del input de comentario principal, movido al inicio */}
             {isAuthenticated && (
                 <Box mt={3} mb={3} display="flex" gap={1}>
                     <Avatar />
@@ -254,7 +250,6 @@ const CommentSection = ({ claseId }) => {
                     >
                         {editingComment ? "Guardar" : "Enviar"}
                     </Button>
-                    {/* Botón de cancelar para salir del modo edición/respuesta */}
                     {(editingComment || replyingTo) && (
                         <Button
                             variant="outlined"

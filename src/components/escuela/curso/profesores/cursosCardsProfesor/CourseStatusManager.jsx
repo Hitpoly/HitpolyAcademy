@@ -13,7 +13,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import CourseCardEstado from "../../../../cards/CourseCardEstado";
-import useCourseData from "./useCourseData"; // Importa el nuevo hook
+import useCourseData from "./useCourseData";
 
 const CourseStatusManager = ({
   onEditCourse,
@@ -22,7 +22,7 @@ const CourseStatusManager = ({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
-  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(false); // Para refrescar desde el manager // Usa el custom hook para obtener los datos y estados
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(false); 
 
   const {
     allCourses,
@@ -31,17 +31,17 @@ const CourseStatusManager = ({
     categorias,
     loadingCategories,
     dynamicEstadosDisponibles,
-    setAllCourses, // Función para actualizar allCourses desde aquí
-    setError, // Función para establecer errores desde aquí
-  } = useCourseData(propRefreshTrigger || localRefreshTrigger); // Pasa el trigger del padre o el local // --- useEffect para filtrar cursos ---
+    setAllCourses,
+    setError,
+  } = useCourseData(propRefreshTrigger || localRefreshTrigger); 
 
   useEffect(() => {
-    let tempCourses = [...allCourses]; // Cursos completos obtenidos del hook
+    let tempCourses = [...allCourses];
 
     if (selectedCategory) {
       tempCourses = tempCourses.filter(
         (
-          item // 'item' es { curso: {...}, marcas: [...] } // Accedemos a item.curso.categoria_id
+          item 
         ) =>
           item.curso &&
           String(item.curso.categoria_id) === String(selectedCategory)
@@ -50,8 +50,6 @@ const CourseStatusManager = ({
 
     if (selectedStatus) {
       tempCourses = tempCourses.filter((item) => {
-        // 'item' es { curso: {...}, marcas: [...] }
-        // Accedemos a item.curso.estado
         const courseEstadoNormalizado =
           item.curso && String(item.curso.estado).trim().toLowerCase();
         const selectedStatusNormalizado = String(selectedStatus)
@@ -61,21 +59,19 @@ const CourseStatusManager = ({
       });
     }
     setFilteredCourses(tempCourses);
-  }, [allCourses, selectedCategory, selectedStatus]); // Dependencias: allCourses, selectedCategory, selectedStatus
+  }, [allCourses, selectedCategory, selectedStatus]); 
 
   const handleEditClick = (course) => {
     onEditCourse(course);
-  }; // --- handleStatusChange con actualización optimista ---
+  };
 
   const handleStatusChange = async (courseId, newStatus) => {
     let originalCourse = null;
     setAllCourses((prevItems) => {
-      // prevItems es el array de {curso, marcas}
       const updatedItems = prevItems.map((item) => {
         if (item.curso && item.curso.id === courseId) {
-          // Accedemos a item.curso.id
-          originalCourse = { ...item }; // Guardamos el item completo original
-          return { ...item, curso: { ...item.curso, estado: newStatus } }; // Actualizamos el estado dentro de 'curso'
+          originalCourse = { ...item }; 
+          return { ...item, curso: { ...item.curso, estado: newStatus } }; 
         }
         return item;
       });
@@ -107,8 +103,7 @@ const CourseStatusManager = ({
 
       const data = await response.json();
       if (data.status === "success") {
-        // Si la actualización fue exitosa, no necesitamos hacer nada más aquí ya que el estado se actualizó optimistamente.
-      } else {
+        } else {
         setError(data.message || "Error al cambiar el estado del curso."); // Revertir el estado si la operación falla en el backend
         setAllCourses((prevItems) =>
           prevItems.map(
@@ -159,7 +154,6 @@ const CourseStatusManager = ({
       const data = await response.json();
 
       if (data.status === "success") {
-        // Actualiza el estado local de allCourses inmutablemente
         setAllCourses((prevItems) => {
           const remainingItems = prevItems.filter(
             (item) => item.curso && item.curso.id !== courseId
@@ -176,7 +170,7 @@ const CourseStatusManager = ({
   };
 
   const handleRefresh = () => {
-    setLocalRefreshTrigger((prev) => !prev); // Alterna el trigger local
+    setLocalRefreshTrigger((prev) => !prev);
   };
 
   const handleCategoryChange = (event) => {

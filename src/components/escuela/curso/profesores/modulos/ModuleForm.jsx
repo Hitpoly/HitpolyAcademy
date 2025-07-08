@@ -8,18 +8,18 @@ import {
   Alert,
   CircularProgress,
   IconButton,
-  Dialog, // Importamos Dialog
-  DialogTitle, // Importamos DialogTitle
-  DialogContent, // Importamos DialogContent
-  DialogActions, // Importamos DialogActions
+  Dialog,
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 const ModuleForm = ({
   courseId,
   moduleToEdit,
-  open, // Nueva prop: para controlar si el modal está abierto
-  onClose, // Nueva prop: para cerrar el modal
+  open,
+  onClose, 
   onModuleSaved,
   existingOrders = [],
 }) => {
@@ -46,7 +46,7 @@ const ModuleForm = ({
       setFormData(initialFormState);
     }
     setResponseMessage({ type: "", message: "" });
-  }, [moduleToEdit, open]); // Añadimos 'open' como dependencia para resetear el estado al abrir/cerrar
+  }, [moduleToEdit, open]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -134,7 +134,7 @@ const ModuleForm = ({
             `Módulo ${moduleToEdit ? "actualizado" : "creado"} correctamente.`,
         });
         setTimeout(() => {
-          onModuleSaved(); // Llama a la función para cerrar el modal y refrescar la lista
+          onModuleSaved(); 
         }, 1000);
       } else {
         setResponseMessage({
@@ -166,8 +166,8 @@ const ModuleForm = ({
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent dividers> {/* 'dividers' añade un borde superior e inferior */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ pt: 1 }}> {/* Añadimos pt para padding-top */}
+      <DialogContent dividers> 
+        <Box component="form" onSubmit={handleSubmit} sx={{ pt: 1 }}> 
           {responseMessage.message && (
             <Alert severity={responseMessage.type} sx={{ mb: 2 }}>
               {responseMessage.message}
@@ -182,7 +182,7 @@ const ModuleForm = ({
             onChange={handleChange}
             margin="normal"
             required
-            autoFocus // Para que el primer campo tenga foco al abrir
+            autoFocus
           />
           <TextField
             fullWidth
@@ -207,7 +207,7 @@ const ModuleForm = ({
           />
         </Box>
       </DialogContent>
-      <DialogActions sx={{ pr: 3, pb: 2 }}> {/* Añadimos padding al DialogActions */}
+      <DialogActions sx={{ pr: 3, pb: 2 }}>
         <Button onClick={onClose} variant="outlined" disabled={loading}>
           Cancelar
         </Button>
@@ -217,7 +217,7 @@ const ModuleForm = ({
           variant="contained"
           color="primary"
           disabled={loading}
-          onClick={handleSubmit} // Agregamos onClick al botón para asegurar que se dispare el submit
+          onClick={handleSubmit}
         >
           {loading ? (
             <CircularProgress size={24} />

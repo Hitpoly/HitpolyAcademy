@@ -63,8 +63,6 @@ const CursosDestacados = () => {
     }
   }, []);
 
-  // Esta función fetchFeaturedCourses se mantiene pero no se usará en este flujo
-  // dado que el componente ahora carga todos los cursos para su gestión.
   const fetchFeaturedCourses = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -119,7 +117,7 @@ const CursosDestacados = () => {
     });
 
     if (result.isConfirmed) {
-      setLoading(true); // Se muestra el spinner de carga para la eliminación
+      setLoading(true);
       try {
         const response = await fetch(
           "https://apiacademy.hitpoly.com/ajax/eliminarCursosController.php",
@@ -144,7 +142,6 @@ const CursosDestacados = () => {
 
         if (data.status === "success") {
           Swal.fire("¡Eliminado!", "El curso ha sido eliminado.", "success");
-          // Después de eliminar, recargamos TODOS los cursos para asegurar que la lista esté completa.
           fetchAllCourses();
         } else {
           throw new Error(data.message || "Fallo al eliminar el curso.");
@@ -163,8 +160,6 @@ const CursosDestacados = () => {
 
   const handleToggleFeatured = async (courseId, currentFeaturedStatus) => {
     const newFeaturedStatus = currentFeaturedStatus === 1 ? 0 : 1;
-
-    // 1. Actualización optimista del estado local
     setCourses((prevCourses) =>
       prevCourses.map((course) =>
         course.id === courseId
@@ -174,7 +169,6 @@ const CursosDestacados = () => {
     );
 
     try {
-      // 2. Envío a la API
       const response = await fetch(
         "https://apiacademy.hitpoly.com/ajax/editarCursoAdminController.php",
         {
@@ -190,7 +184,6 @@ const CursosDestacados = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        // 3. Si falla la API, revertir el estado local
         setCourses((prevCourses) =>
           prevCourses.map((course) =>
             course.id === courseId
@@ -206,10 +199,7 @@ const CursosDestacados = () => {
       const data = await response.json();
 
       if (data.status === "success") {
-        // 4. Si es éxito en la API, NO se muestra el banner de éxito
-        // El estado local ya fue actualizado, así que la UI es fluida.
       } else {
-        // 3. Si falla la API lógicamente, revertir el estado local
         setCourses((prevCourses) =>
           prevCourses.map((course) =>
             course.id === courseId
@@ -222,15 +212,12 @@ const CursosDestacados = () => {
         );
       }
     } catch (err) {
-      // Mostrar banner de error solo si la operación falla
       Swal.fire(
         "Error",
         `No se pudo actualizar el estado de destacado: ${err.message}`,
         "error"
       );
     }
-    // No hay `finally` con `setLoading(false)` aquí para mantener la fluidez
-    // ya que la UI ya se actualizó optimista o se revirtió en caso de error.
   };
 
   useEffect(() => {

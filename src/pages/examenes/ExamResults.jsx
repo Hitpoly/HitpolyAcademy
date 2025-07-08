@@ -19,7 +19,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 const ExamResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  // <-- Aquí se desestructura el examTitle del estado de la navegación
   const { answers, questions, examTitle = "Examen" } = location.state || { answers: [], questions: [], examTitle: "Examen" };
 
   if (!answers || answers.length === 0) {
@@ -29,7 +28,7 @@ const ExamResults = () => {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => navigate('/')} // O la ruta a tu página de inicio/exámenes
+          onClick={() => navigate('/')}
           sx={{ mt: 3 }}
         >
           Volver a la Página Principal
@@ -40,7 +39,7 @@ const ExamResults = () => {
 
   const score = answers.filter((answer) => answer.isCorrect).length;
   const totalQuestions = questions.length;
-  const percentage = (totalQuestions > 0) ? (score / totalQuestions) * 100 : 0; // Evita división por cero
+  const percentage = (totalQuestions > 0) ? (score / totalQuestions) * 100 : 0;
 
   const wrongAnswers = answers.filter((answer) => !answer.isCorrect);
 
@@ -62,7 +61,7 @@ const ExamResults = () => {
     >
       <Paper elevation={3} sx={{ p: 4, borderRadius: 2, maxWidth: 800, width: '100%', mb: 3 }}>
         <Typography variant="h4" component="h2" gutterBottom align="center" color="primary">
-          Resultados de {examTitle} {/* <-- Título del examen dinámico aquí */}
+          Resultados de {examTitle}
         </Typography>
         <Divider sx={{ mb: 2 }} />
 
@@ -129,7 +128,7 @@ const ExamResults = () => {
             variant="outlined"
             color="primary"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/')} // O la ruta a tu página de inicio/exámenes
+            onClick={() => navigate('/')}
           >
             Volver al Inicio
           </Button>

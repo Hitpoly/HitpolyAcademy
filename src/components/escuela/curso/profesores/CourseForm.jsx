@@ -1,4 +1,3 @@
-// components/escuela/curso/profesores/CourseForm.jsx
 import React from "react";
 import {
   Box,
@@ -10,7 +9,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-import CourseDetailsSection from "./CourseDetailsSection"; // La ruta puede variar
+import CourseDetailsSection from "./CourseDetailsSection"; 
 import AdditionalDetailsSection from "./AdditionalDetailsSection";
 import useCourseFormLogic from "./logic/useCourseFormLogic";
 
@@ -29,15 +28,15 @@ const CourseForm = () => {
     newTemaTitle,
     setNewTemaTitle,
     bannerFile,
-    cardCoverFile, // <-- Asegúrate de extraerlo aquí
+    cardCoverFile,
     isEditing,
     loading,
     uploadingBanner,
-    uploadingCardCover, // <-- Asegúrate de extraerlo aquí
+    uploadingCardCover,
     responseMessage,
     handleChange,
-    handleFileChange, // <-- Función para el banner
-    handleChangeCardCover, // <-- Función para la portada de tarjeta
+    handleFileChange,
+    handleChangeCardCover, 
     handleAddMarcaPlataforma,
     handleRemoveMarcaPlataforma,
     handleEditMarcaPlataforma,
@@ -129,11 +128,11 @@ const CourseForm = () => {
                   formData={formData}
                   handleChange={handleChange}
                   bannerFile={bannerFile}
-                  cardCoverFile={cardCoverFile} // <-- ¡Pásale el archivo de la portada de tarjeta!
-                  handleFileChange={handleFileChange} // <-- Para el banner
-                  handleChangeCardCover={handleChangeCardCover} // <-- ¡Pásale la función para la portada de tarjeta!
+                  cardCoverFile={cardCoverFile}
+                  handleFileChange={handleFileChange} 
+                  handleChangeCardCover={handleChangeCardCover} 
                   uploadingBanner={uploadingBanner}
-                  uploadingCardCover={uploadingCardCover} // <-- Pásale el estado de carga para la portada
+                  uploadingCardCover={uploadingCardCover} 
                   categorias={categorias}
                   loadingCategories={loadingCategories}
                   categoryErrorMessage={categoryErrorMessage}

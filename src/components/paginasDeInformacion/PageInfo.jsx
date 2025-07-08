@@ -10,11 +10,10 @@ import CenteredCallToAction from "../banners/llamadoALaAccion";
 import FaqSection from "./components/FaqSection";
 import CourseDetailPage from "./components/CourseDetailPage";
 
-// Función para extraer el ID numérico de un slug (por ejemplo, "nombre-curso-123" -> "123")
 const extractIdFromSlug = (slug) => {
   const parts = slug.split('-');
   const id = parts[parts.length - 1];
-  return /^\d+$/.test(id) ? id : null; // Devuelve el ID si es numérico, de lo contrario null
+  return /^\d+$/.test(id) ? id : null; 
 };
 
 function PaginaDeInformacion() {
@@ -28,11 +27,9 @@ function PaginaDeInformacion() {
   const { id: courseSlugFromUrl } = useParams();
 
   const numericCourseId = extractIdFromSlug(courseSlugFromUrl);
-  // ------------------------------------------------------------------
 
   useEffect(() => {
     const fetchCourseAndContentData = async () => {
-      // Usa numericCourseId que ya está definido arriba
       if (!numericCourseId) {
         setError("ID del curso no válido o no proporcionado en la URL.");
         setLoading(false);
@@ -69,7 +66,6 @@ function PaginaDeInformacion() {
           Array.isArray(courseData.cursos.cursos)
         ) {
           foundCourse = courseData.cursos.cursos.find(
-            // Compara con el numericCourseId ya definido
             (curso) => String(curso.id) === numericCourseId
           );
           
@@ -130,7 +126,6 @@ function PaginaDeInformacion() {
           return;
         }
 
-        // --- Lógica para Módulos y Clases ---
         const modulesResponse = await fetch(
           "https://apiacademy.hitpoly.com/ajax/getModulosPorCursoController.php",
           {
@@ -138,7 +133,7 @@ function PaginaDeInformacion() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               accion: "getModulosCurso",
-              id: numericCourseId, // Usa numericCourseId aquí también
+              id: numericCourseId,
             }),
           }
         );
@@ -266,7 +261,6 @@ function PaginaDeInformacion() {
     );
   }
 
-  // Desestructuración y asignación de valores predeterminados
   const {
     titulo = "Título no disponible",
     descripcion_larga = "Descripción no disponible",
@@ -280,7 +274,6 @@ function PaginaDeInformacion() {
     tipo_clase = "Online",
     titulo_credencial = "Certificado",
     descripcion_credencial = "Otorgado al completar",
-    // eslint-disable-next-line no-unused-vars
     profesor_id,
     nivel = "N/A",
     precio = "N/A",
@@ -288,12 +281,10 @@ function PaginaDeInformacion() {
     url_video_introductorio,
     marcaAsociada = [],
     url_banner,
-    // eslint-disable-next-line no-unused-vars
     resultados_aprendizaje = [],
-    temario, // Asegúrate de que `temario` exista en apiData
+    temario,
   } = apiData;
 
-  // Prepara el temario para pasarlo a `CourseDetailPage`
   const temarioForDisplay =
     temario && Array.isArray(temario)
       ? temario.map((item) => item.titulo || "Tema sin título")
@@ -354,7 +345,7 @@ function PaginaDeInformacion() {
     hoursPerWeek: horas_por_semana,
     startDate: fecha_inicio_clases,
     enrollmentDeadline: fecha_limite_inscripcion,
-    activationDate: "N/A", // Si no hay activación específica, puedes mantener "N/A"
+    activationDate: "N/A", 
     learningPace: ritmo_aprendizaje,
     classType: tipo_clase,
     credentialTitle: titulo_credencial,
@@ -367,11 +358,9 @@ function PaginaDeInformacion() {
     brandingData: marcaAsociada,
   };
 
-  // Prepara el valor de horas_por_semana para mostrar, si el de la API es null
   const displayHorasPorSemana =
     horas_por_semana !== null ? horas_por_semana : "No especificado";
 
-  // Formatea las fechas para una mejor visualización si no son los valores por defecto
   const formattedFechaInicio =
     fecha_inicio_clases !== "Próximamente"
       ? new Date(fecha_inicio_clases).toLocaleDateString("es-ES", {
@@ -424,17 +413,15 @@ function PaginaDeInformacion() {
     ],
   };
 
-  // --- NUEVA DATA PARA CENTRED CALL TO ACTION ---
   const customCallToActionData = {
     title: `Regístrate en ${titulo}`,
     subtitle: "¡Asegura tu cupo hoy y transforma tu futuro profesional!",
     buttonText: "Inscríbete Ahora",
-    buttonLink: "#enrollment-form", // <-- ID del ancla al formulario
-    backgroundColor: "#E0E0E0", // Un color de fondo diferente si quieres
+    buttonLink: "#enrollment-form",
+    backgroundColor: "#E0E0E0",
     buttonColor: "primary",
     buttonSx: { backgroundColor: "#F21C63", "&:hover": { backgroundColor: "#d41857" } },
   };
-  // ------------------------------------------------
 
   return (
     <>
@@ -463,7 +450,7 @@ function PaginaDeInformacion() {
             <ProgrammeDetailsBanner {...programmeDetailsForBanner} />
           </Box>
           <Box
-            id="enrollment-form" // <-- ¡AQUÍ ESTÁ EL ID DEL ANCLA!
+            id="enrollment-form"
             sx={{
               width: { xs: "100%", md: "35%" },
               backgroundColor: "#f4f4f4",
@@ -477,16 +464,12 @@ function PaginaDeInformacion() {
           </Box>
         </Box>
       </Box>
-
-      {/* CourseDetailPage */}
       {apiData && (
         <CourseDetailPage
           course={courseDataForDetailPage}
           countdownTargetDate={countdownTarget}
         />
       )}
-
-      {/* FactsAndCertificate */}
       <FactsAndCertificate
         certificateSubtitle={subtitulo}
         certificateLongDescription={descripcion_larga}
@@ -494,15 +477,11 @@ function PaginaDeInformacion() {
         brandingData={programmeDetailsForBanner.brandingData}
       />
 
-      {/* FaqSection - Ahora se encargará de cargar sus propios datos */}
       <Box sx={{ padding: { xs: "20px", md: "0px 170px" } }}>
-        <FaqSection courseId={numericCourseId} /> {/* Usa numericCourseId aquí */}
+        <FaqSection courseId={numericCourseId} />
       </Box>
 
-      {/* CenteredCallToAction - Siempre se renderizará con nuestros datos personalizados */}
       <CenteredCallToAction {...customCallToActionData} />
-
-      {/* Footer */}
       <Footer />
     </>
   );

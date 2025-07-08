@@ -23,16 +23,8 @@ const CategoryCoursesPopup = ({
   error
 }) => {
 
-  // LOG PARA VER SI EL POPUP SE ABRE Y CON QUÉ PROPS
   useEffect(() => {
-    if (isOpen) {
-      console.log("LOG - CategoryCoursesPopup: Popup abierto."); // LOG 7
-      console.log("LOG - CategoryCoursesPopup: selectedCategoryId:", selectedCategoryId);
-      console.log("LOG - CategoryCoursesPopup: allCourses (cantidad):", allCourses ? allCourses.length : 0);
-      console.log("LOG - CategoryCoursesPopup: categoryMap (cantidad):", Object.keys(categoryMap).length);
-      console.log("LOG - CategoryCoursesPopup: loading:", loading);
-      console.log("LOG - CategoryCoursesPopup: error:", error);
-    }
+    if (isOpen) {}
   }, [isOpen, selectedCategoryId, allCourses, categoryMap, loading, error]);
 
 
@@ -84,8 +76,6 @@ const CategoryCoursesPopup = ({
             categoryMap={categoryMap}
             loading={false}
             error={null}
-            // Puedes eliminar selectedCategoryId si no lo usas para filtrar internamente en CourseCategory
-            // o si el título ya está cubierto por el popup padre.
             selectedCategoryId={selectedCategoryId} 
           />
         )}

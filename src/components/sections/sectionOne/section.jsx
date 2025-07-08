@@ -24,7 +24,6 @@ const SectionCardGrid = () => {
   const [coursesByCategory, setCoursesByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // Añadido: Estado para almacenar los nombres de los profesores
   const [instructorNamesMap, setInstructorNamesMap] = useState({});
 
   const theme = useTheme();
@@ -54,7 +53,6 @@ const SectionCardGrid = () => {
           ),
         ]);
 
-        // --- Procesamiento de Categorías ---
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           throw new Error(
@@ -71,7 +69,6 @@ const SectionCardGrid = () => {
           );
         }
 
-        // --- Procesamiento de Cursos ---
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
           throw new Error(
@@ -79,9 +76,6 @@ const SectionCardGrid = () => {
           );
         }
         const coursesData = await coursesResponse.json();
-        // LOG: Datos brutos de los cursos recibidos de la API
-
-        // Verificación de la estructura de coursesData
         if (
           coursesData.status !== "success" ||
           !coursesData.cursos ||
@@ -101,10 +95,7 @@ const SectionCardGrid = () => {
         const publishedCourses = coursesData.cursos.cursos.filter(
           (curso) => curso.estado === "Publicado"
         );
-        // LOG: Cursos filtrados que están publicados
         
-
-        // --- Recolectar IDs de profesores únicos y cargar sus nombres ---
         const uniqueInstructorIds = [
           ...new Set(publishedCourses.map((curso) => curso.profesor_id)),
         ];
@@ -146,8 +137,7 @@ const SectionCardGrid = () => {
           },
           {}
         );
-        setInstructorNamesMap(newInstructorNamesMap); // Guarda el mapa de nombres de profesores
-        // LOG: Mapa final de nombres de instructores
+        setInstructorNamesMap(newInstructorNamesMap);
 
         const organizedCourses = publishedCourses.reduce((acc, curso) => {
           const categoryName =
@@ -162,17 +152,16 @@ const SectionCardGrid = () => {
             title: curso.titulo,
             subtitle: curso.subtitulo,
             banner: curso.portada_targeta,
-            accessLink: `/curso/${createSlug(curso.titulo)}-${curso.id}`, // Usar createSlug para el link
-            // Utiliza el mapa de nombres de profesores aquí
+            accessLink: `/curso/${createSlug(curso.titulo)}-${curso.id}`,
             instructorName:
               newInstructorNamesMap[curso.profesor_id] ||
               "Instructor Desconocido",
-            rating: curso.valoracion || null, // Asumiendo que 'valoracion' es el campo del rating
-            reviews: curso.numero_resenas || null, // Asumiendo que 'numero_resenas' es el campo de reviews
-            students: curso.total_estudiantes || null, // Asumiendo que 'total_estudiantes' es el campo de estudiantes
+            rating: curso.valoracion || null,
+            reviews: curso.numero_resenas || null,
+            students: curso.total_estudiantes || null, 
             totalHours: curso.duracion_estimada,
             price: `${curso.precio} ${curso.moneda}`,
-            level: curso.nivel || null, // Asumiendo que 'nivel' es el campo de nivel
+            level: curso.nivel || null, 
           };
 
           
@@ -294,7 +283,6 @@ const SectionCardGrid = () => {
               ))}
             </Box>
 
-            {/* Contenedor de Tarjetas de Cursos */}
             <Box
               sx={{
                 overflowX: { xs: "auto", md: "visible" },
@@ -353,7 +341,6 @@ const SectionCardGrid = () => {
               </Box>
             </Box>
 
-            {/* Botón Ver Más/Menos */}
             {!isMobile && currentCourses.length > 4 && (
               <Box
                 sx={{

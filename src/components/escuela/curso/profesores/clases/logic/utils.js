@@ -1,4 +1,3 @@
-// utils.js
 export const convertSecondsToUnits = (totalSeconds) => {
   if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) {
     return { value: "", unit: "segundos" };

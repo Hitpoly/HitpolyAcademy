@@ -12,17 +12,12 @@ import {
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"; 
 
-// ¡IMPORTA VideoPlayerWithControls en lugar de Videopopup!
-// Asegúrate de que esta ruta sea correcta según donde tengas VideoPlayerWithControls.jsx
 import VideoPlayerWithControls from '../videos/VideoPlayerWithControls'; 
 
-// Datos de la secuencia de popups integrados directamente en el componente
 const DEFAULT_STEPS = [
   {
     title: "¡Bienvenido a Master Full!",
     description: "Estamos emocionados de tenerte aquí. En este primer paso, te presentaremos lo que lograrás en nuestro programa de 7 días para ser un Setter Digital de Élite.",
-    // **¡IMPORTANTE! Reemplaza estas URLs con enlaces REALES de videos de YouTube.**
-    // Dejo los ejemplos de URL que habías puesto, pero recuerda cambiarlos por videos reales.
     videoUrl: "https://youtu.be/lkGrtQL1Z34"
   },
   {
@@ -55,26 +50,25 @@ const SequencePopup = ({ isOpen, onClose, onSequenceComplete }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setCurrentStepIndex(0); // Reinicia el índice al abrir el popup
+      setCurrentStepIndex(0); 
     }
   }, [isOpen]);
 
-  // Si no hay pasos o el índice actual está fuera de rango, no renderiza nada.
   if (!steps || steps.length === 0 || !steps[currentStepIndex]) {
     return null;
   }
 
   const currentStep = steps[currentStepIndex];
-  const isFirstStep = currentStepIndex === 0; // Para saber si estamos en el primer paso
-  const isLastStep = currentStepIndex === steps.length - 1; // Para saber si estamos en el último paso
+  const isFirstStep = currentStepIndex === 0; 
+  const isLastStep = currentStepIndex === steps.length - 1; 
 
   const handleNext = () => {
     if (!isLastStep) {
       setCurrentStepIndex((prevIndex) => prevIndex + 1);
     } else {
-      onClose(); // Cierra el modal al finalizar la secuencia
+      onClose();
       if (onSequenceComplete) {
-        onSequenceComplete(); // Llama a la función para marcar como completado
+        onSequenceComplete();
       }
     }
   };
@@ -103,7 +97,6 @@ const SequencePopup = ({ isOpen, onClose, onSequenceComplete }) => {
         </Typography>
         {currentStep.videoUrl && (
           <Box>
-            {/* ¡Aquí está el cambio clave! Usa VideoPlayerWithControls */}
             <VideoPlayerWithControls videoUrl={currentStep.videoUrl} />
           </Box>
         )}

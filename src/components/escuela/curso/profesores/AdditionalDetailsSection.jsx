@@ -32,13 +32,11 @@ const AdditionalDetailsSection = ({
   handleAddTema,
   handleRemoveTema,
   handleEditTema,
-  handleEditMarcaPlataforma, // Asegúrate de que esta prop se esté pasando desde el componente padre
+  handleEditMarcaPlataforma, 
 }) => {
-  // Estado local para la edición de temas
   const [editingTemaIndex, setEditingTemaIndex] = useState(null);
   const [currentEditingTemaTitle, setCurrentEditingTemaTitle] = useState("");
 
-  // Estados locales para la edición de marcas de plataforma
   const [editingMarcaIndex, setEditingMarcaIndex] = useState(null);
   const [currentEditingLogoText, setCurrentEditingLogoText] = useState("");
   const [currentEditingDescription, setCurrentEditingDescription] = useState("");
@@ -61,20 +59,16 @@ const AdditionalDetailsSection = ({
     setCurrentEditingTemaTitle("");
   };
 
-  // Funciones para la edición de marcas de plataforma
   const handleStartEditingMarca = (index, logoText, description) => {
     setEditingMarcaIndex(index);
-    // Asegurarse de que los valores sean cadenas, incluso si son nulos o indefinidos
     setCurrentEditingLogoText(logoText || "");
     setCurrentEditingDescription(description || "");
   };
 
   const handleSaveEditingMarca = (index) => {
-    // Asegurarse de que los valores no sean undefined o null antes de llamar a trim()
     const logoTextToSave = currentEditingLogoText || "";
     const descriptionToSave = currentEditingDescription || "";
 
-    // Solo guardar si al menos uno de los campos tiene contenido significativo
     if (logoTextToSave.trim() || descriptionToSave.trim()) {
       handleEditMarcaPlataforma(
         index,
@@ -85,9 +79,7 @@ const AdditionalDetailsSection = ({
       setCurrentEditingLogoText("");
       setCurrentEditingDescription("");
     } else {
-      // Opcional: Mostrar un mensaje al usuario si ambos campos están vacíos
-      // console.log("No se puede guardar una marca con campos vacíos.");
-      handleCancelEditingMarca(); // Cancelar la edición si no hay nada que guardar
+      handleCancelEditingMarca(); 
     }
   };
 
@@ -99,7 +91,6 @@ const AdditionalDetailsSection = ({
 
   return (
     <>
-      {/* --- SECCIÓN: TEMARIO DEL CURSO (PRIMERO) --- */}
       <Divider sx={{ my: 3, display: { xs: "block", sm: "none" } }} />
       <Typography variant="h6" gutterBottom>
         Temario del Curso
@@ -201,8 +192,6 @@ const AdditionalDetailsSection = ({
           Aún no hay temas añadidos.
         </Typography>
       )}
-
-      {/* --- SECCIÓN: DETALLES ADICIONALES (SEGUNDO) --- */}
       <Divider sx={{ my: 3 }} />
       <Typography variant="h6" gutterBottom>
         Detalles Adicionales
@@ -299,14 +288,10 @@ const AdditionalDetailsSection = ({
           />
         </Box>
       </Box>
-
-      {/* --- SECCIÓN: MARCAS DE PLATAFORMA (TERCERO Y ÚLTIMO) --- */}
       <Divider sx={{ my: 3 }} />
       <Typography variant="h6" gutterBottom>
         Marcas de Plataforma
       </Typography>
-
-      {/* Mapear las marcas de plataforma existentes */}
       {formData.marca_plataforma.map((marca, index) => (
         <Paper key={index} elevation={2} sx={{ p: 2, mb: 2, position: "relative" }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -348,7 +333,6 @@ const AdditionalDetailsSection = ({
               </>
             ) : (
               <>
-                {/* Asegurarse de mostrar el logotext cuando no se está editando */}
                 <TextField
                   label={`Nombre de Marca ${index + 1}`}
                   value={marca.logoText || ""}
@@ -398,7 +382,6 @@ const AdditionalDetailsSection = ({
         </Typography>
       )}
 
-      {/* Campos para añadir una nueva marca de plataforma */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
         <TextField
           label="Nuevo Nombre de Marca"
@@ -406,7 +389,6 @@ const AdditionalDetailsSection = ({
           onChange={(e) => setNewLogoText(e.target.value)}
           fullWidth
           size="small"
-          // Puedes ajustar esta validación según si quieres que ambos campos sean requeridos o solo uno
           required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <TextField
@@ -417,7 +399,6 @@ const AdditionalDetailsSection = ({
           multiline
           rows={2}
           size="small"
-          // Puedes ajustar esta validación
           required={!newLogoText && !newDescription && formData.marca_plataforma.length === 0}
         />
         <Button

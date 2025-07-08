@@ -6,11 +6,9 @@ import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { Box, Typography, Button, CircularProgress, Tooltip } from "@mui/material"; // Eliminado TextField ya que no se usa directamente aquí
+import { Box, Typography, Button, CircularProgress, Tooltip } from "@mui/material"; 
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-
-// Importa el nuevo componente
-import EmailSubscriptionForm from "../forms/EmailSubscriptionForm"; // Asegúrate de que la ruta sea correcta
+import EmailSubscriptionForm from "../forms/EmailSubscriptionForm"; 
 
 const PortadaOne = () => {
   const swiperRef = useRef(null);
@@ -24,7 +22,6 @@ const PortadaOne = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("fetchFeaturedCourses: Iniciando carga de cursos destacados desde la API...");
       const response = await fetch(
         "https://apiacademy.hitpoly.com/ajax/traerCursosDestacadosController.php",
         {
@@ -34,56 +31,36 @@ const PortadaOne = () => {
         }
       );
 
-      console.log("fetchFeaturedCourses: Respuesta HTTP recibida:", response);
-
+      
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
-          `fetchFeaturedCourses (ERROR HTTP): La respuesta de la red no fue OK. Estado: ${response.status}, Texto:`,
-          errorText
-        );
+        
         throw new Error(
           `Error al cargar cursos destacados: ${response.status} ${response.statusText} - ${errorText}`
         );
       }
 
       const data = await response.json();
-      console.log("fetchFeaturedCourses: Datos JSON parseados de la respuesta:", data);
-
+      
       if (data.status === "success" && Array.isArray(data.cursos)) {
         const formattedSlides = data.cursos.map((curso) => ({
           id: curso.id,
           title: curso.titulo,
           description: curso.subtitulo,
-          backgroundImage: curso.portada_targeta,
+          backgroundImage: curso.url_banner,
         }));
         setSlideData(formattedSlides);
-        console.log("fetchFeaturedCourses: Cursos destacados cargados y formateados exitosamente.", formattedSlides);
-      } else {
-        console.error(
-          "fetchFeaturedCourses: Formato de respuesta inesperado para cursos destacados. data.status:",
-          data.status,
-          "Array.isArray(data.cursos):",
-          Array.isArray(data.cursos),
-          "Mensaje:",
-          data.message,
-          "Contenido completo de data:",
-          data
-        );
+        } else {
         throw new Error(
           data.message || "Formato de respuesta de cursos destacados inválido."
         );
       }
     } catch (err) {
-      console.error(
-        "fetchFeaturedCourses (Catch): Error inesperado durante la carga de cursos destacados:",
-        err
-      );
+      
       setError(err.message);
     } finally {
       setLoading(false);
-      console.log("fetchFeaturedCourses: Proceso de carga finalizado. Loading: false.");
-    }
+      }
   }, []);
 
   useEffect(() => {
@@ -229,7 +206,6 @@ const PortadaOne = () => {
                   mr: { xs: 2, md: 0 },
                 }}
               >
-                {/* Título con límite de líneas y Tooltip */}
                 <Tooltip title={slide.title} placement="top">
                   <Typography
                     variant="h4"
@@ -240,18 +216,16 @@ const PortadaOne = () => {
                       color: "#333",
                       display: "-webkit-box",
                       WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2, // ¡CAMBIO AQUÍ: de 3 a 2 líneas!
+                      WebkitLineClamp: 3,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       lineHeight: "1.2em",
-                      minHeight: "2.4em", // Ajustar minHeight para 2 líneas (1.2em * 2)
+                      minHeight: "2.4em", 
                     }}
                   >
                     {slide.title}
                   </Typography>
                 </Tooltip>
-
-                {/* Subtítulo con límite de líneas y Tooltip */}
                 {slide.description && (
                   <Tooltip title={slide.description} placement="bottom">
                     <Typography
@@ -275,7 +249,6 @@ const PortadaOne = () => {
                   </Tooltip>
                 )}
 
-                {/* Pasamos slide.id como prop */}
                 <EmailSubscriptionForm idCursoDestacado={slide.id} />
 
               </Box>
@@ -283,8 +256,6 @@ const PortadaOne = () => {
           </SwiperSlide>
         ))}
       </Swiper>
-
-      {/* Flecha de navegación derecha personalizada */}
       <Box
         ref={navigationNextRef}
         sx={{

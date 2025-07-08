@@ -130,30 +130,24 @@ function CategoryListManager({ refreshCategoriesTrigger }) {
       setSnackbarEdicionMessage('Error al actualizar la categoría: ' + error.message);
       setSnackbarEdicionSeverity('error');
       setSnackbarEdicionOpen(true);
-      console.error('Error al actualizar categoría:', error);
-    } finally {
+      } finally {
       setCargandoEdicion(false);
     }
   };
 
   const handleDelete = async (id) => {
-    console.log('Iniciando eliminación para ID:', id); // PASO 1
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
-      console.log('Eliminación cancelada por el usuario.'); // PASO 2
       return;
     }
 
     setSnackbarEliminacionOpen(false);
     setCargandoEliminacion(true);
-    console.log('Estado de carga de eliminación establecido en true.'); // PASO 3
-
+    
     const urlEliminacion = "https://apiacademy.hitpoly.com/ajax/eliminarCategoriaController.php";
     const dataEliminacion = {
       accion: "delete",
       id: id
     };
-
-    console.log('Enviando datos a la API:', dataEliminacion); // PASO 4
 
     try {
       const response = await fetch(urlEliminacion, {
@@ -164,40 +158,30 @@ function CategoryListManager({ refreshCategoriesTrigger }) {
         body: JSON.stringify(dataEliminacion),
       });
 
-      console.log('Respuesta de la API (objeto response):', response); // PASO 5
-      console.log('Status de la respuesta:', response.status); // PASO 6
-
       if (!response.ok) {
-        // Esto captura errores HTTP como 404, 500, etc.
-        const errorText = await response.text(); // Intenta leer el cuerpo del error
-        throw new Error(`Error HTTP: ${response.status} - ${errorText}`); // Error más descriptivo
+        const errorText = await response.text(); 
+        throw new Error(`Error HTTP: ${response.status} - ${errorText}`); 
       }
 
-      const result = await response.json(); // PASO 7: Intenta parsear la respuesta como JSON
-      console.log('Resultado de la API (JSON parseado):', result); // PASO 8
+      const result = await response.json(); 
 
-      // Aquí, asume que tu PHP devuelve algo como { success: true } o { error: "mensaje" }
-      if (result && result.success) { // Ajusta esta condición según la respuesta real de tu PHP
+      if (result && result.success) { 
         setSnackbarEliminacionMessage('Categoría eliminada exitosamente.');
         setSnackbarEliminacionSeverity('success');
         setSnackbarEliminacionOpen(true);
-        console.log('Eliminación confirmada por la API como exitosa. Recargando categorías...'); // PASO 9
-        fetchCategorias(); // Recarga la lista después de la eliminación
+        fetchCategorias(); 
       } else {
-        // Esto captura si la API devuelve un 200 OK, pero con un mensaje de error dentro del JSON
         const errorMessage = result && result.message ? result.message : 'Error desconocido al eliminar la categoría desde la API.';
-        throw new Error(errorMessage); // Lanza un error si la API indica fallo lógico
+        throw new Error(errorMessage); 
       }
 
     } catch (error) {
-      console.error('Detalle del error en catch:', error); // PASO 10: Captura el error y lo loguea
       setSnackbarEliminacionMessage('Error al eliminar la categoría: ' + error.message);
       setSnackbarEliminacionSeverity('error');
       setSnackbarEliminacionOpen(true);
     } finally {
       setCargandoEliminacion(false);
-      console.log('Estado de carga de eliminación establecido en false.'); // PASO 11
-    }
+      }
   };
 
   return (

@@ -20,20 +20,18 @@ import CancelIcon from "@mui/icons-material/Cancel";
 const AppTestimonios = () => {
   const [allCommentsFromApi, setAllCommentsFromApi] = useState([]);
   const [usersById, setUsersById] = useState({});
-  const [loading, setLoading] = useState(true); // Estado de carga general
-  const [error, setError] = useState(null); // Estado de error general
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
 
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedContent, setEditedContent] = useState("");
   const [editedDestacado, setEditedDestacado] = useState(0);
 
-  // Función para cargar los comentarios y usuarios
   const fetchCommentsAndUsers = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Obtener comentarios
       const commentsResponse = await fetch(
         "https://apiacademy.hitpoly.com/ajax/getComentariosController.php",
         {
@@ -55,17 +53,9 @@ const AppTestimonios = () => {
         );
       }
       
-      // --- LOG 1: Verificación de datos de comentarios recibidos ---
-      console.log("--- Datos de comentarios recibidos de la API ---");
-      console.log(commentsData.comentarios);
       commentsData.comentarios.forEach(comment => {
-        console.log(`Comentario ID: ${comment.id}, Destacado (API):`, comment.destacado, `(Tipo: ${typeof comment.destacado})`);
-      });
-      console.log("-----------------------------------------------");
-
+       });
       setAllCommentsFromApi(commentsData.comentarios);
-
-      // Obtener todos los usuarios
       const allUsersResponse = await fetch(
         "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
         {
@@ -84,10 +74,6 @@ const AppTestimonios = () => {
       }
       setUsersById(mappedUsers);
     } catch (err) {
-      console.error(
-        "❌ Error cargando datos en AppTestimonios (panel admin):",
-        err
-      );
       setError(err.message);
     } finally {
       setLoading(false);
@@ -96,37 +82,26 @@ const AppTestimonios = () => {
 
   useEffect(() => {
     fetchCommentsAndUsers();
-  }, []); // Se ejecuta una vez al montar el componente
+  }, []); 
 
-  // Función para iniciar la edición de un comentario
+
   const handleEditReview = (comment) => {
-    // --- LOG 2: Al iniciar edición ---
-    console.log(`Iniciando edición para el comentario ID: ${comment.id}`);
-    console.log(`Valor original de 'destacado':`, comment.destacado, `(Tipo: ${typeof comment.destacado})`);
     const newEditedDestacado = Number(comment.destacado) === 1 ? 1 : 0;
-    console.log(`Valor inicial de editedDestacado (después de Number()): ${newEditedDestacado}`);
 
     setEditingCommentId(comment.id);
     setEditedContent(comment.contenido);
     setEditedDestacado(newEditedDestacado);
   };
 
-  // Función para cancelar la edición
   const handleCancelEdit = () => {
     setEditingCommentId(null);
     setEditedContent("");
     setEditedDestacado(0);
   };
 
-  // Función para guardar los cambios de un comentario
   const handleSaveEditedReview = async (commentId) => {
     setLoading(true);
     setError(null);
-
-    // --- LOG 3: Al guardar edición ---
-    console.log(`Guardando comentario ID: ${commentId}`);
-    console.log(`Contenido editado: ${editedContent}`);
-    console.log(`Estado 'destacado' a enviar a la API: ${editedDestacado}`);
 
     try {
       const response = await fetch(
@@ -138,23 +113,15 @@ const AppTestimonios = () => {
             accion: "update",
             id: commentId,
             contenido: editedContent,
-            destacado: editedDestacado, // Esto ya es 0 o 1 (número)
+            destacado: editedDestacado,
           }),
         }
       );
       const data = await response.json();
 
-      // --- LOG 4: Respuesta de la API al guardar ---
-      console.log(`Respuesta de la API al guardar comentario ${commentId}:`, data);
-
-
       if (!response.ok || data.status !== "success") {
         throw new Error(data.message || "Error al actualizar el comentario.");
       }
-
-      console.log(`✅ Comentario con ID ${commentId} actualizado exitosamente.`);
-
-      // Actualizar el estado local de allCommentsFromApi
       setAllCommentsFromApi((prevComments) =>
         prevComments.map((comment) =>
           comment.id === commentId
@@ -163,18 +130,16 @@ const AppTestimonios = () => {
         )
       );
 
-      setEditingCommentId(null); // Sale del modo edición
+      setEditingCommentId(null); 
       setEditedContent("");
       setEditedDestacado(0);
     } catch (err) {
-      console.error("❌ Error guardando el comentario editado:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para eliminar un comentario
   const handleDeleteReview = async (commentId) => {
     if (
       !window.confirm(
@@ -202,14 +167,10 @@ const AppTestimonios = () => {
         throw new Error(data.message || "Error al eliminar el comentario.");
       }
 
-      console.log(`✅ Comentario con ID ${commentId} eliminado exitosamente.`);
-
-      // Actualizar los estados locales eliminando el comentario
       setAllCommentsFromApi((prevComments) =>
         prevComments.filter((comment) => comment.id !== commentId)
       );
     } catch (err) {
-      console.error("❌ Error eliminando el comentario:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -225,9 +186,6 @@ const AppTestimonios = () => {
         Desde aquí puedes **editar el contenido y el estado "destacado"** de
         cada comentario, o **eliminarlos** de forma permanente.
       </Typography>
-
-      {/* Se eliminó el botón "Publicar Testimonios Seleccionados" ya que la lógica de publicación se eliminó */}
-
       <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
         Comentarios disponibles:
       </Typography>
@@ -239,11 +197,7 @@ const AppTestimonios = () => {
       {!loading && !error && allCommentsFromApi.length > 0 && (
         <FormGroup>
           {allCommentsFromApi.map((comment) => {
-            // --- LOG 5: Dentro del map, para cada comentario ---
             const isDestacado = Number(comment.destacado) === 1;
-            console.log(`Comentario ID: ${comment.id} - Valor 'destacado' en el map:`, comment.destacado, `(Tipo: ${typeof comment.destacado})`);
-            console.log(`Comentario ID: ${comment.id} - Resultado de Number(comment.destacado) === 1: ${isDestacado}`);
-
             return (
               <Box
                 key={comment.id}
@@ -255,7 +209,6 @@ const AppTestimonios = () => {
                   p: 1,
                   my: 0.5,
                   borderRadius: 1,
-                  // Usa Number() para asegurar la correcta evaluación
                   backgroundColor: isDestacado ? "#e6ffe6" : "transparent", 
                 }}
               >
@@ -338,7 +291,7 @@ const AppTestimonios = () => {
                   <FormControlLabel
                     control={
                       <Checkbox
-                        checked={editedDestacado === 1} // Esto ya es correcto si editedDestacado es 0 o 1 (número)
+                        checked={editedDestacado === 1} 
                         onChange={(e) => setEditedDestacado(e.target.checked ? 1 : 0)}
                         disabled={loading}
                       />
@@ -347,7 +300,7 @@ const AppTestimonios = () => {
                     sx={{ ml: 0, mt: 1 }}
                   />
                 )}
-                  {editingCommentId !== comment.id && ( // Muestra el estado "destacado" si no está en edición
+                  {editingCommentId !== comment.id && ( 
                      <Typography variant="caption" sx={{ mt: 0.5, ml: 1 }}>
                        Estado: {isDestacado ? "Destacado" : "Normal"}
                      </Typography>

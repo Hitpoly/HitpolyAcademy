@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Typography, Avatar, Divider } from "@mui/material";
-import AccessTimeIcon from "@mui/icons-material/AccessTime"; // Para duración
-import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // Nuevo para horas por semana
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; // Para inicio de clases
-import EventBusyIcon from '@mui/icons-material/EventBusy'; // Nuevo para fecha límite (rojo)
-import PsychologyIcon from '@mui/icons-material/Psychology'; // Nuevo para ritmo de aprendizaje
-import LaptopChromebookIcon from '@mui/icons-material/LaptopChromebook'; // Nuevo para tipo de clase
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents"; // Para Credencial
-import DescriptionIcon from '@mui/icons-material/Description'; // Para descripción de credencial (aunque no visible en render final)
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; 
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; 
+import EventBusyIcon from '@mui/icons-material/EventBusy'; 
+import PsychologyIcon from '@mui/icons-material/Psychology'; 
+import LaptopChromebookIcon from '@mui/icons-material/LaptopChromebook'; 
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents"; 
+import DescriptionIcon from '@mui/icons-material/Description'; 
 
 const ProgrammeDetailsBanner = ({
   programmeName,
@@ -21,9 +21,8 @@ const ProgrammeDetailsBanner = ({
   credentialTitle,
   credentialDescription,
   instructorData,
-  brandingData, // ¡Ahora brandingData es un ARRAY!
+  brandingData, 
 }) => {
-  // Items generales que se distribuirán en las dos columnas
   const mainInfoItems = [
     { label: "Duración", value: duration, icon: AccessTimeIcon },
     { label: "Horas por semana", value: hoursPerWeek, icon: QueryBuilderIcon },
@@ -33,10 +32,9 @@ const ProgrammeDetailsBanner = ({
     { label: "Tipo de clase", value: classType, icon: LaptopChromebookIcon },
   ];
 
-  // Items de credencial que irán juntos en la segunda columna
+
   const credentialInfoItems = [
     { label: "Credencial", value: credentialTitle, icon: EmojiEventsIcon },
-    // La descripción de credencial sin icono y con hideLabel true
     { label: "Descripción de credencial", value: credentialDescription, hideLabel: true, hideIcon: true },
   ];
 
@@ -51,7 +49,6 @@ const ProgrammeDetailsBanner = ({
             sx={{ color: item.iconColor || "#007bff", fontSize: { xs: 24, md: 28 }, mt: 0.5 }}
           />
         ) : (
-          // Espacio para alinear cuando no hay icono pero el label está visible
           !item.hideLabel && <Box sx={{ width: { xs: 24, md: 28 }, height: { xs: 24, md: 28 }, flexShrink: 0 }} />
         )}
         <Box>
@@ -113,7 +110,6 @@ const ProgrammeDetailsBanner = ({
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Sección del Instructor */}
       <Box
         sx={{
           display: "flex",
@@ -160,28 +156,24 @@ const ProgrammeDetailsBanner = ({
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Bloques de Información del Curso - Renderizado Ajustado */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, // 1 columna en xs, 2 en sm y superiores
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, 
           gap: { xs: 2.5, md: 3 },
           mb: 4,
           pt: 3,
         }}
       >
-        {/* Renderiza los mainInfoItems en las dos columnas */}
         {mainInfoItems.map(renderInfoItem)}
 
-        {/* Agrupa los items de credencial en una Box para que ocupen su propia "celda" de grid,
-            pero luego dentro de esa celda se comporten como una columna */}
-        {(credentialTitle || credentialDescription) && ( // Solo renderiza si hay datos de credencial
+        {(credentialTitle || credentialDescription) && ( 
           <Box
             sx={{
-              gridColumn: { xs: "1 / -1", sm: "2 / 3" }, // Ocupa toda la fila en xs, solo la segunda columna en sm
+              gridColumn: { xs: "1 / -1", sm: "2 / 3" }, 
               display: "flex",
-              flexDirection: "column", // Para que los items de credencial se apilen verticalmente
-              gap: { xs: 2.5, md: 3 }, // Espaciado entre Credencial y Descripción
+              flexDirection: "column", 
+              gap: { xs: 2.5, md: 3 }, 
             }}
           >
             {credentialInfoItems.map(renderInfoItem)}
@@ -191,7 +183,6 @@ const ProgrammeDetailsBanner = ({
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Seccion de Marcas Asociadas */}
       <Box
         sx={{
           pt: 2.5,
@@ -215,7 +206,6 @@ const ProgrammeDetailsBanner = ({
             </Typography>
             {brandingData.map((brand, index) => (
               <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                {/* Si tienes logos de imágenes en tu API, aquí iría un <img src={brand.logoUrl} /> */}
                 <Typography
                   variant="body2"
                   fontWeight="bold"

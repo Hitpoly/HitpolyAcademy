@@ -16,11 +16,9 @@ const useCourseFormLogic = () => {
 
   const courseToEdit = location.state?.courseToEdit || null;
 
-  // --- ESTADO PARA LAS PREGUNTAS FRECUENTES ---
   const [preguntasFrecuentes, setPreguntasFrecuentes] = useState([]);
   const [newPregunta, setNewPregunta] = useState("");
   const [newRespuesta, setNewRespuesta] = useState("");
-  // --- FIN ESTADO PARA LAS PREGUNTAS FRECUENTES ---
 
   const initialFormData = {
     accion: "curso",
@@ -30,7 +28,7 @@ const useCourseFormLogic = () => {
     descripcion_corta: "",
     descripcion_larga: "",
     url_banner: "",
-    portada_targeta: "", // Nuevo campo para la URL de la portada de tarjeta
+    portada_targeta: "",
     url_video_introductorio: "",
     precio: "",
     moneda: "USD",
@@ -63,14 +61,14 @@ const useCourseFormLogic = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newTemaTitle, setNewTemaTitle] = useState("");
   const [bannerFile, setBannerFile] = useState(null);
-  const [cardCoverFile, setCardCoverFile] = useState(null); // Nuevo estado para el archivo de la portada de tarjeta
+  const [cardCoverFile, setCardCoverFile] = useState(null); 
 
   const [isEditing, setIsEditing] = useState(false);
 
   const {
     loading,
     uploadingBanner,
-    uploadingCardCover, // Nuevo estado de carga para la portada de tarjeta
+    uploadingCardCover,
     responseMessage,
     setResponseMessage,
     submitCourse,
@@ -224,14 +222,11 @@ const useCourseFormLogic = () => {
       };
       setFormData(newFormData);
       setBannerFile(null);
-      setCardCoverFile(null); // Reiniciar el archivo de portada de tarjeta al editar
+      setCardCoverFile(null);
       setPreguntasFrecuentes(parsedPreguntasFrecuentes);
-    console.log("📍 [useCourseFormLogic] formData inicializado/actualizado:", newFormData);
     if (courseToEdit.curso.portada_targeta) {
-        console.log("📍 [useCourseFormLogic] URL de portada_targeta existente:", courseToEdit.curso.portada_targeta);
-    }
+        }
     if (courseToEdit.curso.id) {
-        console.log("📍 [useCourseFormLogic] ID del curso al editar:", courseToEdit.curso.id);
     }
 
     } else {
@@ -244,15 +239,13 @@ const useCourseFormLogic = () => {
         fecha_actualizacion: new Date().toISOString().slice(0, 10),
       });
       setBannerFile(null);
-      setCardCoverFile(null); // Reiniciar el archivo de portada de tarjeta al crear nuevo
+      setCardCoverFile(null);
       setNewLogoText("");
       setNewDescription("");
       setNewTemaTitle("");
       setPreguntasFrecuentes([]);
       setNewPregunta("");
       setNewRespuesta("");
-    console.log("📍 [useCourseFormLogic] formData inicializado para nuevo curso:", formData);
-
     }
   }, [location.state, user]);
 
@@ -276,18 +269,15 @@ const useCourseFormLogic = () => {
   };
 
   const handleChangeCardCover = (e) => {
-    // Nueva función para manejar el archivo de portada de tarjeta
     const file =
       e.target.files && e.target.files.length > 0 ? e.target.files?.[0] : null;
     setCardCoverFile(file);
     setResponseMessage({ type: "", message: "" });
     setFormData((prevData) => ({
       ...prevData,
-      portada_targeta: "", // Resetea la URL si se selecciona un nuevo archivo
+      portada_targeta: "", 
     }));
-    console.log("📍 [useCourseFormLogic] handleCardCoverChange - Archivo seleccionado:", file ? file.name : "Ninguno");
-    console.log("📍 [useCourseFormLogic] handleCardCoverChange - formData.portada_targeta reseteado a:", "");
-  };
+    };
 
   const handleAddMarcaPlataforma = () => {
     if (newLogoText && newDescription) {
@@ -422,7 +412,6 @@ const useCourseFormLogic = () => {
     }));
   };
 
-  // --- FUNCIONES PARA LAS PREGUNTAS FRECUENTES ---
   const handleAddPreguntaFrecuente = useCallback(() => {
     if (newPregunta.trim() && newRespuesta.trim()) {
       const newFaq = {
@@ -453,18 +442,9 @@ const useCourseFormLogic = () => {
       prev.map((faq, index) => (index === indexToEdit ? updatedFaq : faq))
     );
   }, []);
-  // --- FIN FUNCIONES PARA LAS PREGUNTAS FRECUENTES ---
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    console.log("🚀 [useCourseFormLogic] handleSubmit: Iniciando envío del formulario.");
-    console.log("➡️ [useCourseFormLogic] handleSubmit: formData antes de enviar:", formData);
-    console.log("➡️ [useCourseFormLogic] handleSubmit: bannerFile antes de enviar:", bannerFile ? bannerFile.name : "No hay archivo de banner");
-    console.log("➡️ [useCourseFormLogic] handleSubmit: cardCoverFile antes de enviar:", cardCoverFile ? cardCoverFile.name : "No hay archivo de portada de tarjeta");
-    console.log("➡️ [useCourseFormLogic] handleSubmit: isEditing:", isEditing);
-    console.log("➡️ [useCourseFormLogic] handleSubmit: preguntasFrecuentes:", preguntasFrecuentes);
-
 
     const result = await submitCourse(
       formData,
@@ -473,9 +453,6 @@ const useCourseFormLogic = () => {
       isEditing,
       preguntasFrecuentes
     );
-
-    console.log("✅ [useCourseFormLogic] handleSubmit: Resultado de submitCourse:", result);
-
 
     if (result.success) {
       if (!isEditing && result.id) {

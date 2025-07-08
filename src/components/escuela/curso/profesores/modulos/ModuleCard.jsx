@@ -53,7 +53,7 @@ const ModuleCard = ({ module, onEdit, onDelete, onViewClasses }) => {
                     variant="contained"
                     size="small"
                     sx={{ mt: 2 }}
-                    onClick={() => onViewClasses(module)} // Pasa el objeto completo del módulo
+                    onClick={() => onViewClasses(module)}
                 >
                     Ver Clases
                 </Button>

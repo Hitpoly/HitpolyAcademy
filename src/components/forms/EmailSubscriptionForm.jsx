@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 
-// Helper para el Alert dentro de Snackbar
 const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -24,14 +23,9 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
   const [phoneInput, setPhoneInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Estados para el Snackbar (solo para errores o éxitos que no redirigen)
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
-
-  console.log("Datos de usuario disponibles en AuthContext:", user);
-  console.log("¿Usuario autenticado?:", isAuthenticated);
-  console.log("ID del curso destacado recibido:", idCursoDestacado);
 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -43,12 +37,12 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
-    setOpenSnackbar(false); // Siempre cierra cualquier Snackbar anterior al inicio
+    setOpenSnackbar(false);
 
     if (!emailInput) {
       setSnackbarMessage("Por favor, ingresa tu correo electrónico.");
       setSnackbarSeverity("warning");
-      setOpenSnackbar(true); // Abre el Snackbar para esta advertencia
+      setOpenSnackbar(true);
       setLoading(false);
       return;
     }
@@ -91,8 +85,6 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
       correos: correosToSend,
     };
 
-    console.log("Payload a enviar a la API:", payload);
-
     try {
       const response = await fetch("https://apiacademy.hitpoly.com/ajax/cargarProspectosController.php", {
         method: "POST",
@@ -107,30 +99,24 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
       if (response.ok && data.status === "success") {
         setSnackbarMessage("¡Solicitud procesada con éxito! Se han añadido o actualizado tus datos.");
         setSnackbarSeverity("success");
-        setOpenSnackbar(true); // Muestra éxito general si no hay redirección directa
-        setEmailInput(""); // Limpiar el input tras el éxito
-        setPhoneInput(""); // Limpiar el input del celular
+        setOpenSnackbar(true);
+        setEmailInput("");
+        setPhoneInput("");
       } else {
-        // Si la API indica que el email ya está registrado, redirigir sin mensaje de Snackbar
         if (data.message && data.message.includes("ya está registrado")) {
-            console.log("Email ya registrado. Redirigiendo a /dashboard.");
-            navigate("/dashboard"); // Redirige inmediatamente
-            // No se muestra Snackbar ni se limpia el formulario aquí
-            return; // Detener la ejecución para no afectar la redirección
+            navigate("/dashboard");
+            return;
         } else {
-            // Para cualquier otro tipo de error de la API
             setSnackbarMessage(data.message || "Error al procesar la solicitud. Inténtalo de nuevo.");
             setSnackbarSeverity("error");
-            setOpenSnackbar(true); // Muestra el Snackbar para errores
+            setOpenSnackbar(true);
         }
       }
     } catch (error) {
-      console.error("Error al enviar el formulario:", error);
       setSnackbarMessage("Error de conexión. Por favor, verifica tu internet.");
       setSnackbarSeverity("error");
-      setOpenSnackbar(true); // Muestra el Snackbar para errores de conexión
+      setOpenSnackbar(true); 
     } finally {
-      // Siempre detenemos el indicador de carga
       setLoading(false);
     }
   };
@@ -150,7 +136,7 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
       >
         <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, width: "100%" }}>
           <TextField
-            label="Tu correo electrónico (nuevo)"
+            label="Tu correo electrónico"
             variant="outlined"
             type="email"
             size="small"
@@ -159,7 +145,7 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
             sx={{ flexGrow: 1 }}
           />
           <TextField
-            label="Tu número de celular (nuevo)"
+            label="Tu número de celular"
             variant="outlined"
             type="tel"
             size="small"

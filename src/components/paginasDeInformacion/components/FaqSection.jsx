@@ -8,29 +8,25 @@ import {
   Button,
   Stack,
   useTheme,
-  CircularProgress, // Importa CircularProgress para el estado de carga
-  Alert, // Importa Alert para mostrar errores o mensajes
+  CircularProgress,
+  Alert, 
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-// Si usas SweetAlert2 para notificaciones, asegúrate de importarlo
-// import Swal from 'sweetalert2'; 
 
-// Recibe 'courseId' como una prop
 const FaqSection = ({
-  courseId, // <--- Aquí recibimos el ID del curso
+  courseId,
   initialVisibleCount = 3,
   sectionTitle = "Preguntas Frecuentes",
 }) => {
   const theme = useTheme();
 
-  const [faqs, setFaqs] = useState([]); // Estado para almacenar las FAQs obtenidas
-  const [loading, setLoading] = useState(true); // Estado para el indicador de carga
-  const [error, setError] = useState(null); // Estado para manejar errores de la API
+  const [faqs, setFaqs] = useState([]); 
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
 
   const [visibleFaqCount, setVisibleFaqCount] = useState(initialVisibleCount);
   const [expanded, setExpanded] = useState(false);
 
-  // Función para obtener las FAQs del backend
   const fetchFaqs = useCallback(
     async (id) => {
       setLoading(true);
@@ -46,7 +42,6 @@ const FaqSection = ({
           }
         );
 
-        // Asegúrate de que la respuesta sea exitosa (código 200) antes de intentar parsearla
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
@@ -59,25 +54,23 @@ const FaqSection = ({
         const data = JSON.parse(rawText);
         
         if (data.status === "success") {
-          // Asegúrate de que data.preguntasyrespuestas sea un array, incluso si está vacío
           setFaqs(data.preguntasyrespuestas || []);
         } else {
           setError(data.message || "No se pudieron cargar las FAQs.");
-          setFaqs([]); // En caso de error, limpiar las FAQs existentes
+          setFaqs([]); 
         }
       } catch (err) {
         setError(
           `Error al cargar las FAQs: ${err.message}. Inténtalo de nuevo.`
         );
-        setFaqs([]); // En caso de error, limpiar las FAQs existentes
+        setFaqs([]);
       } finally {
         setLoading(false);
       }
     },
     []
-  ); // Dependencias vacías para que la función no cambie a menos que sus dependencias lo hagan
-
-  // useEffect para llamar a fetchFaqs cuando el courseId cambie
+  );
+  
   useEffect(() => {
     if (courseId) {
       fetchFaqs(courseId);
@@ -86,7 +79,7 @@ const FaqSection = ({
       setError("ID del curso no proporcionado para cargar FAQs.");
       setFaqs([]);
     }
-  }, [courseId, fetchFaqs]); // Este efecto se ejecuta cuando courseId o fetchFaqs cambian
+  }, [courseId, fetchFaqs]);
 
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : false);
@@ -97,11 +90,10 @@ const FaqSection = ({
       setVisibleFaqCount(faqs.length);
     } else {
       setVisibleFaqCount(initialVisibleCount);
-      setExpanded(false); // Colapsa todas las acordeones al "mostrar menos"
+      setExpanded(false);
     }
   };
 
-  // Solo muestra las FAQs si no hay error y no está cargando, y hay FAQs
   const displayedFaqs = faqs.slice(0, visibleFaqCount);
   const showToggleButton = faqs.length > initialVisibleCount;
 
@@ -153,7 +145,7 @@ const FaqSection = ({
         <Stack spacing={2}>
           {displayedFaqs.map((faq, index) => (
             <Accordion
-              key={faq.id || `faq-${index}`} // Usa faq.id si está disponible, si no, un índice
+              key={faq.id || `faq-${index}`} 
               expanded={expanded === `panel${index}`}
               onChange={handleChange(`panel${index}`)}
               sx={{
@@ -184,7 +176,7 @@ const FaqSection = ({
                     flexGrow: 1,
                   }}
                 >
-                  {faq.pregunta} {/* <--- Asegúrate de usar 'pregunta' */}
+                  {faq.pregunta}
                 </Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ textAlign: "left" }}>
@@ -192,7 +184,7 @@ const FaqSection = ({
                   variant="body1"
                   sx={{ color: theme.palette.text.secondary }}
                 >
-                  {faq.respuesta} {/* <--- Asegúrate de usar 'respuesta' */}
+                  {faq.respuesta}
                 </Typography>
               </AccordionDetails>
             </Accordion>

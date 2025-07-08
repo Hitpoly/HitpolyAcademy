@@ -24,7 +24,6 @@ const CourseCard = ({ course, categoryName }) => {
         <CardMedia
           component="img"
           height="140"
-          // Puedes reemplazar esta URL con la imagen real del curso si la tienes
           image={course.imagen || "https://via.placeholder.com/345x140?text=Curso+Imagen"}
           alt={course.titulo}
         />

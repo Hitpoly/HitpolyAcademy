@@ -1,10 +1,9 @@
-// src/pages/components/baner/FactsAndCertificate.jsx
 import React from "react";
-import { Box, Typography, Divider } from "@mui/material"; // Divider no se está usando, se puede quitar si no se planea usar.
+import { Box, Typography, Divider } from "@mui/material"; 
 
 const FactsAndCertificate = ({
-  certificateSubtitle, // Nuevo prop para el subtítulo del certificado
-  certificateLongDescription, // Nuevo prop para la descripción larga del certificado
+  certificateSubtitle,
+  certificateLongDescription, 
   facts,
   brandingData
 }) => {
@@ -23,7 +22,6 @@ const FactsAndCertificate = ({
           px: { xs: 2, sm: 4 },
         }}
       >
-        {/* Sección del Certificado */}
         <Box
           sx={{
             flex: 1,
@@ -81,8 +79,6 @@ const FactsAndCertificate = ({
             null
           )}
         </Box>
-
-        {/* Sección de Datos Clave del Curso */}
         <Box
           sx={{
             flex: 1,
@@ -96,16 +92,15 @@ const FactsAndCertificate = ({
           <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
             {facts.title}
           </Typography>
-          {/* CAMBIO CLAVE AQUÍ: Ajuste para las columnas */}
           <Box
             sx={{
-              display: "grid", // Usamos CSS Grid para un control más preciso de las columnas
+              display: "grid",
               gridTemplateColumns: {
-                xs: "1fr",   // En pantallas extra pequeñas (teléfonos), 1 columna (cada item ocupa el 100% de ancho)
-                sm: "1fr 1fr", // En pantallas pequeñas (teléfonos grandes/tablets), 2 columnas
-                md: "1fr 1fr", // En pantallas medianas (escritorio), 2 columnas
+                xs: "1fr",   
+                sm: "1fr 1fr",
+                md: "1fr 1fr",
               },
-              gap: { xs: 3, sm: 4 }, // Espacio entre los elementos de la cuadrícula
+              gap: { xs: 3, sm: 4 },
             }}
           >
             {facts.items.map((fact, index) => (

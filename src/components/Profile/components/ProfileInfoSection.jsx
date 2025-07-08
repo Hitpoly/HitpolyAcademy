@@ -36,19 +36,15 @@ const isValidUrl = (string) => {
 };
 
 const ProfileInfoSection = () => {
-  // Obtenemos el usuario y la función de login del contexto
   const { user, login } = useAuth();
-  const userId = user?.id; // Extraemos el id_usuario
+  const userId = user?.id;
 
-  // Inicializamos 'profile' directamente con los datos del 'user' del AuthContext
-  // Si user es null (no autenticado), profile será null inicialmente.
-  // Mapeamos los nombres para que coincidan con la estructura interna del componente
   const initialProfile = user
     ? {
         ...user,
-        bio: user.biografia || "", // 'bio' en el componente es 'biografia' en el contexto
-        avatar: user.url_foto_perfil || "/images/default-avatar.png", // 'avatar' en el componente es 'url_foto_perfil' en el contexto
-        cursosCulminados: user.cursosCulminados || [], // Asumir array vacío si no existe
+        bio: user.biografia || "", 
+        avatar: user.url_foto_perfil || "/images/default-avatar.png", 
+        cursosCulminados: user.cursosCulminados || [],
         url_linkedin: user.url_linkedin || "",
         url_facebook: user.url_facebook || "",
         url_instagram: user.url_instagram || "",
@@ -57,9 +53,9 @@ const ProfileInfoSection = () => {
     : null;
 
   const [profile, setProfile] = useState(initialProfile);
-  const [tempProfile, setTempProfile] = useState(null); // Usado para el modo edición
+  const [tempProfile, setTempProfile] = useState(null); 
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false); // No hay carga inicial de API
+  const [loading, setLoading] = useState(false); 
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -72,7 +68,6 @@ const ProfileInfoSection = () => {
   const [urlInstagramError, setUrlInstagramError] = useState(null);
   const [urlTiktokError, setUrlTiktokError] = useState(null);
 
-  // Efecto para actualizar el 'profile' si el 'user' del contexto cambia
   useEffect(() => {
     if (user) {
       setProfile({
@@ -86,9 +81,9 @@ const ProfileInfoSection = () => {
         url_tiktok: user.url_tiktok || "",
       });
     } else {
-      setProfile(null); // Si no hay usuario, el perfil es nulo
+      setProfile(null); 
     }
-  }, [user]); // Dependencia del objeto 'user' del AuthContext
+  }, [user]); 
 
   const uploadAvatarToCloudinary = async (file) => {
     const formDataImg = new FormData();
@@ -255,22 +250,19 @@ const ProfileInfoSection = () => {
       const data = await response.json();
 
       if (data.status === "success") {
-        // Actualizar el perfil en el estado local del componente
         setProfile({ ...tempProfile, avatar: finalAvatarUrl });
-
-        // AHORA: Actualizar el usuario en el AuthContext también
         const updatedUserInContext = {
-          ...user, // Mantenemos los datos que no se editan (ej. id_tipo_usuario)
+          ...user, 
           nombre: tempProfile.nombre,
           email: tempProfile.email,
           url_linkedin: tempProfile.url_linkedin,
           url_facebook: tempProfile.url_facebook,
           url_instagram: tempProfile.url_instagram,
           url_tiktok: tempProfile.url_tiktok,
-          biografia: tempProfile.bio, // Asegurarse de que coincida con el nombre del contexto
-          url_foto_perfil: finalAvatarUrl, // Asegurarse de que coincida con el nombre del contexto
+          biografia: tempProfile.bio,
+          url_foto_perfil: finalAvatarUrl, 
         };
-        login(updatedUserInContext); // Esto actualizará el contexto y el localStorage
+        login(updatedUserInContext); 
 
         setEditMode(false);
         setNewAvatarFile(null);
@@ -303,7 +295,6 @@ const ProfileInfoSection = () => {
     }
   };
 
-  // Si no hay usuario en el AuthContext, muestra un mensaje
   if (!profile) {
     return (
       <Box
@@ -555,16 +546,6 @@ const ProfileInfoSection = () => {
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#333" }}>
                   Cursos Culminados
                 </Typography>
-                {/* <List dense>
-                  {profile.cursosCulminados.map((course) => (
-                    <ListItem key={course.id} disablePadding>
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <SchoolIcon sx={{ color: "#6C4DE2", fontSize: 20 }} />
-                      </ListItemIcon>
-                      <ListItemText primary={course.titulo} />
-                    </ListItem>
-                  ))}
-                </List> */}
                 <Alert severity="info">La lista de cursos culminados no está implementada en este perfil.</Alert>
               </Box>
             )}

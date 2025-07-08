@@ -138,7 +138,6 @@ const InteractiveBoxes = () => {
         >
           {categories.length > 0 ? (
             categories.map((category) => {
-              // Aquí se utiliza la función dinámica para obtener el icono
               const IconComponent = getCategoryIcon(category.nombre);
 
               return (
@@ -169,7 +168,6 @@ const InteractiveBoxes = () => {
                     },
                   }}
                 >
-                  {/* Se renderiza el icono obtenido dinámicamente */}
                   {React.createElement(IconComponent, {
                     sx: { fontSize: 70, color: "#5e17eb" },
                   })}

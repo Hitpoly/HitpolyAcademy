@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Box, Typography, Button } from "@mui/material";
-import CountdownTimer from "./components/HorizontalCountdown"; // Asegúrate que la ruta sea correcta
-
+import CountdownTimer from "./components/HorizontalCountdown"; 
 const CountdownBanner = ({ title, subtitle, targetDate, ctaText, ctaLink }) => {
   const [hasOfferEnded, setHasOfferEnded] = useState(false);
 
   useEffect(() => {
-    // Calcula la diferencia de tiempo para determinar si la oferta ha terminado.
     const difference = +new Date(targetDate) - +new Date();
     if (difference <= 0) {
       setHasOfferEnded(true);
@@ -18,22 +16,21 @@ const CountdownBanner = ({ title, subtitle, targetDate, ctaText, ctaLink }) => {
   };
 
   if (hasOfferEnded) {
-    // Contenido del banner cuando la oferta ha terminado
     return (
       <Box
         sx={{
-          width: "100%", // Ocupa el 100% del ancho de su padre
-          minHeight: "250px", // Altura mínima para el contenido
+          width: "100%",
+          minHeight: "250px", 
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          p: 4, // Padding alrededor del contenido
-          background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)", // Fondo degradado
-          color: "white", // Color del texto
-          boxShadow: "0px 10px 20px rgba(0,0,0,0.5)", // Sombra para profundidad
-          borderRadius: 2, // Bordes redondeados
+          p: 4, 
+          background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)", 
+          color: "white", 
+          boxShadow: "0px 10px 20px rgba(0,0,0,0.5)", 
+          borderRadius: 2, 
         }}
       >
         <Typography
@@ -72,12 +69,11 @@ const CountdownBanner = ({ title, subtitle, targetDate, ctaText, ctaLink }) => {
     );
   }
 
-  // Contenido del banner cuando la oferta está activa
   return (
     <Box
       sx={{
-        width: "100%", // Ocupa el 100% del ancho de su padre
-        maxHeight: "100%", // Asegura que no se desborde verticalmente
+        width: "100%",
+        maxHeight: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -88,13 +84,13 @@ const CountdownBanner = ({ title, subtitle, targetDate, ctaText, ctaLink }) => {
         color: "white",
         boxShadow: "0px 10px 20px rgba(0,0,0,0.5)",
         borderRadius: 2,
-        overflow: "hidden", // Recorta el contenido si excede el tamaño
-        gap: { xs: 4, md: 2 }, // Espacio entre los elementos internos
+        overflow: "hidden",
+        gap: { xs: 4, md: 2 },
       }}
     >
       <Box
         sx={{
-          flexShrink: 0, // Evita que este elemento se encoja
+          flexShrink: 0,
           mb: { xs: 4, md: 0 },
         }}
       >

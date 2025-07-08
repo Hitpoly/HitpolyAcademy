@@ -65,33 +65,21 @@ const InProgressCoursesSection = () => {
 
                 const progressData = await progressResponse.json();
 
-                console.log(
-                  `Respuesta bruta de avance para curso ID ${curso.id}:`,
-                  progressData
-                );
-
-                // --- CAMBIO CLAVE AQUÍ: Usar 'porcentaje_avance_curso' en lugar de 'porcentaje_visto' ---
                 if (
                   progressData.status === "success" &&
-                  typeof progressData.porcentaje_avance_curso === "number" // ¡Corregido!
+                  typeof progressData.porcentaje_avance_curso === "number" 
                 ) {
                   return {
                     ...curso,
-                    progreso: progressData.porcentaje_avance_curso, // ¡Corregido!
+                    progreso: progressData.porcentaje_avance_curso, 
                     completado: progressData.porcentaje_avance_curso === 100 ? 1 : 0, // ¡Corregido!
                   };
                 } else {
-                  console.warn(
-                    `No se pudo obtener el avance para el curso ID ${curso.id}: Formato de respuesta inválido o datos inesperados.`,
-                    progressData.message || ""
-                  );
+                  
                   return { ...curso, progreso: 0, completado: 0 };
                 }
               } catch (progressError) {
-                console.error(
-                  `Error al obtener el progreso del curso ID ${curso.id}:`,
-                  progressError
-                );
+              
                 return { ...curso, progreso: 0, completado: 0 };
               }
             })
@@ -107,7 +95,6 @@ const InProgressCoursesSection = () => {
           );
         }
       } catch (e) {
-        console.error("Error al cargar los cursos o su progreso:", e);
         setError(`Error al cargar los cursos: ${e.message}`);
       } finally {
         setLoading(false);
