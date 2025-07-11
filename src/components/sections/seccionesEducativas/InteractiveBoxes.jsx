@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, useMediaQuery, useTheme, CircularProgress, Alert } from "@mui/material";
+import { Link } from "react-router-dom"; // ¡Importa Link!
 
 // Importar todos los iconos necesarios de forma explícita
 import SchoolIcon from "@mui/icons-material/School";
@@ -44,7 +45,7 @@ const iconMap = {
 const getCategoryIcon = (categoryName) => {
   const lowerCaseName = categoryName.toLowerCase();
   for (const keyword in iconMap) {
-    if (lowerCaseName.includes(keyword)) { 
+    if (lowerCaseName.includes(keyword)) {
       return iconMap[keyword];
     }
   }
@@ -102,6 +103,7 @@ const InteractiveBoxes = () => {
         backgroundColor: "#fff",
         display: "flex",
         flexDirection: "column",
+        p: { xs: 2, md: 4 }, // Añadido padding para que el contenido no esté pegado a los bordes
       }}
     >
       <Typography variant="h3" gutterBottom>
@@ -139,42 +141,52 @@ const InteractiveBoxes = () => {
           {categories.length > 0 ? (
             categories.map((category) => {
               const IconComponent = getCategoryIcon(category.nombre);
+              // Construye la URL de la categoría, por ejemplo: /categoria/matematicas
+              const categoryUrl = `/cursos/${category.nombre.toLowerCase().replace(/\s+/g, '-')}`;
 
               return (
-                <Paper
+                <Link
                   key={category.id}
-                  elevation={0}
-                  sx={{
-                    width: isMobile ? "calc(50% - 12px)" : 230,
-                    height: { xs: 150, md: 250 },
-                    backgroundColor: "#f4f4f4",
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition:
-                      "transform 0.3s, box-shadow 0.3s, background-color 0.3s",
-                    "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: 3,
-                      backgroundColor: "#5e17eb",
-                      "& svg": {
-                        color: "#fff",
-                      },
-                      "& h6": {
-                        color: "#fff",
-                      },
-                    },
-                  }}
+                  to={categoryUrl}
+                  style={{ textDecoration: "none" }} // Remueve el subrayado predeterminado del enlace
                 >
-                  {React.createElement(IconComponent, {
-                    sx: { fontSize: 70, color: "#5e17eb" },
-                  })}
-                  <Typography variant="subtitle1" mt={1} textAlign="center">
-                    {category.nombre}
-                  </Typography>
-                </Paper>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      width: isMobile ? "calc(50% - 12px)" : 230,
+                      height: { xs: 150, md: 250 },
+                      backgroundColor: "#f4f4f4",
+                      borderRadius: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition:
+                        "transform 0.3s, box-shadow 0.3s, background-color 0.3s",
+                      "&:hover": {
+                        transform: "translateY(-5px)",
+                        boxShadow: 3,
+                        backgroundColor: "#5e17eb",
+                        "& svg": {
+                          color: "#fff",
+                        },
+                        "& h6": {
+                          color: "#fff",
+                        },
+                         "& p": { // Asegura que el color del texto también cambie en hover
+                          color: "#fff",
+                        },
+                      },
+                    }}
+                  >
+                    {React.createElement(IconComponent, {
+                      sx: { fontSize: 70, color: "#5e17eb" },
+                    })}
+                    <Typography variant="subtitle1" mt={1} textAlign="center" sx={{ color: 'text.primary' }}>
+                      {category.nombre}
+                    </Typography>
+                  </Paper>
+                </Link>
               );
             })
           ) : (

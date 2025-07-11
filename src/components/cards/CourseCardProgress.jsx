@@ -2,85 +2,150 @@ import React from "react";
 import {
   Box,
   Typography,
-  LinearProgress,
+  LinearProgress, // Importar LinearProgress para la barra de progreso
   Card,
   CardMedia,
   CardContent,
   Button,
 } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow"; // Icono de reproducción
 import { useNavigate } from "react-router-dom";
 
-const CourseCard = ({ curso }) => {
+const CourseCardProgress = ({ curso }) => {
   const navigate = useNavigate();
 
+  // Función para manejar el clic en el botón "Continuar"
   const handleContinueClick = () => {
+    // Navega a la ruta del curso, usando el ID del curso
     navigate(`/master-full/${curso.id}`);
   };
 
   return (
     <Card
       sx={{
+        width: {xs: "100%", md: 350},
+        minWidth: 250,
+        maxWidth: {xs: "100%", md: 350},
+        height: "auto",
+        boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-        borderRadius: 2,
-        overflow: "hidden",
-        width: "300px",
+        borderRadius: "4px",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08)",
+        transition: "transform 0.2s ease-in-out",
         "&:hover": {
-          boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+          transform: "translateY(-4px)",
         },
+        overflow: "hidden",
       }}
     >
+      {/* Sección de la imagen del curso */}
       <CardMedia
         component="img"
-        sx={{
-          width: "100%",
-          height: { xs: 150, sm: 200 },
-          objectFit: "cover",
-        }}
+        sx={{ objectFit: "cover" }}
+        // Usa la portada_targeta del curso o una imagen por defecto
         image={curso.portada_targeta || "/images/default-course-thumbnail.jpg"}
-        alt={curso.titulo}
+        alt={curso.titulo} // Texto alternativo para accesibilidad
       />
 
+      {/* Contenido principal de la tarjeta */}
       <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-        <CardContent sx={{ flex: "1 0 auto", p: 2 }}>
-          <Typography component="div" variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <CardContent
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "12px",
+            paddingBottom: "12px !important",
+          }}
+        >
+          {/* Título del curso */}
+          <Typography
+            component="div"
+            gutterBottom
+            variant="h6"
+            sx={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              lineHeight: "1.3em",
+              minHeight: "2.6em",
+              fontWeight: "bold",
+              fontSize: { xs: "1rem", sm: "1.05rem" },
+              mb: 0.5,
+              color: "#1c1d1f",
+            }}
+          >
             {curso.titulo}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {curso.subtitulo}
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={curso.progreso}
+          <Typography
+            variant="body2"
+            color="text.secondary"
             sx={{
-              height: 8,
-              borderRadius: 5,
-              backgroundColor: "#e0e0e0",
-              "& .MuiLinearProgress-bar": {
-                backgroundColor: "#6C4DE2",
-              },
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              lineHeight: 1.4,
+              minHeight: "2.8em",
+              fontSize: "0.85rem",
               mb: 1,
             }}
+          >
+            {curso.subtitulo}
+          </Typography>
+
+          {/* Barra de progreso */}
+          <LinearProgress
+            variant="determinate"
+            value={curso.progreso} // El valor del progreso (0-100)
+            sx={{
+              height: 8, // Grosor de la barra
+              borderRadius: 5, // Bordes redondeados para la barra
+              backgroundColor: "#e0e0e0", // Color de fondo de la barra
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: "#6C4DE2", // Color de la barra de progreso
+              },
+              mb: 1, // Margen inferior
+            }}
           />
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "right" }}>
+          {/* Texto del porcentaje completado */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ textAlign: "right" }}
+          >
+            {/* El progreso se muestra en negrita */}
             **{curso.progreso}%** completado
           </Typography>
         </CardContent>
-        <Box sx={{ display: "flex", alignItems: "center", p: 1.5, pl: 2, bgcolor: "#f9f9f9" }}>
+
+        {/* Sección del botón "Continuar" */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            p: 1.5,
+            pl: 2,
+            bgcolor: "#f9f9f9",
+          }}
+        >
           <Button
             variant="contained"
-            startIcon={<PlayArrowIcon />}
+            startIcon={<PlayArrowIcon />} // Icono de reproducción
             sx={{
-              bgcolor: "#6C4DE2",
-              "&:hover": { bgcolor: "#5A3BBF" },
-              borderRadius: 2,
-              px: 2,
-              py: 0.8,
-              textTransform: "none",
+              bgcolor: "#6C4DE2", // Color de fondo del botón
+              "&:hover": { bgcolor: "#5A3BBF" }, // Color de fondo al pasar el ratón
+              borderRadius: 2, // Bordes redondeados para el botón
+              px: 2, // Padding horizontal
+              py: 0.8, // Padding vertical
+              textTransform: "none", // Evita que el texto sea todo mayúsculas
             }}
-            onClick={handleContinueClick}
+            onClick={handleContinueClick} // Manejador de clic
           >
             Continuar
           </Button>
@@ -90,4 +155,4 @@ const CourseCard = ({ curso }) => {
   );
 };
 
-export default CourseCard;
+export default CourseCardProgress;

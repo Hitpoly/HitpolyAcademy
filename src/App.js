@@ -21,6 +21,8 @@ import CourseCategory from "./components/categorias/CourseCategory.jsx";
 import FAQSection from "./components/escuela/curso/profesores/FAQSection.jsx";
 import AppTestimonios from "./components/admin/AppTestimonios.jsx";
 import CursosDestacados from "./components/admin/CursosDestacados.jsx";
+import AllCategoriesCourses from "./components/categorias/AllCategoriesCourses.jsx"
+import AnunciosPage from "./components/admin/anuncios/AnunciosPage.jsx"
 
 /**
  * Componente ProtectedRoute mejorado para controlar el acceso basado en la autenticación y el rol del usuario.
@@ -56,6 +58,8 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/curso/:id/register" element={<Register />} />
             <Route path="/cursos/:categoryName" element={<CourseCategory />} />
+            <Route path="/todas-las-categorias" element={<AllCategoriesCourses />} />
+            <Route path="/crear-anuncios" element={<AnunciosPage />} />
             <Route
               path="/master-full/:courseId"
               element={

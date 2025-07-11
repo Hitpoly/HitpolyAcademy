@@ -21,7 +21,7 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import SchoolIcon from "@mui/icons-material/School";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import Swal from "sweetalert2";
+// import Swal from "sweetalert2"; // <-- Puedes comentar o eliminar esta línea también si no lo usas más
 import axios from "axios";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -42,8 +42,10 @@ const ProfileInfoSection = () => {
   const initialProfile = user
     ? {
         ...user,
-        bio: user.biografia || "", 
-        avatar: user.url_foto_perfil || "/images/default-avatar.png", 
+        nombre: user.nombre || "",
+        apellido: user.apellido || "", // Asumiendo que 'apellido' viene en user
+        bio: user.biografia || "",
+        avatar: user.url_foto_perfil || "/images/default-avatar.png",
         cursosCulminados: user.cursosCulminados || [],
         url_linkedin: user.url_linkedin || "",
         url_facebook: user.url_facebook || "",
@@ -53,15 +55,15 @@ const ProfileInfoSection = () => {
     : null;
 
   const [profile, setProfile] = useState(initialProfile);
-  const [tempProfile, setTempProfile] = useState(null); 
+  const [tempProfile, setTempProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
   const [newAvatarFile, setNewAvatarFile] = useState(null);
   const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar, ] = useState(false);
 
   const [urlLinkedinError, setUrlLinkedinError] = useState(null);
   const [urlFacebookError, setUrlFacebookError] = useState(null);
@@ -72,6 +74,8 @@ const ProfileInfoSection = () => {
     if (user) {
       setProfile({
         ...user,
+        nombre: user.nombre || "",
+        apellido: user.apellido || "",
         bio: user.biografia || "",
         avatar: user.url_foto_perfil || "/images/default-avatar.png",
         cursosCulminados: user.cursosCulminados || [],
@@ -81,9 +85,9 @@ const ProfileInfoSection = () => {
         url_tiktok: user.url_tiktok || "",
       });
     } else {
-      setProfile(null); 
+      setProfile(null);
     }
-  }, [user]); 
+  }, [user]);
 
   const uploadAvatarToCloudinary = async (file) => {
     const formDataImg = new FormData();
@@ -107,11 +111,13 @@ const ProfileInfoSection = () => {
         throw new Error("No se recibió una URL válida desde el backend de Cloudinary.");
       }
     } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error al subir imagen",
-        text: "Ocurrió un error al intentar subir la imagen de perfil.",
-      });
+      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
+      //   icon: "error",
+      //   title: "Error al subir imagen",
+      //   text: "Ocurrió un error al intentar subir la imagen de perfil.",
+      // });
+      setError("Ocurrió un error al intentar subir la imagen de perfil."); // Puedes agregar el error a la alerta pequeña
+      setTimeout(() => setError(null), 5000); // Para que desaparezca
       throw error;
     } finally {
       setUploadingAvatar(false);
@@ -119,10 +125,10 @@ const ProfileInfoSection = () => {
   };
 
   const handleEditClick = () => {
-    // Al entrar en modo edición, copiamos el perfil actual (que viene del contexto)
     setTempProfile({ ...profile });
     setEditMode(true);
     setSuccessMessage(null);
+    setError(null); // Limpiar errores previos al entrar en modo edición
     setNewAvatarFile(null);
     setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
@@ -133,8 +139,9 @@ const ProfileInfoSection = () => {
 
   const handleCancelClick = () => {
     setEditMode(false);
-    setTempProfile(null);
+    setTempProfile(null); // Restablecer tempProfile para que los campos muestren los valores originales
     setError(null);
+    setSuccessMessage(null); // Limpiar mensaje de éxito al cancelar
     setNewAvatarFile(null);
     setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
@@ -170,6 +177,7 @@ const ProfileInfoSection = () => {
   const handleSaveClick = async () => {
     if (!userId) {
       setError("No se puede guardar el perfil: ID de usuario no disponible.");
+      setTimeout(() => setError(null), 5000);
       return;
     }
 
@@ -179,6 +187,7 @@ const ProfileInfoSection = () => {
     setUrlInstagramError(null);
     setUrlTiktokError(null);
 
+    // Validaciones de URLs
     if (tempProfile.url_linkedin && !isValidUrl(tempProfile.url_linkedin)) {
       setUrlLinkedinError("URL de LinkedIn inválida. Debe incluir 'http://' o 'https://'.");
       hasValidationError = true;
@@ -197,11 +206,13 @@ const ProfileInfoSection = () => {
     }
 
     if (hasValidationError) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de validación",
-        text: "Por favor, corrige las URLs de redes sociales inválidas.",
-      });
+      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
+      //   icon: "error",
+      //   title: "Error de validación",
+      //   text: "Por favor, corrige las URLs de redes sociales inválidas.",
+      // });
+      setError("Por favor, corrige las URLs de redes sociales inválidas."); // Puedes agregar el error a la alerta pequeña
+      setTimeout(() => setError(null), 5000);
       return;
     }
 
@@ -215,7 +226,7 @@ const ProfileInfoSection = () => {
         finalAvatarUrl = await uploadAvatarToCloudinary(newAvatarFile);
       } catch (uploadError) {
         setLoading(false);
-        return;
+        return; // Detener el proceso si falla la subida de imagen
       }
     }
 
@@ -224,6 +235,7 @@ const ProfileInfoSection = () => {
         accion: "editar",
         id: userId,
         nombre: tempProfile.nombre,
+        apellido: tempProfile.apellido,
         email: tempProfile.email,
         url_linkedin: tempProfile.url_linkedin,
         url_facebook: tempProfile.url_facebook,
@@ -251,45 +263,62 @@ const ProfileInfoSection = () => {
 
       if (data.status === "success") {
         setProfile({ ...tempProfile, avatar: finalAvatarUrl });
+
         const updatedUserInContext = {
-          ...user, 
+          ...user,
           nombre: tempProfile.nombre,
+          apellido: tempProfile.apellido,
           email: tempProfile.email,
           url_linkedin: tempProfile.url_linkedin,
           url_facebook: tempProfile.url_facebook,
           url_instagram: tempProfile.url_instagram,
           url_tiktok: tempProfile.url_tiktok,
           biografia: tempProfile.bio,
-          url_foto_perfil: finalAvatarUrl, 
+          url_foto_perfil: finalAvatarUrl,
         };
-        login(updatedUserInContext); 
+        login(updatedUserInContext);
 
         setEditMode(false);
         setNewAvatarFile(null);
         setPreviewAvatarUrl(null);
         setSuccessMessage("¡Perfil actualizado con éxito!");
-        Swal.fire({
-          icon: "success",
-          title: "¡Éxito!",
-          text: "Perfil actualizado correctamente.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        // MODIFICACIÓN: Desaparecer el mensaje de éxito después de 3 segundos
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000); // 3000 milisegundos = 3 segundos
+
+        // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
+        //   icon: "success",
+        //   title: "¡Éxito!",
+        //   text: "Perfil actualizado correctamente.",
+        //   timer: 1500,
+        //   showConfirmButton: false,
+        // });
       } else {
         setError(data.message || "Hubo un error al guardar los cambios.");
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: data.message || "No se pudieron guardar los cambios.",
-        });
+        // MODIFICACIÓN: Desaparecer el mensaje de error después de 5 segundos
+        setTimeout(() => {
+          setError(null);
+        }, 5000); // 5000 milisegundos = 5 segundos
+
+        // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
+        //   icon: "error",
+        //   title: "Error",
+        //   text: data.message || "No se pudieron guardar los cambios.",
+        // });
       }
     } catch (err) {
       setError(`Error al guardar: ${err.message}`);
-      Swal.fire({
-        icon: "error",
-        title: "Error de conexión",
-        text: "No se pudo conectar con el servidor para guardar los cambios.",
-      });
+      // MODIFICACIÓN: Desaparecer el mensaje de error después de 5 segundos
+      setTimeout(() => {
+        setError(null);
+      }, 5000); // 5000 milisegundos = 5 segundos
+
+      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
+      //   icon: "error",
+      //   title: "Error de conexión",
+      //   text: "No se pudo conectar con el servidor para guardar los cambios.",
+      // });
     } finally {
       setLoading(false);
     }
@@ -320,9 +349,8 @@ const ProfileInfoSection = () => {
         backgroundColor: "#ffff",
         flex: { xs: "0 0 100%", md: "1" },
         minWidth: { md: 280 },
-        p: { xs: 3, md: 3 },
+        pt: 3,
         overflowY: { xs: "visible", md: "auto" },
-        maxHeight: { xs: "none", md: "100%" },
       }}
     >
       <Box
@@ -336,7 +364,7 @@ const ProfileInfoSection = () => {
         <Box sx={{ position: "relative", mb: 3 }}>
           <Avatar
             src={previewAvatarUrl || profile.avatar}
-            alt={profile.nombre}
+            alt={`${profile.nombre} ${profile.apellido}`}
             sx={{
               width: { xs: 150, sm: 150 },
               height: { xs: 150, sm: 150 },
@@ -367,43 +395,56 @@ const ProfileInfoSection = () => {
           )}
         </Box>
 
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 700,
-            color: "#333",
-            textAlign: "center",
-          }}
-        >
+        {/* Sección de Nombre y Apellido */}
+        <Box sx={{ width: "100%", maxWidth: 300, textAlign: "center" }}>
           {editMode ? (
-            <TextField
-              label="Nombre"
-              name="nombre"
-              value={tempProfile.nombre}
-              onChange={handleChange}
-              variant="standard"
-              sx={{
-                ".MuiInput-underline:before": { borderBottom: "none" },
-                ".MuiInput-underline:after": { borderBottom: "none" },
-              }}
-            />
+            <Stack spacing={1} sx={{ mb: 2 }}>
+              <TextField
+                label="Nombre"
+                name="nombre"
+                value={tempProfile.nombre}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined" // Cambiado a outlined para mejor visibilidad en edición
+                sx={{ mb: 1 }}
+              />
+              <TextField
+                label="Apellido"
+                name="apellido"
+                value={tempProfile.apellido}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined" // Cambiado a outlined
+              />
+            </Stack>
           ) : (
-            profile.nombre
-          )}
-
-          {!editMode && (
-            <IconButton
-              aria-label="editar perfil"
-              onClick={handleEditClick}
-              sx={{ ml: 1, p: 0.5, color: "#6C4DE2" }}
+            <Typography
+              variant="h6"
+              component="h6"
+              gutterBottom
+              sx={{
+                fontWeight: 700,
+                color: "#333",
+                textAlign: "center",
+              }}
             >
-              <EditIcon fontSize="small" />
-            </IconButton>
+              {`${profile.nombre} ${profile.apellido}`}
+              <IconButton
+                aria-label="editar perfil"
+                onClick={handleEditClick}
+                sx={{ ml: 1, p: 0.5, color: "#6C4DE2" }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Typography>
           )}
-        </Typography>
+        </Box>
       </Box>
+
+      {/* Separador visual si no estás en modo edición y el nombre/apellido ya se muestra */}
+      {!editMode && (
+        <Box sx={{ width: "100%", borderTop: "1px solid #e0e0e0", my: 3 }}></Box>
+      )}
 
       <Box
         sx={{
@@ -412,17 +453,22 @@ const ProfileInfoSection = () => {
           gap: 2,
           mt: { xs: 3, md: 5 },
           width: "100%",
-          borderTop: { xs: "1px solid #e0e0e0", md: "none" },
+          // Removido borderTop aquí, ya que el separador de arriba lo maneja
           pt: { xs: 3, md: 0 },
         }}
       >
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#333" }}>
-          Información del Alumno
+          Información del Usuario {/* Título cambiado */}
         </Typography>
 
         {successMessage && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
           </Alert>
         )}
 
@@ -536,7 +582,7 @@ const ProfileInfoSection = () => {
                   Sobre mí:
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {profile.bio}
+                  {profile.bio || "No hay biografía."} {/* Mostrar un mensaje si no hay biografía */}
                 </Typography>
               </Box>
             </Box>
@@ -552,6 +598,7 @@ const ProfileInfoSection = () => {
           </Stack>
         ) : (
           <Stack spacing={2}>
+            {/* Estos campos SÍ deben aparecer aquí para la edición del resto de la información */}
             <TextField
               label="Email"
               name="email"
