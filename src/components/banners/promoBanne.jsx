@@ -1,6 +1,7 @@
 import { Box, Button, Typography } from "@mui/material";
 
-const PromoBanner = () => {
+// PromoBanner ahora acepta 'orden' como una prop adicional
+const PromoBanner = ({ titulo, descripcion, enlace, urlImagen, orden }) => {
   return (
     <Box
       sx={{
@@ -13,15 +14,16 @@ const PromoBanner = () => {
         gap: 4,
         flexDirection: { xs: "column", md: "row" },
         overflow: "hidden",
+        // Puedes usar 'orden' aquí si lo necesitas para estilos condicionales, por ejemplo:
+        // border: orden === 1 ? '2px solid yellow' : 'none',
       }}
     >
       <Box sx={{ maxWidth: 500 }}>
         <Typography variant="h2" sx={{ color: "#fff", mb: 2 }}>
-          ¡Descuento especial por examen previo!
+          {titulo || "Título del Anuncio"} {/* Contenido dinámico */}
         </Typography>
         <Typography variant="subtitle1" sx={{ color: "#f0f0f0", mb: 3 }}>
-          Si rendiste tu examen antes de la capitalización, accede a un
-          descuento exclusivo en tu matrícula. ¡Aprovecha esta oportunidad!
+          {descripcion || "Descripción del anuncio."} {/* Contenido dinámico */}
         </Typography>
         <Box sx={{ display: { xs: "none", md: "block" } }}>
           <Button
@@ -35,6 +37,9 @@ const PromoBanner = () => {
                 backgroundColor: "#e0e0e0",
               },
             }}
+            href={enlace} // Enlace dinámico
+            target="_blank" // Abrir en nueva pestaña
+            rel="noopener noreferrer" // Seguridad
           >
             Más información
           </Button>
@@ -53,8 +58,8 @@ const PromoBanner = () => {
         }}
       >
         <img
-          src="/images/setters.jpg"
-          alt="Descuento examen previo"
+          src={urlImagen || "/images/placeholder.jpg"}
+          alt={titulo || "Banner promocional"}
           style={{
             width: "100%",
             height: "100%",
@@ -81,6 +86,9 @@ const PromoBanner = () => {
               backgroundColor: "#e0e0e0",
             },
           }}
+          href={enlace} // Enlace dinámico
+          target="_blank" // Abrir en nueva pestaña
+          rel="noopener noreferrer" // Seguridad
         >
           Más información
         </Button>

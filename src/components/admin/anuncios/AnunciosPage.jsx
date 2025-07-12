@@ -1,27 +1,45 @@
 import React, { useState } from "react";
 import { Box, AppBar, Toolbar, Typography, useTheme } from "@mui/material";
-import CrearAnuncioForm from "../../forms/CrearAnuncioForm";
+import AnuncioForm from "../../forms/CrearAnuncioForm";
 import AnunciosList from "../../banners/AnunciosList";
 
 function AnunciosPage() {
   const [refreshListTrigger, setRefreshListTrigger] = useState(0);
-  const handleAnuncioCreado = () => setRefreshListTrigger((prev) => prev + 1);
+  const [anuncioToEdit, setAnuncioToEdit] = useState(null); // Estado para el anuncio a editar
   const theme = useTheme();
+
+  const handleAnuncioCreado = () => {
+    setRefreshListTrigger((prev) => prev + 1);
+    setAnuncioToEdit(null); // Limpiar el formulario después de crear
+  };
+
+  const handleAnuncioEditado = () => {
+    setRefreshListTrigger((prev) => prev + 1);
+    setAnuncioToEdit(null); // Limpiar el formulario después de editar
+  };
+
+  const handleEditAnuncio = (anuncio) => {
+    setAnuncioToEdit(anuncio); // Establecer el anuncio que se va a editar
+  };
+
+  // ✨ Nueva función para cancelar la edición ✨
+  const handleCancelEdit = () => {
+    setAnuncioToEdit(null); // Esto hará que AnuncioForm se limpie y vuelva al modo de creación
+  };
 
   return (
     <Box sx={{ height: "100%", p: 5}}>
       <Box
         sx={{
           width: "100%",
-          height: "calc(100vh - 64px)",
+          height: "calc(100vh - 65px)",
           mt: 2,
           [theme.breakpoints.down("sm")]: {
-            display: "block", // En móviles, una columna debajo de la otra
+            display: "block",
             height: "auto",
           },
         }}
       >
-        {/* Columna Izquierda */}
         <Box
           sx={{
             width: "35%",
@@ -34,10 +52,14 @@ function AnunciosPage() {
             },
           }}
         >
-          <CrearAnuncioForm onAnuncioCreado={handleAnuncioCreado} />
+          <AnuncioForm
+            onAnuncioCreado={handleAnuncioCreado}
+            anuncioToEdit={anuncioToEdit}
+            onAnuncioEditado={handleAnuncioEditado}
+            // ✨ Pasar la nueva función como prop ✨
+            onCancelEdit={handleCancelEdit}
+          />
         </Box>
-
-        {/* Columna Derecha */}
         <Box
           sx={{
             width: "65%",
@@ -50,7 +72,10 @@ function AnunciosPage() {
             },
           }}
         >
-          <AnunciosList refreshTrigger={refreshListTrigger} />
+          <AnunciosList
+            refreshTrigger={refreshListTrigger}
+            onEditAnuncio={handleEditAnuncio}
+          />
         </Box>
       </Box>
     </Box>

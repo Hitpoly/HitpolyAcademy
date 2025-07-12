@@ -1,18 +1,104 @@
-import React from "react";
-import { Box, Typography } from "@mui/material";
+import React, { useState, useEffect, useCallback } from "react";
+import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import PortadaOne from "../../components/banners/postadaOne";
 import CarouselWithSwiper from "../../components/carruseles/CarruselOne";
 import SectionCardGrid from "../../components/sections/sectionOne/section";
-import PromoBanner from "../../components/banners/promoBanne";
+import PromoBanner from "../../components/banners/promoBanne"; // Asegúrate de que esta ruta sea correcta
 import SectionTwo from "../../components/sections/sectionTwo/section";
 import TestimoniosSection from "../../components/sections/testimonios/TestimonialOne";
 import CommunitySection from "../../components/sections/comunidad/CommunitySection";
 import CenteredCallToAction from "../../components/banners/llamadoALaAccion";
 import Footer from "../../components/footer/pieDePagina";
 import InteractiveBoxes from "../../components/sections/seccionesEducativas/InteractiveBoxes";
+import axios from "axios";
 
+const ENDPOINT_GET_ALL_ANUNCIOS = "https://apiacademy.hitpoly.com/ajax/getAllAnunciosController.php";
 
 function Inicio() {
+  const [allPromoBanners, setAllPromoBanners] = useState([]); // Almacenará TODOS los banners activos y ordenados
+  const [loadingBanners, setLoadingBanners] = useState(true);
+  const [errorBanners, setErrorBanners] = useState(null);
+
+  const fetchPromoBanners = useCallback(async () => {
+    setLoadingBanners(true);
+    setErrorBanners(null);
+    try {
+      const response = await axios.post(ENDPOINT_GET_ALL_ANUNCIOS, {
+        accion: "getAll"
+      });
+
+      let fetchedAnuncios = [];
+      if (response.data && Array.isArray(response.data.clases)) {
+        fetchedAnuncios = response.data.clases;
+      } else if (Array.isArray(response.data)) {
+        fetchedAnuncios = response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        fetchedAnuncios = response.data.data;
+      }
+
+      // Filtrar por estado 'A' (Activo) y ordenar por 'orden'
+      const activeAndSortedAnuncios = fetchedAnuncios
+        .filter(anuncio => anuncio.estado === 'A' && anuncio.orden !== null && anuncio.orden !== undefined) // Asegurarse que tengan 'orden'
+        .sort((a, b) => a.orden - b.orden);
+
+      setAllPromoBanners(activeAndSortedAnuncios);
+    } catch (err) {
+      console.error("Error al cargar banners desde la API en Inicio.jsx:", err);
+      setErrorBanners("No se pudieron cargar los banners promocionales. Por favor, inténtalo de nuevo más tarde.");
+    } finally {
+      setLoadingBanners(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPromoBanners();
+  }, [fetchPromoBanners]);
+
+  // Nueva función para renderizar un PromoBanner específico por su 'orden'
+  const renderSpecificPromoBanner = (targetOrder) => {
+    if (loadingBanners) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 5 }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ ml: 2 }}>Cargando banner de orden {targetOrder}...</Typography>
+        </Box>
+      );
+    }
+
+    if (errorBanners) {
+      return (
+        <Box sx={{ py: 5 }}>
+          <Alert severity="error">{errorBanners}</Alert>
+        </Box>
+      );
+    }
+
+    // Busca el anuncio con el 'orden' deseado
+    const anuncio = allPromoBanners.find(banner => banner.orden === targetOrder);
+
+    if (anuncio) {
+      return (
+        <PromoBanner
+          key={anuncio.id || `promo-banner-${anuncio.orden}`}
+          titulo={anuncio.titulo}
+          descripcion={anuncio.descripcion}
+          enlace={anuncio.enlace}
+          urlImagen={anuncio.urlImagen || anuncio.urlimagen}
+          orden={anuncio.orden}
+        />
+      );
+    } else {
+      // Si no se encuentra un banner con ese orden, puedes renderizar un placeholder o nada
+      return (
+        <Box sx={{ py: 5, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary">
+            No hay banner activo para el orden {targetOrder}.
+          </Typography>
+        </Box>
+      );
+    }
+  };
+
   return (
     <>
       <PortadaOne />
@@ -27,9 +113,9 @@ function Inicio() {
         <Box
           sx={{
             position: "relative",
-            flex: { xs: "0 0 100%", sm: "0 0 40%" }, 
+            flex: { xs: "0 0 100%", sm: "0 0 40%" },
             display: "flex",
-            justifyContent: { xs: "center", sm: "flex-start" }, 
+            justifyContent: { xs: "center", sm: "flex-start" },
             alignItems: "center",
             padding: { xs: "20px 16px", sm: 0 },
             paddingLeft: { xs: 0, sm: "40px" },
@@ -37,7 +123,7 @@ function Inicio() {
             color: "white",
             clipPath: {
               xs: "none",
-              sm: "polygon(0 0, 100% 0, 60% 100%, 0 100%)", 
+              sm: "polygon(0 0, 100% 0, 60% 100%, 0 100%)",
             },
           }}
         >
@@ -46,7 +132,7 @@ function Inicio() {
             sx={{
               fontSize: { xs: "1.2rem", sm: "1.5rem", md: "2rem" },
               fontWeight: "bold",
-              textAlign: { xs: "center", sm: "left" }, 
+              textAlign: { xs: "center", sm: "left" },
             }}
           >
             Comunidad Activa
@@ -54,7 +140,7 @@ function Inicio() {
         </Box>
         <Box
           sx={{
-            flex: { xs: "0 0 100%", sm: "0 0 60%" }, 
+            flex: { xs: "0 0 100%", sm: "0 0 60%" },
             paddingLeft: { xs: 0, sm: 2 },
             paddingY: { xs: "20px", sm: 0 },
           }}
@@ -73,7 +159,10 @@ function Inicio() {
       >
         <SectionCardGrid />
       </Box>
-      <PromoBanner />
+
+      {/* Primer PromoBanner: debería mostrar el anuncio con orden 1 */}
+      {renderSpecificPromoBanner(1)}
+
       <Box
         sx={{
           paddingTop: { xs: "40px", md: "100px" },
@@ -105,7 +194,10 @@ function Inicio() {
       >
         <TestimoniosSection />
       </Box>
-      <PromoBanner />
+
+      {/* Segundo PromoBanner: debería mostrar el anuncio con orden 2 */}
+      {renderSpecificPromoBanner(2)}
+
       <CommunitySection />
       <CenteredCallToAction />
       <Footer />

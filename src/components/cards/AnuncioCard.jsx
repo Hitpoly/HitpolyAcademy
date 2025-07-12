@@ -1,5 +1,5 @@
 // src/components/AnuncioCard.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -7,11 +7,38 @@ import {
   Typography,
   Box,
   Link,
+  IconButton, // Importar IconButton
+  Menu,       // Importar Menu
+  MenuItem,   // Importar MenuItem
 } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert'; // Importar MoreVertIcon
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
-function AnuncioCard({ titulo, descripcion, enlace, urlimagen }) {
+function AnuncioCard({ id, titulo, descripcion, enlace, urlimagen, orden, onEdit, onDelete }) {
+  const [anchorEl, setAnchorEl] = useState(null); // Estado para el anclaje del menú
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEditClick = () => {
+    handleClose();
+    onEdit({ id, titulo, descripcion, enlace, urlimagen, orden });
+  };
+
+  const handleDeleteClick = () => {
+    handleClose();
+    onDelete(id);
+  };
+
   return (
-    <Card sx={{ display: 'flex', marginBottom: 2, boxShadow: 3, borderRadius: '8px' }}>
+    <Card sx={{ display: 'flex', marginBottom: 2, boxShadow: 3, borderRadius: '8px', position: 'relative' }}>
       {urlimagen && (
         <CardMedia
           component="img"
@@ -34,6 +61,36 @@ function AnuncioCard({ titulo, descripcion, enlace, urlimagen }) {
             </Link>
           )}
         </CardContent>
+      </Box>
+
+      {/* Botón de tres puntos */}
+      <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+        <IconButton
+          aria-label="más opciones"
+          aria-controls={open ? 'anuncio-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? 'true' : undefined}
+          onClick={handleClick}
+          size="small"
+        >
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          id="anuncio-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          MenuListProps={{
+            'aria-labelledby': 'basic-button',
+          }}
+        >
+          <MenuItem onClick={handleEditClick}>
+            <EditIcon sx={{ mr: 1 }} /> Editar
+          </MenuItem>
+          <MenuItem onClick={handleDeleteClick}>
+            <DeleteIcon sx={{ mr: 1 }} /> Eliminar
+          </MenuItem>
+        </Menu>
       </Box>
     </Card>
   );

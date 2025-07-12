@@ -21,8 +21,8 @@ import CourseCategory from "./components/categorias/CourseCategory.jsx";
 import FAQSection from "./components/escuela/curso/profesores/FAQSection.jsx";
 import AppTestimonios from "./components/admin/AppTestimonios.jsx";
 import CursosDestacados from "./components/admin/CursosDestacados.jsx";
-import AllCategoriesCourses from "./components/categorias/AllCategoriesCourses.jsx"
-import AnunciosPage from "./components/admin/anuncios/AnunciosPage.jsx"
+import AllCategoriesCourses from "./components/categorias/AllCategoriesCourses.jsx";
+import AnunciosPage from "./components/admin/anuncios/AnunciosPage.jsx";
 
 /**
  * Componente ProtectedRoute mejorado para controlar el acceso basado en la autenticación y el rol del usuario.
@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" />;
   }
 
-   return children;
+  return children;
 };
 
 function App() {
@@ -58,8 +58,15 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/curso/:id/register" element={<Register />} />
             <Route path="/cursos/:categoryName" element={<CourseCategory />} />
-            <Route path="/todas-las-categorias" element={<AllCategoriesCourses />} />
-            <Route path="/crear-anuncios" element={<AnunciosPage />} />
+            <Route path="/oferta-del-mes" element={<AllCategoriesCourses />} />
+            <Route
+              path="/crear-anuncios"
+              element={
+                <ProtectedRoute allowedRoles={[1]}>
+                  <AnunciosPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/master-full/:courseId"
               element={
@@ -111,7 +118,7 @@ function App() {
             <Route
               path="/datos-de-curso"
               element={
-                <ProtectedRoute allowedRoles={[1, 2]}> 
+                <ProtectedRoute allowedRoles={[1, 2]}>
                   <CourseForm />
                 </ProtectedRoute>
               }
@@ -119,7 +126,7 @@ function App() {
             <Route
               path="/mis-cursos"
               element={
-                <ProtectedRoute allowedRoles={[1, 2]}> 
+                <ProtectedRoute allowedRoles={[1, 2]}>
                   <CourseListManager />
                 </ProtectedRoute>
               }
@@ -127,7 +134,7 @@ function App() {
             <Route
               path="/preguntas-frecuentes/:courseId"
               element={
-                <ProtectedRoute allowedRoles={[1, 2]}> 
+                <ProtectedRoute allowedRoles={[1, 2]}>
                   <FAQSection />
                 </ProtectedRoute>
               }
@@ -143,7 +150,7 @@ function App() {
             <Route
               path="/datos-de-curso/:courseId/modulos/:moduleId/clases"
               element={
-                <ProtectedRoute allowedRoles={[1, 2]}> 
+                <ProtectedRoute allowedRoles={[1, 2]}>
                   <ModuleClassesManager />
                 </ProtectedRoute>
               }
@@ -151,7 +158,7 @@ function App() {
             <Route
               path="/categorias"
               element={
-                <ProtectedRoute allowedRoles={[1]}> 
+                <ProtectedRoute allowedRoles={[1]}>
                   <CategoryManager />
                 </ProtectedRoute>
               }
