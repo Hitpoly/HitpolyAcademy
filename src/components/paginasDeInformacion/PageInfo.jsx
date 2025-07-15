@@ -3,7 +3,7 @@ import { Box, CircularProgress, Alert, Typography } from "@mui/material";
 import { useParams } from "react-router-dom";
 
 import ProgrammeDetailsBanner from "../banners/infoCurso";
-import EnrollmentForm from "../forms/EnrollmentForm";
+import EnrollmentForm from "../forms/cursoForm/EnrollmentForm";
 import FactsAndCertificate from "./components/baner/FactsAndCertificate";
 import Footer from "../footer/pieDePagina";
 import CenteredCallToAction from "../banners/llamadoALaAccion";

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import {
@@ -10,20 +10,10 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import Swal from "sweetalert2";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useParams } from "react-router-dom";
+import { useEnrollmentLogic } from "./logic/useEnrollmentLogic"; // Importa el nuevo hook
 
-const extractCourseIdFromSlug = (slug) => {
-  if (!slug) return null;
-
-  const match = slug.match(/-(\d+)$/);
-  if (match && match[1]) {
-    return match[1];
-  }
-  return null;
-};
-
+// Esquemas de validación (pueden quedarse aquí o moverse a un archivo de 'schemas')
 const EnrollmentSchema = Yup.object().shape({
   nombre: Yup.string().required("El nombre es requerido"),
   apellido: Yup.string().required("El apellido es requerido"),
@@ -50,359 +40,108 @@ const InterestSchema = Yup.object().shape({
 });
 
 const EnrollmentForm = () => {
-  const { isAuthenticated, login, user } = useAuth();
-  const navigate = useNavigate();
   const { id: urlSlugFromParams } = useParams();
+  const {
+    loading, // Estado de carga para envío de formularios (registro/interés)
+    snackbar,
+    handleCloseSnackbar,
+    handleRegisterAndEnroll,
+    handleUpdateInterestAndEnroll,
+    isAuthenticated,
+    navigate,
+    extractCourseIdFromSlug,
+    // --- ¡Nuevas propiedades del hook! ---
+    isEnrolled,         // Si el usuario ya está inscrito en este curso (por título)
+    checkingEnrollment, // Si se está verificando el estado de inscripción (carga inicial)
+    courseDetails,      // Detalles del curso actual (incluye el título)
+  } = useEnrollmentLogic(urlSlugFromParams);
 
-  const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const courseId = extractCourseIdFromSlug(urlSlugFromParams); // Obtener el ID del curso para la redirección
 
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setSnackbar({ ...snackbar, open: false });
-  };
-
+  // No necesitamos un useEffect aquí para isAuthenticated, ya que el hook lo maneja internamente.
+  // Pero lo dejo comentado por si lo usabas para otra cosa.
+  /*
   useEffect(() => {
+    // Puedes mantener este useEffect si necesitas alguna acción específica al cambiar el estado de autenticación.
+    // En este caso, el hook ya maneja la lógica de navegación y redirección.
   }, [isAuthenticated]);
+  */
 
-  const parseApiResponse = async (response) => {
-    try {
-      const json = await response.json();
-      return json;
-    } catch (error) {
-      const text = await response.text();
-
-      if (text.trim() === "") {
-        throw new Error("La API devolvió una respuesta vacía.");
-      }
-      throw new Error(
-        `La API devolvió un formato inesperado o JSON inválido. Contenido: "${text.substring(
-          0,
-          200
-        )}..."`
-      );
-    }
-  };
-
-  const enrollUserInCourse = async (userId, courseId) => {
-    const parsedCourseId = parseInt(courseId, 10);
-    if (isNaN(parsedCourseId)) {
-      throw new Error("El ID del curso para inscripción no es un número válido.");
-    }
-
-    const today = new Date().toISOString().slice(0, 10);
-    const dataToEnrollCourse = {
-      accion: "inscripciones",
-      usuario_id: userId,
-      curso_id: parsedCourseId,
-      fecha_inscripcion: today,
-      progreso: 0,
-      completado: 0,
-      fecha_completado: null,
-    };
-
-    const enrollResponse = await fetch(
-      "https://apiacademy.hitpoly.com/ajax/cargarInscripcionController.php",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToEnrollCourse),
-      }
+  // --- Lógica para mostrar el estado de carga inicial (verificando inscripción) ---
+  if (checkingEnrollment) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          Verificando tu estado de inscripción...
+        </Typography>
+      </Box>
     );
+  }
 
-    if (!enrollResponse.ok) {
-      const errorData = await parseApiResponse(enrollResponse);
-      const errorMessage =
-        errorData.message ||
-        `Error ${enrollResponse.status}: Fallo al inscribir al usuario en el curso.`;
-      throw new Error(errorMessage);
-    }
+  // --- Lógica para el botón de acceso rápido si el usuario ya está inscrito ---
+  if (isAuthenticated && isEnrolled && courseDetails) {
+    return (
+      <Box
+        sx={{
+          padding: { xs: 3, md: 4 },
+          width: "100%",
+          margin: "auto",
+          maxWidth: "500px",
+          borderRadius: "8px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: "primary.main" }}>
+          ¡Ya estás inscrito en "{courseDetails.title}"! 🎉
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
+          Continúa tu aprendizaje o explora el contenido del curso.
+        </Typography>
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: "#F21D6B",
+            "&:hover": {
+              backgroundColor: "#d81a5f",
+            },
+            py: 1.5,
+            fontSize: "1rem",
+            fontWeight: "bold",
+          }}
+          onClick={() => navigate(`/master-full/${courseId}`)} // Redirige al curso
+        >
+          Acceder al Curso
+        </Button>
+      </Box>
+    );
+  }
 
-    const enrollResultData = await parseApiResponse(enrollResponse);
-    if (
-      enrollResultData.status === "success" ||
-      enrollResultData.status === "warning"
-    ) {
-      if (enrollResultData.status === "warning") {
-      }
-      return enrollResultData;
-    } else {
-      throw new Error(
-        enrollResultData.message || "La inscripción al curso no fue exitosa."
-      );
-    }
-  };
-  const handleRegisterAndEnroll = async (
-    values,
-    { setSubmitting, resetForm }
-  ) => {
-    setLoading(true);
-    setSubmitting(true);
-    setSnackbar({ open: false, message: "", severity: "success" });
+  // --- Si no se pudo obtener el ID del curso o los detalles ---
+  if (!courseId || !courseDetails) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6" color="error">
+          No se pudo cargar la información del curso. Por favor, asegúrate de acceder a través de un enlace de curso válido.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate("/")}
+          sx={{ mt: 2 }}
+        >
+          Ir a la página principal
+        </Button>
+      </Box>
+    );
+  }
 
-    const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams);
-
-    if (!courseIdFromUrl) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de Curso",
-        text: "No se pudo identificar el curso para la inscripción. Por favor, asegúrate de acceder a través de un enlace de curso válido.",
-      });
-      setLoading(false);
-      setSubmitting(false);
-      return;
-    }
-
-    const userTypeIdForRegistration = user?.user_type_id || null; 
-    
-    if (!userTypeIdForRegistration) {
-        Swal.fire({
-            icon: "error",
-            title: "Error de Tipo de Usuario",
-            text: "No se pudo determinar el tipo de usuario para el registro. Contacta a soporte.",
-        });
-        setLoading(false);
-        setSubmitting(false);
-        return;
-    }
-
-
-    const dataToRegisterUser = {
-      accion: "registrarUsuario",
-      nombre: values.nombre,
-      apellido: values.apellido,
-      email: values.email,
-      pass: values.pass,
-      estado: "activo",
-      id_tipo_usuario: userTypeIdForRegistration,
-      telefono: values.telefono,
-    };
-
-    try {
-      const registerResponse = await fetch(
-        "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToRegisterUser),
-        }
-      );
-
-      if (!registerResponse.ok) {
-        const errorData = await parseApiResponse(registerResponse);
-        const errorMessage =
-          errorData.message ||
-          `Error ${registerResponse.status}: Fallo al registrar el usuario.`;
-        throw new Error(errorMessage);
-      }
-
-      const registerResult = await parseApiResponse(registerResponse);
-
-      if (registerResult.status !== "success") {
-        throw new Error(
-          registerResult.message || "Fallo en el registro del usuario."
-        );
-      }
-
-      const loginData = {
-        funcion: "login",
-        email: values.email,
-        pass: values.pass,
-      };
-
-      const loginResponse = await fetch(
-        "https://apiacademy.hitpoly.com/ajax/usuarioController.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(loginData),
-        }
-      );
-
-      if (!loginResponse.ok) {
-        const errorData = await parseApiResponse(loginResponse);
-        const errorMessage =
-          errorData.message ||
-          `Error ${loginResponse.status}: Fallo en el inicio de sesión automático.`;
-        throw new Error(errorMessage);
-      }
-
-      const loginResult = await parseApiResponse(loginResponse);
-
-      if (loginResult.status === "success") {
-        const userData = loginResult.user;
-        login(userData);
-
-        Swal.fire({
-          icon: "success",
-          title: "¡Registro exitoso!",
-          text: "Ahora, por favor, completa algunos datos adicionales para tu inscripción al curso.",
-        }).then(() => {
-          });
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error de inicio de sesión automático",
-          text:
-            loginResult.message ||
-            "No se pudo iniciar sesión automáticamente después del registro. Inténtelo manualmente.",
-        });
-        setSnackbar({
-          open: true,
-          message:
-            loginResult.message || "Error al iniciar sesión automáticamente.",
-          severity: "error",
-        });
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error en el proceso",
-        text: `Hubo un problema: ${error.message}`,
-      });
-      setSnackbar({
-        open: true,
-        message: `Error: ${error.message}`,
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
-    }
-  };
-
-  const handleUpdateInterestAndEnroll = async (
-    values,
-    { setSubmitting, resetForm }
-  ) => {
-    setLoading(true);
-    setSubmitting(true);
-    setSnackbar({ open: false, message: "", severity: "success" });
-
-    const extractedCourseId = extractCourseIdFromSlug(urlSlugFromParams);
-    const courseToEnrollId = extractedCourseId; 
-
-    const parsedCourseToEnrollId = parseInt(courseToEnrollId, 10);
-    if (isNaN(parsedCourseToEnrollId)) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de ID de Curso",
-        text: "No se pudo determinar un ID de curso válido para la inscripción. Por favor, asegúrate de acceder a través de un enlace de curso válido.",
-      });
-      setLoading(false);
-      setSubmitting(false);
-      return;
-    }
-
-    const today = new Date();
-    const formattedDate = today.toISOString().slice(0, 19).replace("T", " ");
-
-    const dataToRegisterInterest = {
-      accion: "registrarIntereses",
-      usuario_id: user.id,
-      curso_id: parsedCourseToEnrollId,
-      objetivo_curso: values.objetivo_curso,
-      industria_actual: values.industria_actual,
-      horas_dedicacion_semanal: parseInt(values.horas_dedicacion_semanal, 10),
-      interes_adicional: values.interes_adicional || "",
-      fecha_registro_interes: formattedDate,
-    };
-
-    try {
-      const interestResponse = await fetch(
-        "https://apiacademy.hitpoly.com/ajax/cargarDatosUserController.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToRegisterInterest),
-        }
-      );
-
-      if (!interestResponse.ok) {
-        const errorData = await parseApiResponse(interestResponse);
-        const errorMessage =
-          errorData.message ||
-          `Error ${interestResponse.status}: Fallo al registrar los datos de interés.`;
-        throw new Error(errorMessage);
-      }
-
-      const interestResult = await parseApiResponse(interestResponse);
-
-      if (interestResult.status !== "success") {
-        throw new Error(
-          interestResult.message || "Fallo al registrar los datos de interés."
-        );
-      }
-
-      await enrollUserInCourse(user.id, parsedCourseToEnrollId);
-
-      Swal.fire({
-        icon: "success",
-        title: "¡Información y curso asignados exitosamente!",
-        text: "Tus datos han sido guardados y el curso ha sido asignado. ¡Bienvenido!",
-      }).then(() => {
-        navigate(`/master-full/${parsedCourseToEnrollId}`); 
-      });
-
-      resetForm();
-      setSnackbar({
-        open: true,
-        message: "¡Información guardada y curso asignado!",
-        severity: "success",
-      });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error en el proceso",
-        text: `Hubo un problema: ${error.message}`,
-      });
-      setSnackbar({
-        open: true,
-        message: `Error: ${error.message}`,
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
-    }
-  };
-
-  if (isAuthenticated) {
-    const courseIdForTitle = extractCourseIdFromSlug(urlSlugFromParams); 
-
-    if (!courseIdForTitle) {
-      return (
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography variant="h6" color="error">
-            No se pudo encontrar un curso para inscribirte. Por favor, asegúrate
-            de acceder desde la página de un curso.
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/")}
-            sx={{ mt: 2 }}
-          >
-            Ir a la página principal
-          </Button>
-        </Box>
-      );
-    }
-
+  // --- Si el usuario está autenticado PERO NO INSCRITO (mostrar formulario de intereses) ---
+  if (isAuthenticated && !isEnrolled) {
     return (
       <Box
         sx={{
@@ -439,8 +178,7 @@ const EnrollmentForm = () => {
                     fontWeight="bold"
                     sx={{ mb: 1, color: "text.primary", textAlign: "center" }}
                   >
-                    ¡Completa tus datos para empezar el curso {courseIdForTitle}
-                    !
+                    ¡Completa tus datos para empezar el curso "{courseDetails.title}"!
                   </Typography>
                   <Typography
                     variant="body2"
@@ -625,7 +363,7 @@ const EnrollmentForm = () => {
     );
   }
 
-  // Si el usuario NO está autenticado, muestra el formulario de registro
+  // --- Si el usuario NO está autenticado (mostrar formulario de registro) ---
   return (
     <Box
       sx={{
@@ -633,9 +371,6 @@ const EnrollmentForm = () => {
         width: "100%",
         margin: "auto",
         maxWidth: "500px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-        backgroundColor: "white",
         display: "flex",
         flexDirection: "column",
       }}
@@ -665,7 +400,7 @@ const EnrollmentForm = () => {
                   fontWeight="bold"
                   sx={{ mb: 1, color: "text.primary", textAlign: "center" }}
                 >
-                  ¡Regístrate para acceder al programa!
+                  ¡Regístrate para acceder al programa {courseDetails?.title}!
                 </Typography>
                 <Typography
                   variant="body2"

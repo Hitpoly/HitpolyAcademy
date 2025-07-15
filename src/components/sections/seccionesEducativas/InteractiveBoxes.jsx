@@ -153,8 +153,8 @@ const InteractiveBoxes = () => {
                   <Paper
                     elevation={0}
                     sx={{
-                      width: isMobile ? "calc(50% - 12px)" : 230,
-                      height: { xs: 150, md: 250 },
+                      width: { xs: 150, md: 200, lg: 230},
+                      height: { xs: 150, md: 200, lg: 230 },
                       backgroundColor: "#f4f4f4",
                       borderRadius: 2,
                       display: "flex",

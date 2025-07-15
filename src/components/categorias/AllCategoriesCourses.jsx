@@ -5,7 +5,7 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Link,
+  Link, // Asegúrate de que Link esté importado
   Button,
   Accordion,
   AccordionSummary,
@@ -236,10 +236,10 @@ const AllCategoriesCourses = () => {
   }
 
   return (
-    <Box sx={{mt: "10px" }}>
+    <Box>
       <Box
         sx={{
-          backgroundColor: "#6C4DE2",
+          backgroundColor: "#2D1638",
           color: "white",
           p: { xs: "40px 20px", md: "60px 100px" },
           mb: 4,
@@ -262,7 +262,7 @@ const AllCategoriesCourses = () => {
           sx={{
             fontWeight: "bold",
             "& span": {
-              color: "#EF50BA",
+              color: "#f21c63",
             },
           }}
         >
@@ -306,7 +306,8 @@ const AllCategoriesCourses = () => {
           </Box>
           . Avanza hacia tus metas este año. La oferta es válida hasta el 30 de
           julio de 2025.
-          <Link href="#" color="primary" sx={{ textDecoration: "underline" }}>
+          {/* CAMBIO AQUÍ: El href apunta al ID de la sección de FAQ */}
+          <Link href="#preguntas-frecuentes" color="primary" sx={{ textDecoration: "underline" }}>
             Consulte las preguntas frecuentes a continuación para obtener más
             detalles...
           </Link>
@@ -330,7 +331,7 @@ const AllCategoriesCourses = () => {
               fontWeight: "bold",
               fontSize: { xs: "1.125rem", sm: "1.3rem", md: "1.5rem" },
               px: { xs: 1, sm: 2, md: 4 },
-              maxWidth: {sx: "90%", md: "70%"},
+              maxWidth: { sx: "90%", md: "70%" },
               mx: "auto",
               lineHeight: 1.5,
             }}
@@ -383,6 +384,7 @@ const AllCategoriesCourses = () => {
                       },
                       "&::-webkit-scrollbar-track": {
                         backgroundColor: theme.palette.background.paper,
+                        borderRadius: "10px",
                       },
                     }}
                   >
@@ -473,6 +475,7 @@ const AllCategoriesCourses = () => {
 
       {/* INICIO DEL CÓDIGO DE PREGUNTAS FRECUENTES - MODIFICADO */}
       <Box
+        id="preguntas-frecuentes"
         sx={{
           p: { xs: "10px 20px", md: "50px 100px" },
           mt: 4,
@@ -483,11 +486,18 @@ const AllCategoriesCourses = () => {
           gap: { xs: 2, md: 4 },
         }}
       >
-        <Box sx={{ width: { xs: "100%", md: "50%" }, flexShrink: 0, display: "flex", flexDirection: "column" }}>
+        <Box
+          sx={{
+            width: { xs: "100%", md: "50%" },
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <Typography
             variant="body1"
             component="h2"
-            sx={{ fontWeight: "bold", color: "#6C4DE2", fontSize: "3.5rem" }}
+            sx={{ fontWeight: "bold", color: "#2D1638", fontSize: "3.5rem" }}
           >
             Preguntas
           </Typography>
@@ -506,7 +516,7 @@ const AllCategoriesCourses = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ width: { xs: "100%", md: "50%" }, }}>
+        <Box sx={{ width: { xs: "100%", md: "50%" } }}>
           <Accordion sx={{ mb: 2 }}>
             <AccordionSummary
               expandIcon={<ExpandMoreIcon />}
@@ -514,31 +524,31 @@ const AllCategoriesCourses = () => {
               id="panel1a-header"
             >
               <Typography sx={{ fontWeight: "medium" }}>
-                ¿Qué tipos de
+                ¿Qué tipos de{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   infoproductos
-                </Typography>
+                </Typography>{" "}
                 y programas son elegibles para el descuento?
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography color="text.secondary">
-                Las ofertas elegibles para el descuento incluyen nuestros
+                Las ofertas elegibles para el descuento incluyen nuestros{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   infoproductos exclusivos
                 </Typography>
-                ,
+                ,{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   programas de certificación digital
-                </Typography>
-                y
+                </Typography>{" "}
+                y{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   rutas de especialización
-                </Typography>
-                diseñadas por
+                </Typography>{" "}
+                diseñadas por{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   expertos de primer nivel
-                </Typography>
+                </Typography>{" "}
                 en las carreras digitales más demandadas.
               </Typography>
             </AccordionDetails>
@@ -553,25 +563,31 @@ const AllCategoriesCourses = () => {
                 ¿Cómo canjeo el descuento en los{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   infoproductos
-                </Typography>
-                y
+                </Typography>{" "}
+                y{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   programas de certificación
-                </Typography>
+                </Typography>{" "}
                 de HitpolyAcademy?
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography color="text.secondary">
-                Para canjear tu descuento en nuestros
+                Para canjear tu descuento en nuestros{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   infoproductos y programas digitales
                 </Typography>
-                , simplemente deberás ingresar el código
-                <Typography component="span" sx={{ fontWeight: "bold" }}>
-                  LEVELUPEDX25
-                </Typography>
-                al finalizar tu compra directamente en la plataforma de
+                , simplemente deberás pinchar en el enlace{" "}
+                {/* Aquí está el cambio: Envolver el código en un Link */}
+                <Link
+                  href="https://wa.me/51977990496" // Reemplaza con la URL real donde se aplica el descuento
+                  target="_blank" // Abre el enlace en una nueva pestaña
+                  rel="noopener noreferrer" // Mejora la seguridad
+                  sx={{ fontWeight: "bold", textDecoration: "underline" }} // Estilos para que parezca un enlace subrayado y en negrita
+                >
+                  PINCHA AQUI PARA OBTENER LA OFERTA,
+                </Link>{" "}
+                para finalizar tu compra directamente en{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   HitpolyAcademy
                 </Typography>
@@ -586,16 +602,16 @@ const AllCategoriesCourses = () => {
               id="panel3a-header"
             >
               <Typography sx={{ fontWeight: "medium" }}>
-                ¿Este descuento aplica a los
+                ¿Este descuento aplica a los{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   programas de desarrollo profesional
-                </Typography>
+                </Typography>{" "}
                 ?
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography color="text.secondary">
-                Sí, este descuento es válido para la mayoría de nuestros
+                Sí, este descuento es válido para la mayoría de nuestros{" "}
                 <Typography component="span" sx={{ fontWeight: "bold" }}>
                   programas de desarrollo profesional y especialización
                 </Typography>
@@ -642,28 +658,19 @@ const AllCategoriesCourses = () => {
           Descargo de responsabilidad
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          La oferta es válida hasta el 30 de julio de 2025 a las 23:59, hora del
-          este (EE. UU.). No aplica a programas de grado. No se puede combinar
-          con otros códigos de descuento. Para canjear la oferta por cursos
-          verificados, Certificados Profesionales, XSeries, Programas
-          MicroBachelors® y Programas MicroMasters®, usa el código LEVELUPEDX25
-          al finalizar la compra en edx.org.
+          La promoción es válida hasta el 30 de julio de 2025 a las 23:59 (hora
+          de Lima, Perú). Esta oferta no aplica a programas académicos
+          universitarios ni puede combinarse con otras promociones o descuentos
+          activos.
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          La oferta de formación ejecutiva es válida para las siguientes
-          universidades: SDA Bocconi School of Management, University of
-          Cambridge Institute for Sustainability Leadership, Harvard Online, HEC
-          Paris, Institute for Management Development, MIT School of
-          Architecture and Planning, MIT Sloan School of Management,
-          Northwestern University, Rice University, Stanford Center for Health
-          Education, London School of Economics and Political Science, UC Davis
-          Graduate School of Management, University of Cape Town, University of
-          Oxford y University of Toronto. La oferta es válida para cualquier
-          fecha de inicio, siempre que se registre y pague antes del 30 de julio
-          de 2025. Para canjear la oferta por cursos de formación ejecutiva,
-          regístrese en getsmarter.com con el código LEVELUPEDX25 al finalizar
-          la compra. El descuento no es acumulable con otras ofertas de cursos
-          de formación ejecutiva.
+          Hitpoly no es una universidad ni una institución educativa
+          tradicional. Somos una plataforma de capitalización digital
+          independiente. Para acceder a esta promoción, es necesario comunicarse
+          directamente con nuestro equipo a través de los canales oficiales. No
+          se requiere el uso de ningún código de descuento en el sitio web. La
+          oferta está sujeta a disponibilidad y puede modificarse sin previo
+          aviso.
         </Typography>
       </Box>
     </Box>

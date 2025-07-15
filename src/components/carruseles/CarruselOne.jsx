@@ -49,21 +49,25 @@ const CarouselWithSwiper = () => {
         }
 
         const data = await response.json();
-        
+
         if (data.status === "success" && Array.isArray(data.clases)) {
+          // Filtrar solo los usuarios activos
+          const activeUsers = data.clases.filter(
+            (user) => user.estado === "Activo" // Manteniendo "Activo" con la 'A' mayúscula
+          );
 
-          const processedUsers = data.clases.map(user => ({
+          const processedUsers = activeUsers.map((user) => ({
             id: user.id,
-            nombre: user.nombre || 'Nombre no disponible',
-
-            img: user.url_foto_perfil || '/images/default-avatar.jpg', 
-            linkedin: user.url_linkedin || '', 
+            nombre: user.nombre || "Nombre no disponible",
+            img: user.url_foto_perfil || "/images/default-avatar.jpg",
+            linkedin: user.url_linkedin || "",
           }));
-          
+
           setAlumnos(processedUsers);
         } else {
           throw new Error(
-            data.message || "No se encontraron datos de usuarios o el formato es incorrecto."
+            data.message ||
+              "No se encontraron datos de usuarios o el formato es incorrecto."
           );
         }
       } catch (err) {
@@ -105,7 +109,9 @@ const CarouselWithSwiper = () => {
         }}
       >
         <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Cargando usuarios para el carrusel...</Typography>
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          Cargando usuarios para el carrusel...
+        </Typography>
       </Box>
     );
   }
@@ -136,7 +142,7 @@ const CarouselWithSwiper = () => {
         }}
       >
         <Typography variant="body1" color="text.secondary">
-          No hay usuarios disponibles para mostrar en el carrusel.
+          No hay usuarios activos disponibles para mostrar en el carrusel.
         </Typography>
       </Box>
     );
@@ -166,10 +172,10 @@ const CarouselWithSwiper = () => {
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
           }}
-          loop={true}
+          loop={true} // Se mantiene la lógica original
           spaceBetween={10}
-          centeredSlides={true}
-          slidesPerView={isMobile ? 3 : 5}
+          centeredSlides={true} // Se mantiene la lógica original
+          slidesPerView={isMobile ? 3 : 5} // Se mantiene la lógica original
           autoplay={{
             delay: 1500,
             disableOnInteraction: false,

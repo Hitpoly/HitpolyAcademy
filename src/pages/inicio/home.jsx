@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
 import PortadaOne from "../../components/banners/postadaOne";
 import CarouselWithSwiper from "../../components/carruseles/CarruselOne";
 import SectionCardGrid from "../../components/sections/sectionOne/section";
-import PromoBanner from "../../components/banners/promoBanne"; // Asegúrate de que esta ruta sea correcta
+import PromoBanner from "../../components/banners/promoBanne";
 import SectionTwo from "../../components/sections/sectionTwo/section";
 import TestimoniosSection from "../../components/sections/testimonios/TestimonialOne";
 import CommunitySection from "../../components/sections/comunidad/CommunitySection";
@@ -15,9 +18,32 @@ import axios from "axios";
 const ENDPOINT_GET_ALL_ANUNCIOS = "https://apiacademy.hitpoly.com/ajax/getAllAnunciosController.php";
 
 function Inicio() {
-  const [allPromoBanners, setAllPromoBanners] = useState([]); // Almacenará TODOS los banners activos y ordenados
+  const [allPromoBanners, setAllPromoBanners] = useState([]);
   const [loadingBanners, setLoadingBanners] = useState(true);
   const [errorBanners, setErrorBanners] = useState(null);
+
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    if (user) {
+      const isInactive = (user.estado === "Inactivo"); 
+      
+      if (isInactive) {
+        const timer = setTimeout(() => {
+          navigate("/ofertas");
+        }, 7000);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }
+    }
+  }, [user, isAuthenticated, navigate]);
 
   const fetchPromoBanners = useCallback(async () => {
     setLoadingBanners(true);
@@ -36,14 +62,12 @@ function Inicio() {
         fetchedAnuncios = response.data.data;
       }
 
-      // Filtrar por estado 'A' (Activo) y ordenar por 'orden'
       const activeAndSortedAnuncios = fetchedAnuncios
-        .filter(anuncio => anuncio.estado === 'A' && anuncio.orden !== null && anuncio.orden !== undefined) // Asegurarse que tengan 'orden'
+        .filter(anuncio => anuncio.estado === 'A' && anuncio.orden !== null && anuncio.orden !== undefined)
         .sort((a, b) => a.orden - b.orden);
 
       setAllPromoBanners(activeAndSortedAnuncios);
     } catch (err) {
-      console.error("Error al cargar banners desde la API en Inicio.jsx:", err);
       setErrorBanners("No se pudieron cargar los banners promocionales. Por favor, inténtalo de nuevo más tarde.");
     } finally {
       setLoadingBanners(false);
@@ -54,7 +78,6 @@ function Inicio() {
     fetchPromoBanners();
   }, [fetchPromoBanners]);
 
-  // Nueva función para renderizar un PromoBanner específico por su 'orden'
   const renderSpecificPromoBanner = (targetOrder) => {
     if (loadingBanners) {
       return (
@@ -73,7 +96,6 @@ function Inicio() {
       );
     }
 
-    // Busca el anuncio con el 'orden' deseado
     const anuncio = allPromoBanners.find(banner => banner.orden === targetOrder);
 
     if (anuncio) {
@@ -88,7 +110,6 @@ function Inicio() {
         />
       );
     } else {
-      // Si no se encuentra un banner con ese orden, puedes renderizar un placeholder o nada
       return (
         <Box sx={{ py: 5, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary">
@@ -160,7 +181,6 @@ function Inicio() {
         <SectionCardGrid />
       </Box>
 
-      {/* Primer PromoBanner: debería mostrar el anuncio con orden 1 */}
       {renderSpecificPromoBanner(1)}
 
       <Box
@@ -195,7 +215,6 @@ function Inicio() {
         <TestimoniosSection />
       </Box>
 
-      {/* Segundo PromoBanner: debería mostrar el anuncio con orden 2 */}
       {renderSpecificPromoBanner(2)}
 
       <CommunitySection />
