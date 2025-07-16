@@ -1,4 +1,3 @@
-// src/components/modulos/CourseModulesManager.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -122,12 +121,6 @@ const CourseModulesManager = () => {
   };
 
   useEffect(() => {
-    console.log(
-      "useEffect activado. courseId:",
-      courseId,
-      "refreshTrigger:",
-      refreshTrigger
-    );
     fetchModulesAndCourseTitle();
   }, [courseId, refreshTrigger]);
 
