@@ -37,13 +37,9 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
   useEffect(() => {
     const loadCourseAndEnrollmentStatus = async () => {
       setCheckingEnrollment(true);
-      console.log(`🌀 useEnrollmentLogic: Iniciando carga y verificación para curso slug: ${urlSlugFromParams}`);
-
-      // Aquí es donde se llama a la función actualizada
       const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams); 
 
       if (!courseIdFromUrl) {
-        console.error("❌ useEnrollmentLogic: No se pudo extraer un ID de curso válido del slug.");
         Swal.fire({
           icon: "error",
           title: "Error de Curso",
@@ -54,33 +50,26 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
       }
 
       try {
-        console.log(`🔍 useEnrollmentLogic: Obteniendo detalles para courseId: ${courseIdFromUrl}`);
         const courseResult = await getCourseDetailsById(courseIdFromUrl);
 
         if (courseResult.found) {
           setCourseDetails(courseResult.details);
-          console.log(`✅ useEnrollmentLogic: Detalles del curso cargados:`, courseResult.details);
-
+          
           if (isAuthenticated && user?.id && courseResult.details.title) {
-            console.log(`🔐 useEnrollmentLogic: Usuario autenticado (${user.id}). Verificando inscripción en curso "${courseResult.details.title}".`);
             const enrolled = await checkUserEnrollmentByTitle(user.id, courseResult.details.title);
             setIsEnrolled(enrolled);
             if (enrolled) {
-              console.log(`🎉 useEnrollmentLogic: Usuario ${user.id} YA ESTÁ inscrito en el curso "${courseResult.details.title}".`);
-            } else {
-              console.log(`🤷‍♀️ useEnrollmentLogic: Usuario ${user.id} NO está inscrito en el curso "${courseResult.details.title}".`);
-            }
+              } else {
+              }
           } else {
-            console.log("ℹ️ useEnrollmentLogic: Usuario no autenticado o título del curso no disponible. Saltando la verificación de inscripción.");
             setIsEnrolled(false);
           }
         } else {
-          console.warn(`⚠️ useEnrollmentLogic: No se encontraron detalles para el curso con ID: ${courseIdFromUrl}.`);
+          
           setCourseDetails(null);
           setIsEnrolled(false);
         }
       } catch (error) {
-        console.error("💥 useEnrollmentLogic: Error al cargar detalles del curso o verificar inscripción:", error);
         Swal.fire({
           icon: "error",
           title: "Error al cargar el curso",
@@ -182,8 +171,7 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
         title: "¡Registro exitoso!",
         text: "Ahora, por favor, completa algunos datos adicionales para tu inscripción al curso.",
       }).then(() => {
-        // No hay necesidad de navegar aquí, el componente se re-renderizará y mostrará el formulario de interés.
-      });
+        });
     } catch (error) {
       Swal.fire({
         icon: "error",

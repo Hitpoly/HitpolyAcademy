@@ -82,7 +82,6 @@ const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => { // <
         width: '100%',
         aspectRatio: '16 / 9',
         backgroundColor: '#000',
-        borderRadius: 1,
         overflow: 'hidden',
         '& iframe': {
           ...fillParentStyles,

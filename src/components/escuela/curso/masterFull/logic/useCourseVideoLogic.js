@@ -156,6 +156,8 @@ const useCourseVideoLogic = (courseId) => {
                       videoUrl: clase.url_video,
                       progressPanels: clase.paneles_progreso || [],
                       orden: clase.orden,
+                      // ¡AQUÍ ESTÁ LA LÍNEA CLAVE QUE DEBES AÑADIR!
+                      description: clase.descripcion || null, // Asegúrate de que tu API devuelve 'descripcion'
                     }))
                     .sort((a, b) => a.orden - b.orden);
                   return {

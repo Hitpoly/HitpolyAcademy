@@ -135,9 +135,6 @@ export const registerInterest = async (interestData) => {
 };
 
 export const getUserEnrollmentsAndTitles = async (userId) => {
-  console.log(
-    `🔎 getUserEnrollmentsAndTitles: Intentando obtener cursos inscritos para Usuario ID: ${userId}`
-  );
   try {
     const response = await fetch(
       "https://apiacademy.hitpoly.com/ajax/getInfoUserController.php",
@@ -211,7 +208,7 @@ export const getCourseDetailsById = async (courseId) => {
     const allCourses = await getAllCourses();
     const foundCourse = allCourses.find(
       (course) => String(course.id) === String(courseId)
-    ); // Busca el curso por ID (comparando como string por si acaso)
+    ); 
 
     if (foundCourse) {
       return {

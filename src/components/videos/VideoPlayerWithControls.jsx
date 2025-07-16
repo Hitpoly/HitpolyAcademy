@@ -1,17 +1,15 @@
-// src/components/videos/VideoPlayerWithControls.jsx
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Box, IconButton, Slider, Typography } from "@mui/material";
 
-// Importaciones directas a los iconos específicos
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import YouTubeIcon from '@mui/icons-material/YouTube'; // Nuevo: para el icono de YouTube
+import YouTubeIcon from '@mui/icons-material/YouTube';
 
-import Videopopup from "./Videopopup";
+import Videopopup from "./Videopopup"; 
 
 const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   const [player, setPlayer] = useState(null);
@@ -23,17 +21,16 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const playerContainerRef = useRef(null); // Ref para el contenedor del reproductor
-  const [isHovering, setIsHovering] = useState(false); // Para mostrar/ocultar overlay
+  const playerContainerRef = useRef(null);
+  const [isHovering, setIsHovering] = useState(false);
 
-  // Constantes de estado del reproductor de YouTube
   const YT_PLAYING = 1;
   const YT_PAUSED = 2;
   const YT_ENDED = 0;
   const YT_BUFFERING = 3;
 
   const startProgressInterval = useCallback((playerInstance, isYouTube) => {
-    stopProgressInterval(); // Asegurarse de limpiar cualquier intervalo anterior
+    stopProgressInterval();
     const id = setInterval(() => {
       if (isYouTube) {
         if (playerInstance && typeof playerInstance.getCurrentTime === 'function' && typeof playerInstance.getDuration === 'function') {
@@ -43,16 +40,12 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
             setCurrentTime(currentT);
             setVideoProgress((currentT / dur) * 100);
 
-            // Añadir lógica para detectar el final del video de YouTube por progreso
-            // Solo si el video ya ha empezado a reproducirse y está casi al final
-            // Usamos player?.getPlayerState() para asegurar que no falle si el player no tiene el método
             if (currentT >= dur - 0.5 && dur > 0 && player?.getPlayerState() !== YT_ENDED) {
-                // console.log("🐛 VideoPlayerWithControls: Video de YouTube finalizado (por progreso, después de seek).");
-                setIsPaused(true);
-                setVideoProgress(100);
-                setCurrentTime(duration);
-                stopProgressInterval();
-                onVideoCompleted();
+              setIsPaused(true);
+              setVideoProgress(100);
+              setCurrentTime(duration);
+              stopProgressInterval();
+              onVideoCompleted();
             }
           }
         }
@@ -62,9 +55,9 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
           setVideoProgress((playerInstance.currentTime / playerInstance.duration) * 100);
         }
       }
-    }, 1000); // Actualiza cada segundo
+    }, 1000);
     setIntervalId(id);
-  }, [duration, onVideoCompleted, player]); // Añadir 'player' como dependencia para acceder a player.getPlayerState()
+  }, [duration, onVideoCompleted, player]);
 
   const stopProgressInterval = useCallback(() => {
     if (intervalId) {
@@ -73,10 +66,8 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
     }
   }, [intervalId]);
 
-  // Nuevo manejador para los cambios de estado de YouTube
   const handleYouTubeStateChange = useCallback((state) => {
-    // console.log("🐛 YouTube State Changed:", state);
-    if (!player) return; // Asegúrate de que el player esté disponible
+    if (!player) return;
 
     switch (state) {
       case YT_PLAYING:
@@ -92,16 +83,13 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
         stopProgressInterval();
         break;
       case YT_ENDED:
-        // console.log("🐛 VideoPlayerWithControls: Video de YouTube finalizado (por estado).");
         setIsPaused(true);
         setVideoProgress(100);
-        setCurrentTime(duration); // Asegurarse de que el tiempo final sea la duración total
+        setCurrentTime(duration);
         stopProgressInterval();
         onVideoCompleted();
         break;
       case YT_BUFFERING:
-        // Opcional: Puedes mostrar un indicador de buffering o detener el intervalo si lo prefieres
-        // Actualmente, el intervalo sigue corriendo si estaba reproduciéndose, ya que el buffering es temporal.
         break;
       default:
         break;
@@ -110,15 +98,10 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
 
 
   const handlePlayerReady = useCallback((playerInstance) => {
-    // console.log("🐛 VideoPlayerWithControls: Reproductor listo.", playerInstance);
     setPlayer(playerInstance);
-    // Determinar si es un reproductor de YouTube basado en la existencia del método `playVideo`
-    // (react-youtube's event.target tiene estos métodos)
     setIsYouTubePlayer(typeof playerInstance.playVideo === 'function');
 
-    if (typeof playerInstance.playVideo === 'function') { // Es un reproductor de YouTube (react-youtube)
-      // console.log("🐛 VideoPlayerWithControls: Es reproductor de YouTube (via react-youtube).");
-      // Obtener la duración de YouTube una vez que esté disponible
+    if (typeof playerInstance.playVideo === 'function') {
       const checkDurationYT = setInterval(() => {
         if (playerInstance.getDuration && playerInstance.getDuration() > 0) {
           setDuration(playerInstance.getDuration());
@@ -126,8 +109,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
         }
       }, 100);
 
-    } else { // Es un elemento <video> HTML nativo
-      // console.log("🐛 VideoPlayerWithControls: Es reproductor HTML nativo.");
+    } else {
       playerInstance.volume = volume / 100;
 
       playerInstance.onplay = () => {
@@ -140,12 +122,11 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
         stopProgressInterval();
       };
       playerInstance.onended = () => {
-        // console.log("🐛 VideoPlayerWithControls: Video HTML finalizado.");
         setIsPaused(true);
         setVideoProgress(100);
         setCurrentTime(duration);
         stopProgressInterval();
-        onVideoCompleted(); // Notificar a VideoLayout
+        onVideoCompleted();
       };
       playerInstance.ontimeupdate = () => {
         if (playerInstance.duration > 0) {
@@ -159,8 +140,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
       playerInstance.onvolumechange = () => {
         setVolume(playerInstance.volume * 100);
       };
-      // Forzar la obtención de la duración si ya está cargado el video
-      if (playerInstance.readyState >= 1) { // HAVE_METADATA o superior
+      if (playerInstance.readyState >= 1) {
         setDuration(playerInstance.duration);
       }
     }
@@ -173,15 +153,13 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
     };
   }, [stopProgressInterval]);
 
-  // Si la URL del video cambia, reinicia el estado y el reproductor
   useEffect(() => {
-    // console.log("🐛 VideoPlayerWithControls: videoUrl ha cambiado:", videoUrl);
     setVideoProgress(0);
     setCurrentTime(0);
     setIsPaused(true);
     setHasStartedPlaying(false);
     setDuration(0);
-    setPlayer(null); // Limpiar el reproductor para que Videopopup lo re-inicialice
+    setPlayer(null);
   }, [videoUrl]);
 
 
@@ -204,7 +182,6 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   };
 
   const handleSeek = (event, newValue) => {
-    // Solo actualiza el slider visualmente mientras el usuario arrastra
     setVideoProgress(newValue);
   };
 
@@ -217,19 +194,16 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
             const timeToSeek = (newValue / 100) * dur;
             player.seekTo(timeToSeek, true);
             setCurrentTime(timeToSeek);
-            // Si el video estaba reproduciéndose, reinicia el intervalo de progreso
-            // Esto es crucial para que la barra siga avanzando después de un seek.
             if (!isPaused) {
                 startProgressInterval(player, true);
             }
           }
         }
-      } else { // Es un elemento <video> HTML nativo
+      } else {
         if (player.duration > 0) {
           const timeToSeek = (newValue / 100) * player.duration;
           player.currentTime = timeToSeek;
           setCurrentTime(timeToSeek);
-          // Si el video estaba reproduciéndose, reinicia el intervalo de progreso
           if (!isPaused) {
             startProgressInterval(player, false);
           }
@@ -255,11 +229,11 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
       if (isYouTubePlayer) {
         if (player.isMuted()) {
           player.unMute();
-          player.setVolume(50); // Restaurar a un volumen predeterminado
+          player.setVolume(50);
           setVolume(50);
         } else {
           player.mute();
-          setVolume(0); // Establecer visualmente el volumen a 0
+          setVolume(0);
         }
       } else {
         if (player.volume === 0) {
@@ -290,86 +264,83 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
     }
   };
 
-  return (
-    <Box ref={playerContainerRef}>
-      <Box sx={{ paddingBottom: { xs: "20px", md: "30px 0px" }, position: 'relative' }}>
-        <Videopopup
-          videoUrl={videoUrl}
-          onPlayerReady={handlePlayerReady}
-          onYouTubeStateChange={handleYouTubeStateChange}
-        />
+  const showControls = !hasStartedPlaying || isPaused || isHovering;
 
-        {/* Overlay de control: solo visible cuando el video no ha empezado, pausado, o al pasar el mouse */}
+  return (
+    <Box ref={playerContainerRef} sx={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden' }}>
+      <Videopopup
+        videoUrl={videoUrl}
+        onPlayerReady={handlePlayerReady}
+        onYouTubeStateChange={handleYouTubeStateChange}
+      />
+
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          backgroundColor: 'transparent',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          opacity: showControls ? 1 : 0, 
+          transition: 'opacity 0.3s ease-in-out',
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onClick={(e) => {
+          if (!e.target.closest('.bottom-controls-bar')) {
+            handlePlayPause();
+          }
+        }}
+      >
+        {player && isPaused ? ( 
+          <Box
+            sx={{
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              borderRadius: '50%',
+              padding: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: { xs: 80, sm: 100 },
+              height: { xs: 80, sm: 100 },
+            }}
+          >
+            {isYouTubePlayer ? ( 
+              <YouTubeIcon sx={{ fontSize: { xs: 70, sm: 82 }, color: 'white' }} />
+            ) : ( 
+              <PlayArrowIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} />
+            )}
+          </Box>
+        ) : null}
+      </Box>
+         {player && (
         <Box
+          className="bottom-controls-bar"
           sx={{
             position: 'absolute',
-            inset: 0,
-            zIndex: 2, // Por encima del video
-            backgroundColor: 'transparent',
-            cursor: 'pointer',
+            height: {xs: "50px", md: "70px"},
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 3,
             display: 'flex',
-            justifyContent: 'center',
             alignItems: 'center',
-            bottom: "20px",
-            opacity: (!hasStartedPlaying || isPaused || isHovering) ? 1 : 0,
+            gap: { xs: 1, sm: 2 },
+            p: { xs: 1, sm: 2 },
+            color: 'white',
+            opacity: showControls ? 1 : 0,
             transition: 'opacity 0.3s ease-in-out',
           }}
-          onContextMenu={(e) => e.preventDefault()}
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
-          onClick={handlePlayPause}
+          onClick={(e) => e.stopPropagation()}
         >
-          {isYouTubePlayer && !hasStartedPlaying ? (
-            <Box
-              sx={{
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                borderRadius: '50%',
-                padding: 1,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: { xs: 80, sm: 100 },
-                height: { xs: 80, sm: 100 },
-              }}
-            >
-              <YouTubeIcon sx={{ fontSize: { xs: 70, sm: 82 }, color: 'white' }} />
-            </Box>
-          ) : (
-            <IconButton
-              sx={{
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' },
-                padding: { xs: '12px', sm: '16px' }
-              }}
-              aria-label={isPaused ? "Reproducir video" : "Pausar video"}
-            >
-              {isPaused ?
-                <PlayArrowIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} />
-                :
-                <PauseIcon sx={{ fontSize: { xs: 50, sm: 70 }, color: 'white' }} />
-              }
-            </IconButton>
-          )}
-        </Box>
-      </Box>
-
-      {/* Controles de video personalizados */}
-      {player && (
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: { xs: 1, sm: 2 },
-          mt: 2,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          px: { xs: 1, sm: 0 },
-          backgroundColor: '#f5f5f5',
-          borderRadius: '8px',
-          p: 2,
-          boxShadow: '0px 2px 5px rgba(0,0,0,0.05)'
-        }}>
-          <IconButton onClick={handlePlayPause} color="primary" size="large">
-            {isPaused ? <PlayArrowIcon sx={{ fontSize: 40 }} /> : <PauseIcon sx={{ fontSize: 40 }} />}
+          <IconButton onClick={handlePlayPause} color="inherit" size="large">
+            {isPaused ? <PlayArrowIcon sx={{ fontSize: {xs: 30, md: 40} }} /> : <PauseIcon sx={{ fontSize: {xs: 30, md: 40} }} />}
           </IconButton>
           <Typography variant="body2" sx={{ minWidth: '45px', textAlign: 'center' }}>
             {formatTime(currentTime)}
@@ -386,6 +357,13 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
                 '& .MuiSlider-thumb': {
                   width: 16,
                   height: 16,
+                  color: 'white',
+                },
+                '& .MuiSlider-track': {
+                  color: 'primary.light',
+                },
+                '& .MuiSlider-rail': {
+                  color: 'rgba(255,255,255,0.3)',
                 },
               }}
             />
@@ -394,7 +372,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
             {formatTime(duration)}
           </Typography>
 
-          <IconButton onClick={handleMuteToggle} color="primary" size="small">
+          <IconButton onClick={handleMuteToggle} color="inherit" size="small">
             {volume === 0 ? <VolumeOffIcon /> : <VolumeUpIcon />}
           </IconButton>
           <Slider
@@ -402,11 +380,22 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
             onChange={handleVolumeChange}
             aria-labelledby="volume-slider"
             orientation="horizontal"
-            sx={{ width: { xs: 80, sm: 100 } }}
+            sx={{
+              width: { xs: 80, sm: 100 },
+              '& .MuiSlider-thumb': {
+                color: 'white',
+              },
+              '& .MuiSlider-track': {
+                color: 'primary.light',
+              },
+              '& .MuiSlider-rail': {
+                color: 'rgba(255,255,255,0.3)',
+              },
+            }}
             size="small"
             color="primary"
           />
-          <IconButton onClick={handleFullscreenToggle} color="primary" size="small">
+          <IconButton onClick={handleFullscreenToggle} color="inherit" size="small">
             {document.fullscreenElement ? <FullscreenExitIcon /> : <FullscreenIcon />}
           </IconButton>
         </Box>

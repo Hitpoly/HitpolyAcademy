@@ -25,7 +25,7 @@ import CountdownBanner from "../../cronometro/CountdownBanner";
 
 const CourseDetailPage = ({ course, countdownTargetDate }) => {
   const [visibleLearningOutcomes, setVisibleLearningOutcomes] = useState(3); 
-   const [visibleModules, setVisibleModules] = useState(2); 
+  const [visibleModules, setVisibleModules] = useState(2); 
 
   const totalLearningOutcomes = course.learningOutcomes?.length || 0;
   const totalCourseModules = course.modules?.length || 0;
@@ -40,7 +40,9 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
     setVisibleModules(visibleModules === 2 ? totalCourseModules : 2);
   };
 
-  
+  const handleInductionVideoCompletion = () => {
+    };
+
   if (!course) {
     return (
       <Typography variant="h6">Cargando información del curso...</Typography>
@@ -77,8 +79,18 @@ const CourseDetailPage = ({ course, countdownTargetDate }) => {
           }}
         >
           <Box sx={{ flex: 1 }}>
-            <Box sx={{ paddingBottom: { xs: "20px", md: "30px 0px" } }}>
-              <VideoPlayerWithControls videoUrl={course.inductionVideoUrl} />
+            
+            <Box
+              sx={{
+                paddingBottom: { xs: "20px", md: "30px 0px" },
+                mx: { xs: -2, md: -3 }, 
+                mt: { xs: -2, md: -3 }, 
+                }}
+            >
+              <VideoPlayerWithControls 
+                videoUrl={course.inductionVideoUrl} 
+                onVideoCompleted={handleInductionVideoCompletion} // 🚀 ¡AÑADE ESTA LÍNEA! 🚀
+              />
             </Box>
             <Box
               sx={{

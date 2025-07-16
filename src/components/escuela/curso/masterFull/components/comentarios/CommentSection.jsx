@@ -197,7 +197,7 @@ const CommentSection = ({ claseId }) => {
                                     placeholder={replyPlaceholder}
                                 />
                                 <Button variant="contained" endIcon={<SendIcon />} disabled={!newCommentContent.trim()} onClick={handlePostComment}>
-                                    Enviar
+                                    
                                 </Button>
                             </Box>
                         )}

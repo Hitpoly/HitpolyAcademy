@@ -1,6 +1,6 @@
 // VideoLayout.jsx
-import React from "react";
-import { Box, Typography, CircularProgress, Alert } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, Typography, CircularProgress, Alert, Button } from "@mui/material";
 import ProgressBar from "./components/progreso.jsx";
 import VideoPlayerWithControls from "../../../videos/VideoPlayerWithControls.jsx";
 import VideoList from "./components/VideoList.jsx";
@@ -24,6 +24,38 @@ const VideoLayout = ({ courseId }) => {
     handleVideoEnd,
     toggleCompletedVideo,
   } = useCourseVideoLogic(courseId);
+
+  // Estado para controlar la expansión de la descripción
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Reinicia el estado de expansión cuando cambia la clase
+  useEffect(() => {
+    setShowFullDescription(false);
+  }, [currentClass]);
+
+  // --- LOGS DE DEPURACIÓN (Mantener si aún los necesitas, de lo contrario puedes removerlos) ---
+  useEffect(() => {
+    console.log("VideoLayout - Estado de carga:", { loading, error });
+    console.log("VideoLayout - Modules:", modules);
+    console.log("VideoLayout - currentVideoId:", currentVideoId);
+    console.log("VideoLayout - completedVideoIdsLocal:", completedVideoIdsLocal);
+    console.log("VideoLayout - totalCourseVideos:", totalCourseVideos);
+    console.log("VideoLayout - completedVideosCount:", completedVideosCount);
+  }, [loading, error, modules, currentVideoId, completedVideoIdsLocal, totalCourseVideos, completedVideosCount]);
+
+  useEffect(() => {
+    console.log("VideoLayout - currentClass:", currentClass);
+    if (currentClass) {
+      console.log("VideoLayout - currentClass.title:", currentClass.title);
+      console.log("VideoLayout - currentClass.videoUrl:", currentClass.videoUrl);
+      console.log("VideoLayout - currentClass.description:", currentClass.description);
+    } else {
+      console.log("VideoLayout - currentClass es null o undefined.");
+    }
+    console.log("VideoLayout - currentClassResources:", currentClassResources);
+  }, [currentClass, currentClassResources]);
+  // --- FIN LOGS DE DEPURACIÓN ---
+
 
   if (loading) {
     return (
@@ -82,6 +114,11 @@ const VideoLayout = ({ courseId }) => {
     );
   }
 
+  // Obtenemos la descripción de la clase
+  const descriptionText = currentClass?.description || "";
+  // Determinamos si la descripción es lo suficientemente larga como para necesitar "Ver más"
+  const needsTruncation = descriptionText.length > 150; // Ajusta este valor según la longitud típica de tus descripciones
+
   return (
     <>
       <Box
@@ -124,7 +161,45 @@ const VideoLayout = ({ courseId }) => {
             videoUrl={currentClass.videoUrl}
             onVideoCompleted={handleVideoEnd}
           />
-        </Box>
+          {/* Aquí se añade la descripción de la clase con "Ver más" */}
+          {currentClass?.description && (
+            <Box sx={{ mt: 3, mb: 4, p: 2, borderRadius: '8px', bgcolor: 'background.paper', boxShadow: 1 }}>
+              <Typography variant="h6" gutterBottom color="primary">
+                Descripción de la clase
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: showFullDescription ? 'unset' : 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {descriptionText}
+              </Typography>
+              {needsTruncation && (
+                <Button 
+                  onClick={() => setShowFullDescription(!showFullDescription)} 
+                  color="primary" 
+                  size="small" 
+                  sx={{ mt: 1 }}
+                >
+                  {showFullDescription ? "Ver menos" : "Ver más"}
+                </Button>
+              )}
+            </Box>
+          )}
+          
+          {/* Sección de Comentarios para celulares (display: block en xs, none en md y arriba) */}
+          <Box sx={{ display: { xs: 'block', md: 'none' }, mt: { xs: 4, md: 0 } }}>
+            <CommentSection claseId={currentVideoId} />
+          </Box>
+
+        </Box> {/* Fin del Box principal de Video/Descripción */}
+
         <Box sx={{ flex: 3, marginTop: { xs: "30px", md: "0px" } }}>
           <VideoList
             modules={modules}
@@ -135,16 +210,18 @@ const VideoLayout = ({ courseId }) => {
           />
         </Box>
       </Box>
+
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column-reverse", md: "row" },
+          flexDirection: { xs: "column", md: "row" }, // Cambiado a 'column' en xs para que los recursos vayan después de comentarios si los comentarios están aparte
           padding: { xs: "20px", md: "0px 50px" },
           marginTop: { xs: "0px", md: "40px" },
           gap: "20px",
         }}
       >
-        <Box sx={{ flex: 7 }}>
+        {/* Sección de Comentarios para escritorio (display: none en xs, block en md y arriba) */}
+        <Box sx={{ flex: 7, display: { xs: 'none', md: 'block' } }}>
           <CommentSection claseId={currentVideoId} />
         </Box>
         <Box sx={{ flex: 3 }}>
