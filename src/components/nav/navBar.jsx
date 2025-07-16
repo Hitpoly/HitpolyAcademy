@@ -19,7 +19,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import BookIcon from '@mui/icons-material/Book'; // Importa BookIcon
+import BookIcon from '@mui/icons-material/Book';
+import CampaignIcon from '@mui/icons-material/Campaign'; // Importa el icono para anuncios
+// import DashboardIcon from '@mui/icons-material/Dashboard'; // Eliminamos este si no lo vamos a usar
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline'; // Importa el icono para editar perfiles
+import CommentIcon from '@mui/icons-material/Comment'; // ¡Nuevo! Importa el icono de comentarios
+
 import ListaDeCategorias from "./components/MenuHamburguesa";
 import TemporaryDrawer from "./components/drawer";
 import { useAuth } from "../../context/AuthContext";
@@ -28,7 +33,7 @@ import SequencePopup from "../../components/popups/SequencePopup";
 
 const MenuDeNavegacion = () => {
 
- const affiliateSteps = [ 
+  const affiliateSteps = [
     {
       title: "¡Bienvenido al Panel de Afiliados!",
       description: "Aquí te explicaremos cómo funciona nuestro programa de afiliados y cómo puedes empezar a ganar comisiones.",
@@ -108,6 +113,19 @@ const MenuDeNavegacion = () => {
 
   const handleMyCoursesClick = () => {
     navigate("/mis-cursos");
+  };
+
+  // Funciones para los botones adicionales
+  const handleCreateAdsClick = () => {
+    navigate("/crear-anuncios");
+  };
+
+  const handleAdminDashboardClick = () => {
+    navigate("/admin-testimonios");
+  };
+
+  const handleEditProfilesClick = () => {
+    navigate("/editar-perfiles");
   };
 
   useEffect(() => {
@@ -237,9 +255,9 @@ const MenuDeNavegacion = () => {
 
   const handleCourseClick = (course) => {
     navigate(`/curso/${course.id}`);
-    setIsSearchActive(false); 
-    setSearchTerm(''); 
-    setFilteredCourses([]); 
+    setIsSearchActive(false);
+    setSearchTerm('');
+    setFilteredCourses([]);
   };
 
   const isNotHomePage = location.pathname !== '/';
@@ -271,7 +289,7 @@ const MenuDeNavegacion = () => {
           <IconButton onClick={toggleDrawer(true)} color="inherit">
             <MenuIcon />
           </IconButton>
-          <Box sx={{ position: 'relative' }}> 
+          <Box sx={{ position: 'relative' }}>
             <TextField
               sx={{ display: { xs: "none", md: "flex" } }}
               size="small"
@@ -279,8 +297,8 @@ const MenuDeNavegacion = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={handleSearchChange}
-              onFocus={handleSearchFocus} 
-              onBlur={handleSearchBlur}  
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
             />
             {isSearchActive && (searchTerm !== '' || (filteredCourses.length > 0 && !loadingSearchData)) && (
                 <Paper
@@ -438,6 +456,71 @@ const MenuDeNavegacion = () => {
                     <BookIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+              )}
+
+              {/* Nuevos botones para el rol 1 */}
+              {userRole === 1 && (
+                <>
+                  <Tooltip title="Crear anuncios">
+                    <IconButton
+                      color="primary"
+                      onClick={handleCreateAdsClick}
+                      sx={{
+                        border: '1px solid #1976d2',
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        p: 0,
+                        '&:hover': {
+                          backgroundColor: '#e3f2fd',
+                        }
+                      }}
+                      aria-label="Crear anuncios"
+                    >
+                      <CampaignIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Administración de Comentarios"> {/* ¡Tooltip actualizado! */}
+                    <IconButton
+                      color="primary"
+                      onClick={handleAdminDashboardClick}
+                      sx={{
+                        border: '1px solid #1976d2',
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        p: 0,
+                        '&:hover': {
+                          backgroundColor: '#e3f2fd',
+                        }
+                      }}
+                      aria-label="Ir a la sección de comentarios y administración" // ¡Aria-label actualizado!
+                    >
+                      <CommentIcon fontSize="small" /> {/* ¡Ícono cambiado aquí! */}
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Editar perfiles">
+                    <IconButton
+                      color="primary"
+                      onClick={handleEditProfilesClick}
+                      sx={{
+                        border: '1px solid #1976d2',
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        p: 0,
+                        '&:hover': {
+                          backgroundColor: '#e3f2fd',
+                        }
+                      }}
+                      aria-label="Editar perfiles de usuario"
+                    >
+                      <PersonOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
               )}
 
               <Tooltip title="Afiliado">

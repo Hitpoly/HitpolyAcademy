@@ -89,7 +89,7 @@ function App() {
               }
             />
             <Route
-              path="/dashboard-admin"
+              path="/admin-testimonios"
               element={
                 <ProtectedRoute allowedRoles={[1]}>
                   <AppTestimonios />
