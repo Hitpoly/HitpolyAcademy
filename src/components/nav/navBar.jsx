@@ -20,10 +20,9 @@ import HomeIcon from '@mui/icons-material/Home';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import BookIcon from '@mui/icons-material/Book';
-import CampaignIcon from '@mui/icons-material/Campaign'; // Importa el icono para anuncios
-// import DashboardIcon from '@mui/icons-material/Dashboard'; // Eliminamos este si no lo vamos a usar
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline'; // Importa el icono para editar perfiles
-import CommentIcon from '@mui/icons-material/Comment'; // ¡Nuevo! Importa el icono de comentarios
+import CampaignIcon from '@mui/icons-material/Campaign';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import CommentIcon from '@mui/icons-material/Comment';
 
 import ListaDeCategorias from "./components/MenuHamburguesa";
 import TemporaryDrawer from "./components/drawer";
@@ -32,7 +31,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SequencePopup from "../../components/popups/SequencePopup";
 
 const MenuDeNavegacion = () => {
-
   const affiliateSteps = [
     {
       title: "¡Bienvenido al Panel de Afiliados!",
@@ -481,7 +479,7 @@ const MenuDeNavegacion = () => {
                     </IconButton>
                   </Tooltip>
 
-                  <Tooltip title="Administración de Comentarios"> {/* ¡Tooltip actualizado! */}
+                  <Tooltip title="Administración de Comentarios">
                     <IconButton
                       color="primary"
                       onClick={handleAdminDashboardClick}
@@ -495,9 +493,9 @@ const MenuDeNavegacion = () => {
                           backgroundColor: '#e3f2fd',
                         }
                       }}
-                      aria-label="Ir a la sección de comentarios y administración" // ¡Aria-label actualizado!
+                      aria-label="Ir a la sección de comentarios y administración"
                     >
-                      <CommentIcon fontSize="small" /> {/* ¡Ícono cambiado aquí! */}
+                      <CommentIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
 
@@ -523,24 +521,27 @@ const MenuDeNavegacion = () => {
                 </>
               )}
 
-              <Tooltip title="Afiliado">
-                <IconButton
-                  color="secondary"
-                  onClick={handleOpenAffiliatePopup}
-                  sx={{
-                    border: '1px solid #1976d2',
-                    borderRadius: '50%',
-                    width: 40,
-                    height: 40,
-                    p: 0,
-                    '&:hover': {
-                      backgroundColor: '#e3f2fd',
-                    }
-                  }}
-                >
-                  <EmojiEventsIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              {/* El botón de afiliado solo se muestra si el userRole NO es 1 (administrador) */}
+              {userRole !== 1 && (
+                <Tooltip title="Afiliado">
+                  <IconButton
+                    color="secondary"
+                    onClick={handleOpenAffiliatePopup}
+                    sx={{
+                      border: '1px solid #1976d2',
+                      borderRadius: '50%',
+                      width: 40,
+                      height: 40,
+                      p: 0,
+                      '&:hover': {
+                        backgroundColor: '#e3f2fd',
+                      }
+                    }}
+                  >
+                    <EmojiEventsIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
 
               <Tooltip title="Perfil">
                 <TemporaryDrawer />
