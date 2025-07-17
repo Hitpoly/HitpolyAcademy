@@ -37,7 +37,7 @@ const RegisterSchema = Yup.object().shape({
     .oneOf(["activo", "inactivo"], "Estado inválido")
     .required("El estado es requerido"),
   id_tipo_usuario: Yup.number()
-    .oneOf([1, 2, 3], "Selecciona un tipo de usuario válido")
+    .oneOf([2, 3], "Selecciona un tipo de usuario válido (Profesor o Alumno)") // ¡CAMBIO AQUÍ! Solo permite 2 y 3
     .required("El tipo de usuario es requerido"),
   avatarFile: Yup.mixed()
     .required("La foto de perfil es requerida")
@@ -106,8 +106,7 @@ const RegisterUserForm = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const userTypes = [
-    { value: 1, label: "Administrador" },
-    { value: 2, label: "Profesor" },
+    { value: 2, label: "Profesor" }, // ¡CAMBIO AQUÍ! Eliminado Administrador
     { value: 3, label: "Alumno" },
   ];
 

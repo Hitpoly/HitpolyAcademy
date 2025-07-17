@@ -1,5 +1,4 @@
-// VideoLayout.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react"; // <-- Importa useRef
 import { Box, Typography, CircularProgress, Alert, Button } from "@mui/material";
 import ProgressBar from "./components/progreso.jsx";
 import VideoPlayerWithControls from "../../../videos/VideoPlayerWithControls.jsx";
@@ -20,41 +19,33 @@ const VideoLayout = ({ courseId }) => {
     currentClassResources,
     totalCourseVideos,
     completedVideosCount,
-    handleVideoChange,
+    handleVideoChange: originalHandleVideoChange, 
     handleVideoEnd,
     toggleCompletedVideo,
   } = useCourseVideoLogic(courseId);
 
-  // Estado para controlar la expansión de la descripción
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const videoPlayerRef = useRef(null); 
 
-  // Reinicia el estado de expansión cuando cambia la clase
   useEffect(() => {
     setShowFullDescription(false);
   }, [currentClass]);
 
-  // --- LOGS DE DEPURACIÓN (Mantener si aún los necesitas, de lo contrario puedes removerlos) ---
+  const handleVideoChangeAndScroll = (clase) => {
+    originalHandleVideoChange(clase); 
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   useEffect(() => {
-    console.log("VideoLayout - Estado de carga:", { loading, error });
-    console.log("VideoLayout - Modules:", modules);
-    console.log("VideoLayout - currentVideoId:", currentVideoId);
-    console.log("VideoLayout - completedVideoIdsLocal:", completedVideoIdsLocal);
-    console.log("VideoLayout - totalCourseVideos:", totalCourseVideos);
-    console.log("VideoLayout - completedVideosCount:", completedVideosCount);
   }, [loading, error, modules, currentVideoId, completedVideoIdsLocal, totalCourseVideos, completedVideosCount]);
 
   useEffect(() => {
-    console.log("VideoLayout - currentClass:", currentClass);
     if (currentClass) {
-      console.log("VideoLayout - currentClass.title:", currentClass.title);
-      console.log("VideoLayout - currentClass.videoUrl:", currentClass.videoUrl);
-      console.log("VideoLayout - currentClass.description:", currentClass.description);
-    } else {
-      console.log("VideoLayout - currentClass es null o undefined.");
+      } else {
     }
-    console.log("VideoLayout - currentClassResources:", currentClassResources);
-  }, [currentClass, currentClassResources]);
-  // --- FIN LOGS DE DEPURACIÓN ---
+    }, [currentClass, currentClassResources]);
 
 
   if (loading) {
@@ -93,7 +84,7 @@ const VideoLayout = ({ courseId }) => {
         <Typography variant="h6">Selecciona una clase para empezar.</Typography>
         <VideoList
           modules={modules}
-          onSelectVideo={handleVideoChange}
+          onSelectVideo={handleVideoChangeAndScroll}
           completedVideos={completedVideoIdsLocal}
           toggleCompletedVideo={toggleCompletedVideo}
           selectedVideoId={currentVideoId}
@@ -114,17 +105,15 @@ const VideoLayout = ({ courseId }) => {
     );
   }
 
-  // Obtenemos la descripción de la clase
   const descriptionText = currentClass?.description || "";
-  // Determinamos si la descripción es lo suficientemente larga como para necesitar "Ver más"
-  const needsTruncation = descriptionText.length > 150; // Ajusta este valor según la longitud típica de tus descripciones
+  const needsTruncation = descriptionText.length > 150; 
 
   return (
     <>
       <Box
         sx={{
-          padding: { xs: "20px", md: "0px 50px" },
-          marginTop: { xs: "20px", md: "10px" },
+          padding: { xs: "0px", md: "0px 50px" },
+          marginTop: { xs: "0px", md: "10px" },
         }}
       >
         <ProgressBar
@@ -160,8 +149,8 @@ const VideoLayout = ({ courseId }) => {
           <VideoPlayerWithControls
             videoUrl={currentClass.videoUrl}
             onVideoCompleted={handleVideoEnd}
+            ref={videoPlayerRef}
           />
-          {/* Aquí se añade la descripción de la clase con "Ver más" */}
           {currentClass?.description && (
             <Box sx={{ mt: 3, mb: 4, p: 2, borderRadius: '8px', bgcolor: 'background.paper', boxShadow: 1 }}>
               <Typography variant="h6" gutterBottom color="primary">
@@ -193,17 +182,16 @@ const VideoLayout = ({ courseId }) => {
             </Box>
           )}
           
-          {/* Sección de Comentarios para celulares (display: block en xs, none en md y arriba) */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, mt: { xs: 4, md: 0 } }}>
             <CommentSection claseId={currentVideoId} />
           </Box>
 
-        </Box> {/* Fin del Box principal de Video/Descripción */}
+        </Box>
 
         <Box sx={{ flex: 3, marginTop: { xs: "30px", md: "0px" } }}>
           <VideoList
             modules={modules}
-            onSelectVideo={handleVideoChange}
+            onSelectVideo={handleVideoChangeAndScroll} 
             completedVideos={completedVideoIdsLocal}
             toggleCompletedVideo={toggleCompletedVideo}
             selectedVideoId={currentVideoId}
@@ -214,13 +202,12 @@ const VideoLayout = ({ courseId }) => {
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", md: "row" }, // Cambiado a 'column' en xs para que los recursos vayan después de comentarios si los comentarios están aparte
+          flexDirection: { xs: "column", md: "row" }, 
           padding: { xs: "20px", md: "0px 50px" },
           marginTop: { xs: "0px", md: "40px" },
           gap: "20px",
         }}
       >
-        {/* Sección de Comentarios para escritorio (display: none en xs, block en md y arriba) */}
         <Box sx={{ flex: 7, display: { xs: 'none', md: 'block' } }}>
           <CommentSection claseId={currentVideoId} />
         </Box>

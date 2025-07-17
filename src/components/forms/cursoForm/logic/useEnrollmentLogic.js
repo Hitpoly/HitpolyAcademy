@@ -10,7 +10,7 @@ import {
   getCourseDetailsById,
   checkUserEnrollmentByTitle,
 } from "../logic/api";
-import { extractCourseIdFromSlug } from "../logic/courseUtils"; // Esta es la función clave
+import { extractCourseIdFromSlug } from "../logic/courseUtils";
 
 export const useEnrollmentLogic = (urlSlugFromParams) => {
   const { isAuthenticated, login, user } = useAuth();
@@ -34,17 +34,30 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const showToast = (icon, title) => {
+    Swal.mixin({
+      toast: true,
+      position: 'bottom-start',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    }).fire({
+      icon: icon,
+      title: title
+    });
+  };
+
   useEffect(() => {
     const loadCourseAndEnrollmentStatus = async () => {
       setCheckingEnrollment(true);
-      const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams); 
+      const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams);
 
       if (!courseIdFromUrl) {
-        Swal.fire({
-          icon: "error",
-          title: "Error de Curso",
-          text: "No se pudo identificar el curso para la inscripción. Por favor, asegúrate de acceder a través de un enlace de curso válido.",
-        });
+        showToast("error", "Error: Curso no identificado.");
         setCheckingEnrollment(false);
         return;
       }
@@ -54,27 +67,26 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
 
         if (courseResult.found) {
           setCourseDetails(courseResult.details);
-          
+
           if (isAuthenticated && user?.id && courseResult.details.title) {
-            const enrolled = await checkUserEnrollmentByTitle(user.id, courseResult.details.title);
+            const enrolled = await checkUserEnrollmentByTitle(
+              user.id,
+              courseResult.details.title
+            );
             setIsEnrolled(enrolled);
             if (enrolled) {
               } else {
               }
           } else {
             setIsEnrolled(false);
-          }
+            }
         } else {
-          
           setCourseDetails(null);
           setIsEnrolled(false);
+          showToast("warning", "Información del curso no encontrada.");
         }
       } catch (error) {
-        Swal.fire({
-          icon: "error",
-          title: "Error al cargar el curso",
-          text: `No se pudo cargar la información del curso: ${error.message}`,
-        });
+        showToast("error", `Error al cargar el curso: ${error.message}`);
         setCourseDetails(null);
         setIsEnrolled(false);
       } finally {
@@ -83,7 +95,7 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
     };
 
     loadCourseAndEnrollmentStatus();
-  }, [urlSlugFromParams, isAuthenticated, user?.id]);
+  }, [urlSlugFromParams, isAuthenticated, user?.id, navigate]);
 
   const handleRegisterAndEnroll = async (
     values,
@@ -91,57 +103,29 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
   ) => {
     setLoading(true);
     setSubmitting(true);
-    setSnackbar({ open: false, message: "", severity: "success" });
+    setSnackbar({ open: false, message: "", severity: "success" }); 
 
-    const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams); // Y aquí también
+    const courseIdFromUrl = extractCourseIdFromSlug(urlSlugFromParams);
+    const parsedCourseToEnrollId = parseInt(courseIdFromUrl, 10);
 
-    if (!courseIdFromUrl) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de Curso",
-        text: "No se pudo identificar el curso para la inscripción. Por favor, asegúrate de acceder a través de un enlace de curso válido.",
-      });
+    if (isNaN(parsedCourseToEnrollId)) {
+      showToast("error", "Error: ID de curso no válido.");
       setLoading(false);
       setSubmitting(false);
       return;
     }
 
-    if (isAuthenticated && user && isEnrolled) {
-      Swal.fire({
-        icon: "info",
-        title: "Ya estás inscrito",
-        text: "Parece que ya estás inscrito en este curso. Te estamos redirigiendo.",
-      }).then(() => {
-        navigate(`/master-full/${courseIdFromUrl}`);
-      });
+    if (isAuthenticated) {
+      showToast("info", "Ya estás registrado. Redirigiendo para completar la inscripción.");
+      if (isEnrolled) {
+        navigate(`/master-full/${parsedCourseToEnrollId}`);
+      }
       setLoading(false);
       setSubmitting(false);
       return;
     }
 
-    if (isAuthenticated && user && !isEnrolled) {
-      Swal.fire({
-        icon: "info",
-        title: "Ya estás registrado",
-        text: "Parece que ya tienes una cuenta pero no estás inscrito en este curso. Por favor, completa tus datos adicionales para inscribirte.",
-      });
-      setLoading(false);
-      setSubmitting(false);
-      return;
-    }
-
-    const userTypeIdForRegistration = user?.user_type_id || 1;
-
-    if (!userTypeIdForRegistration) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de Tipo de Usuario",
-        text: "No se pudo determinar el tipo de usuario para el registro. Contacta a soporte.",
-      });
-      setLoading(false);
-      setSubmitting(false);
-      return;
-    }
+    const userTypeIdForRegistration = 3;
 
     const dataToRegisterUser = {
       accion: "registrarUsuario",
@@ -156,34 +140,52 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
 
     try {
       await registerUser(dataToRegisterUser);
+      console.log("🎉 Usuario registrado con éxito.");
 
       const loginData = {
         funcion: "login",
         email: values.email,
         pass: values.pass,
       };
+      const loggedInUser = await loginUser(loginData);
+      login(loggedInUser);
+      const currentUserId = loggedInUser?.id;
 
-      const userData = await loginUser(loginData);
-      login(userData);
+      if (!currentUserId) {
+        throw new Error("No se pudo obtener el ID del usuario recién registrado para la inscripción.");
+      }
 
-      Swal.fire({
-        icon: "success",
-        title: "¡Registro exitoso!",
-        text: "Ahora, por favor, completa algunos datos adicionales para tu inscripción al curso.",
-      }).then(() => {
-        });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error en el proceso",
-        text: `Hubo un problema: ${error.message}`,
+      const today = new Date();
+      const formattedDate = today.toISOString().slice(0, 19).replace("T", " ");
+
+      const dataToRegisterInterest = {
+        accion: "registrarIntereses",
+        usuario_id: currentUserId,
+        curso_id: parsedCourseToEnrollId,
+        objetivo_curso: values.objetivo_curso || "",
+        industria_actual: values.industria_actual || "",
+        horas_dedicacion_semanal: parseInt(values.horas_dedicacion_semanal, 10) || 0,
+        interes_adicional: values.interes_adicional || "",
+        fecha_registro_interes: formattedDate,
+      };
+      await registerInterest(dataToRegisterInterest);
+      await enrollUser({
+        accion: "inscripciones",
+        usuario_id: currentUserId,
+        curso_id: parsedCourseToEnrollId,
+        fecha_inscripcion: today.toISOString().slice(0, 10),
+        progreso: 0,
+        completado: 0,
+        fecha_completado: null,
       });
-      setSnackbar({
-        open: true,
-        message: `Error: ${error.message}`,
-        severity: "error",
-      });
-    } finally {
+      
+      showToast("success", "¡Bienvenido! Registro e inscripción completados. 🎉");
+      navigate(`/master-full/${parsedCourseToEnrollId}`);
+
+      resetForm();
+      } catch (error) {
+      showToast("error", `Error en el proceso: ${error.message}`);
+      } finally {
       setLoading(false);
       setSubmitting(false);
     }
@@ -195,41 +197,28 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
   ) => {
     setLoading(true);
     setSubmitting(true);
-    setSnackbar({ open: false, message: "", severity: "success" });
+    setSnackbar({ open: false, message: "", severity: "success" }); 
 
-    const extractedCourseId = extractCourseIdFromSlug(urlSlugFromParams); // Y aquí también
+    const extractedCourseId = extractCourseIdFromSlug(urlSlugFromParams);
     const parsedCourseToEnrollId = parseInt(extractedCourseId, 10);
 
     if (isNaN(parsedCourseToEnrollId)) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de ID de Curso",
-        text: "No se pudo determinar un ID de curso válido para la inscripción. Por favor, asegúrate de acceder a través de un enlace de curso válido.",
-      });
+      showToast("error", "Error: ID de curso no válido.");
       setLoading(false);
       setSubmitting(false);
       return;
     }
 
-    if (!user || !user.id) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de Usuario",
-        text: "No se pudo identificar tu usuario para registrar los intereses. Por favor, intenta iniciar sesión de nuevo.",
-      });
+    if (!isAuthenticated || !user || !user.id) {
+      showToast("error", "Error de usuario. Por favor, inicia sesión de nuevo.");
       setLoading(false);
       setSubmitting(false);
       return;
     }
 
-    if (isAuthenticated && user && isEnrolled) {
-      Swal.fire({
-        icon: "info",
-        title: "Ya estás inscrito",
-        text: "Parece que ya estás inscrito en este curso. Te estamos redirigiendo.",
-      }).then(() => {
-        navigate(`/master-full/${parsedCourseToEnrollId}`);
-      });
+    if (isEnrolled) {
+      showToast("info", "Ya estás inscrito en este curso. Redirigiendo.");
+      navigate(`/master-full/${parsedCourseToEnrollId}`);
       setLoading(false);
       setSubmitting(false);
       return;
@@ -260,33 +249,13 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
         completado: 0,
         fecha_completado: null,
       });
-
-      Swal.fire({
-        icon: "success",
-        title: "¡Información y curso asignados exitosamente! 🎉",
-        text: "Tus datos han sido guardados y el curso ha sido asignado. ¡Bienvenido!",
-      }).then(() => {
-        navigate(`/master-full/${parsedCourseToEnrollId}`);
-      });
+      showToast("success", "¡Información y curso asignados exitosamente! 🎉");
+      navigate(`/master-full/${parsedCourseToEnrollId}`);
 
       resetForm();
-      setSnackbar({
-        open: true,
-        message: "¡Información guardada y curso asignado!",
-        severity: "success",
-      });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error en el proceso",
-        text: `Hubo un problema: ${error.message}`,
-      });
-      setSnackbar({
-        open: true,
-        message: `Error: ${error.message}`,
-        severity: "error",
-      });
-    } finally {
+      } catch (error) {
+      showToast("error", `Error en el proceso: ${error.message}`);
+      } finally {
       setLoading(false);
       setSubmitting(false);
     }

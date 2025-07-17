@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, forwardRef } from "react"; // <-- Importa forwardRef
 import { Box, IconButton, Slider, Typography } from "@mui/material";
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -8,10 +8,8 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import YouTubeIcon from '@mui/icons-material/YouTube';
-
-import Videopopup from "./Videopopup"; 
-
-const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
+import Videopopup from "./Videopopup";
+const VideoPlayerWithControls = forwardRef(({ videoUrl, onVideoCompleted }, ref) => { // <-- Recibe `ref` como segundo argumento
   const [player, setPlayer] = useState(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [volume, setVolume] = useState(50);
@@ -21,7 +19,6 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const playerContainerRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const YT_PLAYING = 1;
@@ -255,11 +252,11 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   };
 
   const handleFullscreenToggle = () => {
-    if (playerContainerRef.current) {
+    if (ref.current) { 
       if (document.fullscreenElement) {
         document.exitFullscreen();
       } else {
-        playerContainerRef.current.requestFullscreen();
+        ref.current.requestFullscreen();
       }
     }
   };
@@ -267,7 +264,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
   const showControls = !hasStartedPlaying || isPaused || isHovering;
 
   return (
-    <Box ref={playerContainerRef} sx={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden' }}>
+    <Box ref={ref} sx={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden' }}>
       <Videopopup
         videoUrl={videoUrl}
         onPlayerReady={handlePlayerReady}
@@ -317,7 +314,7 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
           </Box>
         ) : null}
       </Box>
-         {player && (
+          {player && (
         <Box
           className="bottom-controls-bar"
           sx={{
@@ -402,6 +399,6 @@ const VideoPlayerWithControls = ({ videoUrl, onVideoCompleted }) => {
       )}
     </Box>
   );
-};
+});
 
 export default VideoPlayerWithControls;
