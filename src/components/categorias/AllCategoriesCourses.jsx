@@ -305,10 +305,10 @@ const AllCategoriesCourses = () => {
             estamos aquí para apoyarte en tu camino
           </Box>
           . Avanza hacia tus metas este año. La oferta es válida hasta el 30 de
-          julio de 2025.
+          julio de 2025. {" "}
           {/* CAMBIO AQUÍ: El href apunta al ID de la sección de FAQ */}
           <Link href="#preguntas-frecuentes" color="primary" sx={{ textDecoration: "underline" }}>
-            Consulte las preguntas frecuentes a continuación para obtener más
+             Consulte las preguntas frecuentes a continuación para obtener más
             detalles...
           </Link>
         </Typography>
@@ -336,9 +336,9 @@ const AllCategoriesCourses = () => {
               lineHeight: 1.5,
             }}
           >
-            15% de descuento en cursos, certificados profesionales, XSeries,
-            educación ejecutiva, programas MicroMasters® y programas
-            MicroBachelors®
+            15% de descuento en cursos, certificados profesionales, Series,
+            educación ejecutiva, programas Masters y programas
+            MicroMaster.
           </Typography>
         </Box>
       </Box>
@@ -347,7 +347,7 @@ const AllCategoriesCourses = () => {
         categoriesWithCourses.map((category) => (
           <Box
             key={category.id}
-            sx={{ mb: 6, p: { xs: "10px 20px", md: "50px 100px" } }}
+            sx={{ ml: 2, mb: 6, p: { xs: "10px 0px", md: "50px 100px" } }}
           >
             <Typography
               variant="body1"
@@ -393,7 +393,8 @@ const AllCategoriesCourses = () => {
                         key={curso.id}
                         sx={{
                           flexShrink: 0,
-                          width: { xs: "80%", sm: "45%", md: "30%" },
+                          width: { xs: "100%", sm: "45%", md: "30%" },
+                          mr: { xs: 2, sm: 3 },
                         }}
                       >
                         <CursoCard

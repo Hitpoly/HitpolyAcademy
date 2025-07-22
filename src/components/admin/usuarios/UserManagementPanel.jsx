@@ -14,12 +14,25 @@ import {
   Switch,
   FormControlLabel,
   TablePagination,
-  TextField, // Importar TextField para el campo de búsqueda
-  InputAdornment, // Para añadir un ícono de búsqueda
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search"; // Ícono de búsqueda
+import SearchIcon from "@mui/icons-material/Search";
 
 const API_BASE_URL = "https://apiacademy.hitpoly.com/ajax/";
+
+const getUserTypeName = (idTipo) => {
+  switch (idTipo) {
+    case 1:
+      return "Administrador";
+    case 2:
+      return "Profesor";
+    case 3:
+      return "Alumno";
+    default:
+      return "Desconocido";
+  }
+};
 
 const UserManagementPanel = () => {
   const [users, setUsers] = useState([]);
@@ -28,7 +41,7 @@ const UserManagementPanel = () => {
   const [editingUserId, setEditingUserId] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState(""); // Nuevo estado para el término de búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -54,19 +67,23 @@ const UserManagementPanel = () => {
       }
 
       const data = await response.json();
-
+      
       if (data.status === "success") {
         if (Array.isArray(data.clases)) {
-          const usersWithNormalizedState = data.clases.map((user) => ({
-            ...user,
-            estado:
-              user.estado && typeof user.estado === "string"
-                ? user.estado.toLowerCase()
-                : user.estado === 1 || user.estado === true
-                ? "activo"
-                : "inactivo",
-          }));
-          setUsers(usersWithNormalizedState);
+          const usersWithNormalizedStateAndType = data.clases.map((user) => {
+            
+            return {
+              ...user,
+              estado:
+                user.estado && typeof user.estado === "string"
+                  ? user.estado.toLowerCase()
+                  : user.estado === 1 || user.estado === true
+                  ? "activo"
+                  : "inactivo",
+              tipoNombre: getUserTypeName(Number(user.id_tipo_usuario)),
+            };
+          });
+          setUsers(usersWithNormalizedStateAndType);
         } else {
           throw new Error("Formato de datos de usuarios inesperado desde el servidor.");
         }
@@ -75,9 +92,9 @@ const UserManagementPanel = () => {
       }
     } catch (err) {
       setError(`Error al cargar usuarios: ${err.message}`);
-    } finally {
+      } finally {
       setLoading(false);
-    }
+      }
   };
 
   const handleToggleChange = async (event, userId) => {
@@ -121,8 +138,7 @@ const UserManagementPanel = () => {
       const data = await response.json();
 
       if (data.status === "success") {
-        // No es necesario setUsers de nuevo aquí porque ya lo hicimos optimísticamente
-      } else {
+        } else {
         setUsers((prevUsers) => {
           const revertedUsers = prevUsers.map((user) =>
             user.id === userId
@@ -157,17 +173,18 @@ const UserManagementPanel = () => {
     setPage(0);
   };
 
-  // Filtrar usuarios basado en searchTerm
   const filteredUsers = users.filter((user) => {
     const term = searchTerm.toLowerCase();
     const nombre = (user.nombre || "").toLowerCase();
     const apellido = (user.apellido || "").toLowerCase();
-    const email = (user.email || "").toLowerCase(); 
+    const email = (user.email || "").toLowerCase();
+    const tipoNombre = (user.tipoNombre || "").toLowerCase();
 
     return (
       nombre.includes(term) ||
       apellido.includes(term) ||
-      email.includes(term) 
+      email.includes(term) ||
+      tipoNombre.includes(term)
     );
   });
 
@@ -221,6 +238,7 @@ const UserManagementPanel = () => {
                   <TableCell>Nombre</TableCell>
                   <TableCell>Apellido</TableCell>
                   <TableCell>Email</TableCell>
+                  <TableCell>Tipo</TableCell>
                   <TableCell>Estado</TableCell>
                 </TableRow>
               </TableHead>
@@ -234,6 +252,7 @@ const UserManagementPanel = () => {
                         <TableCell>{user.nombre}</TableCell>
                         <TableCell>{user.apellido}</TableCell>
                         <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.tipoNombre}</TableCell>
                         <TableCell>
                           <Box sx={{ display: "flex", alignItems: "center" }}>
                             <FormControlLabel

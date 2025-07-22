@@ -27,7 +27,7 @@ const CursoCard = ({
     <Card
       sx={{
         width: 300,
-        minWidth: 250,
+        minWidth: 200,
         maxWidth: 300,
         height: "auto",
         boxSizing: "border-box",

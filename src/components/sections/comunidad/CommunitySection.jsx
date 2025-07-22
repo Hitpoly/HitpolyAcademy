@@ -10,7 +10,7 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const benefits = [
-  "Obtenga credenciales valiosas de las mejores universidades y empresas.",
+  "Obtenga credenciales valiosas de los mejores educadores y empresas.",
   "Acceda a recursos de apoyo y planificación profesional.",
   "Aprenda de profesores universitarios de primer nivel y de líderes de la industria.",
   "Mejora tus habilidades a tu ritmo con opciones flexibles híbridas o 100 % en línea.",

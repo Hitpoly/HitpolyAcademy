@@ -1,29 +1,35 @@
 import { Box, Button, Typography } from "@mui/material";
 
-// PromoBanner ahora acepta 'orden' como una prop adicional
-const PromoBanner = ({ titulo, descripcion, enlace, urlImagen, orden }) => {
+const PromoBanner = ({ titulo, descripcion, enlace, urlImagen }) => {
   return (
     <Box
       sx={{
-        height: {xs: "100%", md: "80vh"},
+        height: { xs: "auto", md: "80vh" },
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         backgroundColor: "#6C4DE2",
-        padding: { xs: "30px 10px", md: "30px 150px" },
-        gap: 4,
+        padding: {xs: 2, md: 0},
         flexDirection: { xs: "column", md: "row" },
         overflow: "hidden",
-        // Puedes usar 'orden' aquí si lo necesitas para estilos condicionales, por ejemplo:
-        // border: orden === 1 ? '2px solid yellow' : 'none',
+        position: "relative",
       }}
     >
-      <Box sx={{ maxWidth: 500 }}>
-        <Typography variant="h2" sx={{ color: "#fff", mb: 2 }}>
-          {titulo || "Título del Anuncio"} {/* Contenido dinámico */}
+      {/* Texto */}
+      <Box
+        sx={{
+          flex: 1,
+          zIndex: 2,
+          px: { xs: 0, md: 10 },
+          py: { xs: 2, md: 0 },
+          width: { xs: "100%", md: "50%" },
+        }}
+      >
+        <Typography variant="h2" sx={{ color: "#fff", mb: 2, fontSize: "3rem" }}>
+          {titulo || "Título del Anuncio"}
         </Typography>
         <Typography variant="subtitle1" sx={{ color: "#f0f0f0", mb: 3 }}>
-          {descripcion || "Descripción del anuncio."} {/* Contenido dinámico */}
+          {descripcion || "Descripción del anuncio."}
         </Typography>
         <Box sx={{ display: { xs: "none", md: "block" } }}>
           <Button
@@ -37,24 +43,24 @@ const PromoBanner = ({ titulo, descripcion, enlace, urlImagen, orden }) => {
                 backgroundColor: "#e0e0e0",
               },
             }}
-            href={enlace} // Enlace dinámico
-            target="_blank" // Abrir en nueva pestaña
-            rel="noopener noreferrer" // Seguridad
+            href={enlace}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             Más información
           </Button>
         </Box>
       </Box>
+
+      {/* Imagen */}
       <Box
         sx={{
-          backgroundColor: "black",
-          maxWidth: { xs: "100%", md: 600 },
-          width: "100%",
-          height: { xs: "300px", md: "1500px" },
-          overflow: "hidden",
-          position: "relative",
-          transform: { xs: "none", md: "rotate(15deg)" },
-          transformOrigin: "center",
+          width: { xs: "100%", md: "50%" },
+          height: { xs: "auto", md: "100%" },
+          clipPath: {
+            xs: "none",
+            md: "polygon(20% 0, 0 100%, 100% 100%, 100% 0%)",
+          },
         }}
       >
         <img
@@ -64,20 +70,24 @@ const PromoBanner = ({ titulo, descripcion, enlace, urlImagen, orden }) => {
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            display: "block",
           }}
         />
       </Box>
+
+      {/* Botón móvil */}
       <Box
         sx={{
           display: { xs: "flex", md: "none" },
           justifyContent: "center",
           width: "100%",
+          zIndex: 2,
+          mt: {xs: 4, md: 2},
         }}
       >
         <Button
           variant="contained"
           sx={{
-            mt: 2,
             backgroundColor: "#fff",
             color: "#F21C63",
             fontWeight: "bold",
@@ -86,9 +96,9 @@ const PromoBanner = ({ titulo, descripcion, enlace, urlImagen, orden }) => {
               backgroundColor: "#e0e0e0",
             },
           }}
-          href={enlace} // Enlace dinámico
-          target="_blank" // Abrir en nueva pestaña
-          rel="noopener noreferrer" // Seguridad
+          href={enlace}
+          target="_blank"
+          rel="noopener noreferrer"
         >
           Más información
         </Button>
