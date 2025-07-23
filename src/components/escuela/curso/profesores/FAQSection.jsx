@@ -8,6 +8,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete'; // ¡Importa DeleteIcon como un componente!
 import Swal from 'sweetalert2';
 
 const FAQSection = () => {
@@ -21,16 +22,15 @@ const FAQSection = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [editingFaq, setEditingFaq] = useState(null); 
+  const [editingFaq, setEditingFaq] = useState(null);
   const [editPregunta, setEditPregunta] = useState('');
   const [editRespuesta, setEditRespuesta] = useState('');
-  const [openEditDialog, setOpenEditDialog] = useState(false); 
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const fetchFaqs = useCallback(async (id) => {
     setLoading(true);
     setError('');
     try {
-
       const response = await fetch('https://apiacademy.hitpoly.com/ajax/getPreguntasYrespuestasController.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,6 +55,7 @@ const FAQSection = () => {
     if (courseId) {
       fetchFaqs(courseId);
     } else {
+      // Manejar el caso donde no hay courseId, si es necesario.
     }
   }, [courseId, fetchFaqs]);
 
@@ -82,25 +83,23 @@ const FAQSection = () => {
     setLoading(true);
     setError('');
     try {
-
       const response = await fetch('https://apiacademy.hitpoly.com/ajax/cargarPreguntasyRespuestacontroller.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accion: 'preguntasYrespuestas',
-          id: courseId, 
+          id: courseId,
           items: preguntasPendientes,
         }),
       });
 
       const rawText = await response.text();
-
       const data = JSON.parse(rawText);
 
       if (data.status === 'success') {
         Swal.fire('¡Enviado!', 'Preguntas frecuentes guardadas exitosamente.', 'success');
         setPreguntasPendientes([]);
-        fetchFaqs(courseId);
+        fetchFaqs(courseId); // Refresca la lista de FAQs existentes
       } else {
         setError(data.message || 'Error al guardar las preguntas.');
       }
@@ -123,7 +122,7 @@ const FAQSection = () => {
     setEditingFaq(null);
     setEditPregunta('');
     setEditRespuesta('');
-    setError('');
+    setError(''); // Limpiar cualquier error del diálogo de edición
   };
 
   const handleUpdateFaq = async () => {
@@ -146,7 +145,7 @@ const FAQSection = () => {
         body: JSON.stringify({
           accion: 'update',
           id: editingFaq.id,
-          id_curso: courseId,
+          id_curso: courseId, // Asegúrate de que tu backend espera id_curso
           pregunta: editPregunta.trim(),
           respuesta: editRespuesta.trim(),
         }),
@@ -157,7 +156,7 @@ const FAQSection = () => {
       if (data.status === 'success') {
         Swal.fire('¡Actualizado!', 'Pregunta frecuente actualizada exitosamente.', 'success');
         setOpenEditDialog(false);
-        fetchFaqs(courseId);
+        fetchFaqs(courseId); // Refresca la lista de FAQs existentes para ver los cambios
       } else {
         setError(data.message || 'Error al actualizar la pregunta.');
       }
@@ -168,7 +167,10 @@ const FAQSection = () => {
     }
   };
 
-
+  // Función para eliminar una pregunta pendiente de la lista local
+  const handleDeletePendingFaq = (indexToDelete) => {
+    setPreguntasPendientes(prev => prev.filter((_, i) => i !== indexToDelete));
+  };
 
   const handleBackToEdit = () => navigate(-1);
   const handleBackToCourses = () => navigate('/mis-cursos');
@@ -243,11 +245,18 @@ const FAQSection = () => {
             </Typography>
             <List dense>
               {preguntasPendientes.map((item, index) => (
-                <ListItem key={`nueva-${index}`} secondaryAction={
-                    <IconButton edge="end" aria-label="delete" onClick={() => setPreguntasPendientes(prev => prev.filter((_, i) => i !== index))}>
-                        <img src={require('@mui/icons-material/Delete').default} alt="Delete" style={{ width: 24, height: 24 }} />
+                <ListItem
+                  key={`nueva-${index}`}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleDeletePendingFaq(index)} // Usar la nueva función de eliminación
+                    >
+                      <DeleteIcon /> {/* ¡Aquí está la corrección! */}
                     </IconButton>
-                }>
+                  }
+                >
                   <ListItemText
                     primary={`P: ${item.pregunta}`}
                     secondary={`R: ${item.respuesta}`}

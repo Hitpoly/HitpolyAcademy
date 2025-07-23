@@ -5,35 +5,33 @@ import AnunciosList from "../../banners/AnunciosList";
 
 function AnunciosPage() {
   const [refreshListTrigger, setRefreshListTrigger] = useState(0);
-  const [anuncioToEdit, setAnuncioToEdit] = useState(null); // Estado para el anuncio a editar
+  const [anuncioToEdit, setAnuncioToEdit] = useState(null);
   const theme = useTheme();
 
   const handleAnuncioCreado = () => {
     setRefreshListTrigger((prev) => prev + 1);
-    setAnuncioToEdit(null); // Limpiar el formulario después de crear
+    setAnuncioToEdit(null);
   };
 
   const handleAnuncioEditado = () => {
     setRefreshListTrigger((prev) => prev + 1);
-    setAnuncioToEdit(null); // Limpiar el formulario después de editar
+    setAnuncioToEdit(null);
   };
 
   const handleEditAnuncio = (anuncio) => {
-    setAnuncioToEdit(anuncio); // Establecer el anuncio que se va a editar
+    setAnuncioToEdit(anuncio);
   };
 
-  // ✨ Nueva función para cancelar la edición ✨
   const handleCancelEdit = () => {
-    setAnuncioToEdit(null); // Esto hará que AnuncioForm se limpie y vuelva al modo de creación
+    setAnuncioToEdit(null);
   };
 
   return (
-    <Box sx={{ height: "100%", p: 5}}>
+    <Box sx={{ height: "100%", p: 2 }}>
       <Box
         sx={{
           width: "100%",
           height: "calc(100vh - 65px)",
-          mt: 2,
           [theme.breakpoints.down("sm")]: {
             display: "block",
             height: "auto",
@@ -45,10 +43,13 @@ function AnunciosPage() {
             width: "35%",
             height: "100%",
             float: "left",
+            pr: 2,
             [theme.breakpoints.down("sm")]: {
               width: "100%",
               height: "auto",
               float: "none",
+              pr: 0,
+              mb: 3,
             },
           }}
         >
@@ -56,7 +57,6 @@ function AnunciosPage() {
             onAnuncioCreado={handleAnuncioCreado}
             anuncioToEdit={anuncioToEdit}
             onAnuncioEditado={handleAnuncioEditado}
-            // ✨ Pasar la nueva función como prop ✨
             onCancelEdit={handleCancelEdit}
           />
         </Box>

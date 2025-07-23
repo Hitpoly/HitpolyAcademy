@@ -1,4 +1,3 @@
-// src/components/AnuncioCard.jsx
 import React, { useState } from 'react';
 import {
   Card,
@@ -7,17 +6,19 @@ import {
   Typography,
   Box,
   Link,
-  IconButton, // Importar IconButton
-  Menu,       // Importar Menu
-  MenuItem,   // Importar MenuItem
+  IconButton,
+  Menu,
+  MenuItem,
+  useTheme
 } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert'; // Importar MoreVertIcon
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function AnuncioCard({ id, titulo, descripcion, enlace, urlimagen, orden, onEdit, onDelete }) {
-  const [anchorEl, setAnchorEl] = useState(null); // Estado para el anclaje del menú
+  const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const theme = useTheme();
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -38,16 +39,48 @@ function AnuncioCard({ id, titulo, descripcion, enlace, urlimagen, orden, onEdit
   };
 
   return (
-    <Card sx={{ display: 'flex', marginBottom: 2, boxShadow: 3, borderRadius: '8px', position: 'relative' }}>
+    <Card
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: 2,
+        boxShadow: 3,
+        borderRadius: '8px',
+        position: 'relative',
+        [theme.breakpoints.up('md')]: {
+          flexDirection: 'row',
+          height: 150,
+        },
+      }}
+    >
       {urlimagen && (
         <CardMedia
           component="img"
-          sx={{ width: 250, height: 150, flexShrink: 0, objectFit: 'cover' }}
+          sx={{
+            width: '100%',
+            height: 250,
+            flexShrink: 0,
+            objectFit: 'cover',
+            borderRadius: '8px 8px 0 0',
+            [theme.breakpoints.up('md')]: {
+              width: 220,
+              height: '100%',
+              borderRadius: '8px 0 0 8px',
+            },
+          }}
           image={urlimagen}
           alt={titulo}
         />
       )}
-      <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        width: '100%',
+        [theme.breakpoints.up('md')]: {
+          width: 'auto',
+        },
+      }}>
         <CardContent sx={{ flex: '1 0 auto' }}>
           <Typography component="div" variant="h6">
             {titulo}
@@ -63,7 +96,6 @@ function AnuncioCard({ id, titulo, descripcion, enlace, urlimagen, orden, onEdit
         </CardContent>
       </Box>
 
-      {/* Botón de tres puntos */}
       <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
         <IconButton
           aria-label="más opciones"

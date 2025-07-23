@@ -260,6 +260,7 @@ const AllCategoriesCourses = () => {
           component="h1"
           gutterBottom
           sx={{
+            fontSize: {xs: "2.5rem", md: "3rem"},
             fontWeight: "bold",
             "& span": {
               color: "#f21c63",
@@ -375,6 +376,7 @@ const AllCategoriesCourses = () => {
                       display: "flex",
                       overflowX: "auto",
                       pb: 2,
+                      gap: 2,
                       "&::-webkit-scrollbar": {
                         height: "8px",
                       },
@@ -393,8 +395,6 @@ const AllCategoriesCourses = () => {
                         key={curso.id}
                         sx={{
                           flexShrink: 0,
-                          width: { xs: "100%", sm: "45%", md: "30%" },
-                          mr: { xs: 2, sm: 3 },
                         }}
                       >
                         <CursoCard
