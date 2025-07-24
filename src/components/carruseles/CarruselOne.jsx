@@ -51,15 +51,20 @@ const CarouselWithSwiper = () => {
         const data = await response.json();
 
         if (data.status === "success" && Array.isArray(data.clases)) {
-          // Filtrar solo los usuarios activos
+          // Primero, filtrar solo los usuarios activos
           const activeUsers = data.clases.filter(
-            (user) => user.estado === "Activo" // Manteniendo "Activo" con la 'A' mayúscula
+            (user) => user.estado === "Activo"
           );
 
-          const processedUsers = activeUsers.map((user) => ({
+          // >>> CAMBIO CLAVE AQUÍ: Filtrar usuarios que SÍ tienen url_foto_perfil y luego mapear
+          const usersWithImages = activeUsers.filter(
+            (user) => user.url_foto_perfil // Solo si url_foto_perfil NO es null, undefined o cadena vacía
+          );
+
+          const processedUsers = usersWithImages.map((user) => ({
             id: user.id,
             nombre: user.nombre || "Nombre no disponible",
-            img: user.url_foto_perfil || "/images/default-avatar.jpg",
+            img: user.url_foto_perfil, // Ya no necesitamos el fallback aquí
             linkedin: user.url_linkedin || "",
           }));
 
@@ -67,7 +72,7 @@ const CarouselWithSwiper = () => {
         } else {
           throw new Error(
             data.message ||
-              "No se encontraron datos de usuarios o el formato es incorrecto."
+            "No se encontraron datos de usuarios o el formato es incorrecto."
           );
         }
       } catch (err) {
@@ -131,6 +136,7 @@ const CarouselWithSwiper = () => {
     );
   }
 
+  // Se añadió un mensaje específico si no hay alumnos después del filtro
   if (alumnos.length === 0) {
     return (
       <Box
@@ -142,7 +148,7 @@ const CarouselWithSwiper = () => {
         }}
       >
         <Typography variant="body1" color="text.secondary">
-          No hay usuarios activos disponibles para mostrar en el carrusel.
+          No hay usuarios activos con imágenes de perfil disponibles para mostrar en el carrusel.
         </Typography>
       </Box>
     );
@@ -172,10 +178,10 @@ const CarouselWithSwiper = () => {
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
           }}
-          loop={true} // Se mantiene la lógica original
+          loop={true}
           spaceBetween={10}
-          centeredSlides={true} // Se mantiene la lógica original
-          slidesPerView={isMobile ? 3 : 5} // Se mantiene la lógica original
+          centeredSlides={true}
+          slidesPerView={isMobile ? 3 : 5}
           autoplay={{
             delay: 1500,
             disableOnInteraction: false,

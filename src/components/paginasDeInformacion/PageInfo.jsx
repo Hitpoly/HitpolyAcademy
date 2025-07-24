@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Box, CircularProgress, Alert, Typography } from "@mui/material";
 import { useParams } from "react-router-dom";
 
+// IMPORTA TU COMPONENTE DynamicMeta aquí
+import DynamicMeta from "../../utils/DynamicMeta";
+
 import ProgrammeDetailsBanner from "../banners/infoCurso";
 import EnrollmentForm from "../forms/cursoForm/EnrollmentForm";
 import FactsAndCertificate from "./components/baner/FactsAndCertificate";
@@ -71,7 +74,6 @@ function PaginaDeInformacion() {
           
           if (foundCourse) {
             setApiData(foundCourse);
-
             if (foundCourse.profesor_id) {
               try {
                 const professorResponse = await fetch(
@@ -101,7 +103,6 @@ function PaginaDeInformacion() {
                 ) {
                   setProfessorDetails(professorData.usuario);
                 } else {
-                
                   setProfessorDetails(null);
                 }
               } catch (profError) {
@@ -177,7 +178,6 @@ function PaginaDeInformacion() {
 
         const classesData = await classesResponse.json();
         
-
         if (
           classesData.status === "success" &&
           Array.isArray(classesData.clases)
@@ -201,11 +201,10 @@ function PaginaDeInformacion() {
       }
     };
 
-
     if (courseSlugFromUrl) {
       fetchCourseAndContentData();
     }
-  }, [courseSlugFromUrl]);
+  }, [courseSlugFromUrl, numericCourseId]);
 
   if (loading) {
     return (
@@ -281,6 +280,7 @@ function PaginaDeInformacion() {
     url_video_introductorio,
     marcaAsociada = [],
     url_banner,
+    portada_targeta, // Asegúrate de desestructurarlo para usarlo aquí
     resultados_aprendizaje = [],
     temario,
   } = apiData;
@@ -423,8 +423,19 @@ function PaginaDeInformacion() {
     buttonSx: { backgroundColor: "#F21C63", "&:hover": { backgroundColor: "#d41857" } },
   };
 
+  const metaImageUrl = portada_targeta || ""; 
+
   return (
     <>
+      {apiData && ( 
+        <DynamicMeta
+          title={`Curso de ${titulo} - Hitpoly Academy`}
+          description={descripcion_corta}
+          image={metaImageUrl}
+          url={window.location.href} 
+        />
+      )}
+
       <Box
         sx={{
           height: { xs: "100%", md: "100%" },

@@ -56,13 +56,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rutas SIN LAYOUT */}
-          {/* Estas rutas se renderizarán directamente sin el LayoutConMenu */}
           <Route path="/ofertas" element={<SubscriptionPlans />} />
-
-          {/* Rutas CON LAYOUT */}
-          {/* La ruta padre usa el componente LayoutConMenu como elemento. */}
-          {/* Todas las rutas anidadas dentro de esta se renderizarán dentro del <Outlet /> de LayoutConMenu. */}
           <Route element={<LayoutConMenu title="General" />}>
             <Route path="/" element={<Inicio />} />
             <Route path="/curso/:id" element={<PaginaDeInformacion />} />
@@ -71,7 +65,6 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/curso/:id/register" element={<Register />} />
-            {/* Rutas Protegidas */}
             <Route
               path="/crear-anuncios"
               element={
