@@ -1,12 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"; // <-- Quita 'Outlet' de aquí
+// src/App.jsx
+
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React from "react";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-
-// Importa tus componentes de página y layout
 import Inicio from "./pages/inicio/home.jsx";
 import PaginaDeInformacion from "./components/paginasDeInformacion/PageInfo.jsx";
-import LayoutConMenu from "./components/layout/LayoutConMenu.jsx"; // Asegúrate de que este archivo esté correcto
+import LayoutConMenu from "./components/layout/LayoutConMenu.jsx";
 import PasosIniciales from "./components/escuela/curso/masterFull/primerosPasos.jsx";
 import Login from "./components/login/page.jsx";
 import Register from "./components/register/page.jsx";
@@ -44,7 +44,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // Si el usuario no tiene el rol permitido, redirige a la página de inicio
     return <Navigate to="/" />;
   }
 
@@ -53,6 +52,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function App() {
   return (
+    // ELIMINA: <HelmetProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
