@@ -1,8 +1,6 @@
+// src/pages/inicio/home.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-
 import PortadaOne from "../../components/banners/postadaOne";
 import CarouselWithSwiper from "../../components/carruseles/CarruselOne";
 import SectionCardGrid from "../../components/sections/sectionOne/section";
@@ -21,30 +19,6 @@ function Inicio() {
   const [allPromoBanners, setAllPromoBanners] = useState([]);
   const [loadingBanners, setLoadingBanners] = useState(true);
   const [errorBanners, setErrorBanners] = useState(null);
-
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
-    if (user) {
-      const isInactive = (user.estado === "Inactivo"); 
-      
-      if (isInactive) {
-        const timer = setTimeout(() => {
-          navigate("/ofertas");
-        }, 7000);
-
-        return () => {
-          clearTimeout(timer);
-        };
-      }
-    }
-  }, [user, isAuthenticated, navigate]);
-
   const fetchPromoBanners = useCallback(async () => {
     setLoadingBanners(true);
     setErrorBanners(null);

@@ -434,7 +434,7 @@ function PaginaDeInformacion() {
           image={metaImageUrl}
           url={window.location.href} 
         />
-      )}
+      )} 
 
       <Box
         sx={{

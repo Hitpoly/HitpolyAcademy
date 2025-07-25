@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import styled from "@emotion/styled";
 import { Typography, Button, Box } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import Swal from "sweetalert2"; // Mantén esta importación si usas SweetAlert2 para otras alertas de error
 import { useAuth } from "../../../context/AuthContext";
 import Input from "../../UI/input";
 import Ray from "../../UI/Ray";
@@ -52,7 +52,9 @@ const LoginForm = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      }
+      // Si quieres redirigir automáticamente si ya está autenticado, hazlo aquí.
+      // navigate("/");
+    }
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -76,16 +78,19 @@ const LoginForm = () => {
 
       if (data.status === "success") {
         const userData = data.user;
-        login(userData);
+        login(userData); // Autentica al usuario en el contexto
 
-        Swal.fire({
-          icon: "success",
-          title: "¡Bienvenido al master de hitpoly!",
-          text: "Has iniciado sesión correctamente",
-        });
+        // --- SE ELIMINA EL CÓDIGO DEL BANNER DE BIENVENIDA AQUÍ ---
+        // Swal.fire({
+        //   icon: "success",
+        //   title: "¡Bienvenido al master de hitpoly!",
+        //   text: "Has iniciado sesión correctamente",
+        // });
+        // --------------------------------------------------------
 
-        navigate("/");
+        navigate("/"); // Redirige al usuario a la página principal
       } else {
+        // Muestra alerta de error si el login no es exitoso
         Swal.fire({
           icon: "error",
           title: "Error",
@@ -93,13 +98,14 @@ const LoginForm = () => {
         });
       }
     } catch (error) {
+      // Muestra alerta de error si hay un problema con la conexión al servidor
       Swal.fire({
         icon: "error",
         title: "Error del servidor",
         text: "Hubo un problema al conectar con el servidor. Por favor, revisa tu conexión a internet o intenta más tarde.",
       });
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // Siempre desactiva el estado de envío al finalizar
     }
   };
 
