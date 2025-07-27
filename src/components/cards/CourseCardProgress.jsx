@@ -1,23 +1,69 @@
-import React from "react";
+import React, { useState } from "react"; // Importar useState para el estado del tooltip
 import {
   Box,
   Typography,
-  LinearProgress, // Importar LinearProgress para la barra de progreso
+  LinearProgress,
   Card,
   CardMedia,
   CardContent,
   Button,
+  Tooltip, // Importar Tooltip
+  IconButton, // Importar IconButton
 } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow"; // Icono de reproducción
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import ShareIcon from "@mui/icons-material/Share"; // Importar el icono de compartir
 import { useNavigate } from "react-router-dom";
 
 const CourseCardProgress = ({ curso }) => {
   const navigate = useNavigate();
 
+  // Estado para controlar el texto del tooltip del botón de compartir
+  const [shareTooltipText, setShareTooltipText] = useState("Copiar enlace del curso");
+
+  // Función para convertir el título en un slug amigable para URL
+  const slugify = (text) => {
+    return text
+      .toString()
+      .normalize("NFD") // Normaliza diacríticos (ej. é -> e)
+      .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos
+      .toLowerCase() // Convierte a minúsculas
+      .trim() // Elimina espacios en blanco al principio y al final
+      .replace(/\s+/g, "-") // Reemplaza espacios con guiones
+      .replace(/[^\w-]+/g, "") // Elimina caracteres no alfanuméricos excepto guiones
+      .replace(/--+/g, "-"); // Reemplaza múltiples guiones con uno solo
+  };
+
+  // Extraer el ID del curso del objeto curso
+  // Asumimos que `curso.id` ya contiene el ID necesario
+  const courseId = curso.id;
+
+  // Construir el enlace de compartir con el título slugificado y el ID
+  // Se ha actualizado el dominio a https://academy.hitpoly.com/
+  const shareLink = `https://academy.hitpoly.com/curso/${slugify(curso.titulo)}-${courseId}`;
+
   // Función para manejar el clic en el botón "Continuar"
   const handleContinueClick = () => {
     // Navega a la ruta del curso, usando el ID del curso
     navigate(`/master-full/${curso.id}`);
+  };
+
+  // Función para manejar el clic en el botón de compartir
+  const handleShareClick = () => {
+    navigator.clipboard
+      .writeText(shareLink)
+      .then(() => {
+        setShareTooltipText("¡Copiado!"); // Cambia el texto del tooltip a "Copiado"
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso"); // Vuelve al texto original después de un tiempo
+        }, 1500); // 1.5 segundos
+      })
+      .catch((err) => {
+        console.error("Error al copiar el enlace: ", err);
+        setShareTooltipText("Error al copiar"); // Muestra un mensaje de error si falla
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso");
+        }, 2000); // Más tiempo para leer el error
+      });
   };
 
   return (
@@ -119,15 +165,15 @@ const CourseCardProgress = ({ curso }) => {
             color="text.secondary"
             sx={{ textAlign: "right" }}
           >
-            {/* El progreso se muestra en negrita */}
             **{curso.progreso}%** completado
           </Typography>
         </CardContent>
 
-        {/* Sección del botón "Continuar" */}
+        {/* Sección del botón "Continuar" y compartir */}
         <Box
           sx={{
             display: "flex",
+            justifyContent: "space-between", // Para alinear el botón y el icono
             alignItems: "center",
             p: 1.5,
             pl: 2,
@@ -149,6 +195,17 @@ const CourseCardProgress = ({ curso }) => {
           >
             Continuar
           </Button>
+
+          {/* Botón de compartir con Tooltip dinámico */}
+          <Tooltip title={shareTooltipText} placement="top">
+            <IconButton
+              aria-label="compartir"
+              onClick={handleShareClick}
+              sx={{ color: "#1c1d1f" }} // Asegura que el icono sea visible
+            >
+              <ShareIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
     </Card>

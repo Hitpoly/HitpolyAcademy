@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react"; // Importar useState
+
 import {
   Card,
   CardContent,
@@ -8,7 +9,10 @@ import {
   Box,
   Rating,
   Tooltip,
+  IconButton,
 } from "@mui/material";
+
+import ShareIcon from "@mui/icons-material/Share";
 
 const CursoCard = ({
   title,
@@ -23,6 +27,46 @@ const CursoCard = ({
   price,
   level,
 }) => {
+  // Estado para controlar el texto del tooltip del botón de compartir
+  const [shareTooltipText, setShareTooltipText] = useState("Copiar enlace del curso");
+
+  // Función para convertir el título en un slug amigable para URL
+  const slugify = (text) => {
+    return text
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]+/g, "")
+      .replace(/--+/g, "-");
+  };
+
+  // Extraer el ID del curso de accessLink, asumiendo que es el último segmento numérico
+  const courseId = accessLink.split("/").pop();
+
+  // Construir el enlace de compartir con el título slugificado y el ID
+  const shareLink = `https://academy.hitpoly.com/curso/${slugify(title)}-${courseId}`;
+
+  const handleShareClick = () => {
+    navigator.clipboard
+      .writeText(shareLink)
+      .then(() => {
+        setShareTooltipText("¡Copiado!"); // Cambia el texto del tooltip a "Copiado"
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso"); // Vuelve al texto original después de un tiempo
+        }, 1500); // 1.5 segundos
+      })
+      .catch((err) => {
+        console.error("Error al copiar el enlace: ", err);
+        setShareTooltipText("Error al copiar"); // Muestra un mensaje de error si falla
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso");
+        }, 2000); // Más tiempo para leer el error
+      });
+  };
+
   return (
     <Card
       sx={{
@@ -149,7 +193,14 @@ const CursoCard = ({
             )}
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              mb: 1,
+              flexWrap: "wrap",
+            }}
+          >
             {students && (
               <Typography
                 variant="caption"
@@ -174,7 +225,7 @@ const CursoCard = ({
                 color="text.secondary"
                 sx={{
                   fontSize: "0.8rem",
-                  ml: (students || totalHours) ? 0.5 : 0,
+                  ml: students || totalHours ? 0.5 : 0,
                   border: "1px solid #d1d7dc",
                   borderRadius: "3px",
                   px: 0.5,
@@ -196,20 +247,39 @@ const CursoCard = ({
             pt: 1,
           }}
         >
-          {price && (
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{
-                fontWeight: "bold",
-                mb: 1,
-                color: "#1c1d1f",
-                fontSize: "1.2rem",
-              }}
-            >
-              {price}
-            </Typography>
-          )}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+              mb: 1,
+            }}
+          >
+            {price && (
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{
+                  fontWeight: "bold",
+                  color: "#1c1d1f",
+                  fontSize: "1.2rem",
+                }}
+              >
+                {price}
+              </Typography>
+            )}
+            {/* El Tooltip ahora usa el estado shareTooltipText */}
+            <Tooltip title={shareTooltipText} placement="top">
+              <IconButton
+                aria-label="compartir"
+                onClick={handleShareClick}
+                sx={{ color: "#1c1d1f" }}
+              >
+                <ShareIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <Button
             size="small"
             variant="outlined"
