@@ -17,6 +17,8 @@ const PortadaOne = () => {
   const [slideData, setSlideData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Nuevo estado para controlar si el carrusel debe detenerse por interacción con el formulario
+  const [shouldStopAutoplay, setShouldStopAutoplay] = useState(false);
 
   const fetchFeaturedCourses = useCallback(async () => {
     setLoading(true);
@@ -81,6 +83,17 @@ const PortadaOne = () => {
       swiperRef.current.navigation.update();
     }
   }, [slideData]);
+
+  // Efecto para controlar el autoplay basado en 'shouldStopAutoplay'
+  useEffect(() => {
+    if (swiperRef.current && swiperRef.current.autoplay) {
+      if (shouldStopAutoplay) {
+        swiperRef.current.autoplay.stop();
+      } else {
+        swiperRef.current.autoplay.start();
+      }
+    }
+  }, [shouldStopAutoplay]); // Depende de shouldStopAutoplay
 
   if (loading) {
     return (
@@ -248,8 +261,8 @@ const PortadaOne = () => {
                     </Typography>
                   </Tooltip>
                 )}
-
-                <EmailSubscriptionForm idCursoDestacado={slide.id} />
+                {/* Pasamos la función para actualizar el estado del autoplay */}
+                <EmailSubscriptionForm idCursoDestacado={slide.id} onInputActivity={setShouldStopAutoplay} />
 
               </Box>
             </Box>

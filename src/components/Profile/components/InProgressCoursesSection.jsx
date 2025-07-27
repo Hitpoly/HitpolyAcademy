@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Stack, CircularProgress, Alert, useTheme, useMediaQuery } from "@mui/material"; // Importa useTheme y useMediaQuery
+import {
+  Box,
+  Typography,
+  Stack,
+  CircularProgress,
+  Alert,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material"; // Importa useTheme y useMediaQuery
 import CourseCard from "../../cards/CourseCardProgress";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -85,7 +93,7 @@ const InProgressCoursesSection = () => {
         } else {
           throw new Error(
             coursesData.message ||
-            "No se encontraron cursos o el formato de 'traerCursosController' es incorrecto."
+              "No se encontraron cursos o el formato de 'traerCursosController' es incorrecto."
           );
         }
 
@@ -172,13 +180,25 @@ const InProgressCoursesSection = () => {
   return (
     <Box
       sx={{
+        display: "flex",
+        flexDirection: "column",
         flex: { xs: "0 0 100%", md: "100%" },
         mb: { xs: 3, md: 0 },
         maxHeight: "100%",
         p: { xs: 3, md: "10px 10px" },
+
       }}
     >
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#333" }}>
+      <Typography
+        variant="h5"
+        sx={{
+          mb: 2,
+          color: "#333",
+          display: "flex",
+          justifyContent: "center",
+          alignContent: "center",
+        }}
+      >
         Mis Cursos en Progreso
       </Typography>
       {/* CAMBIO CLAVE: Usamos Box con Flexbox en lugar de Stack */}
@@ -186,16 +206,20 @@ const InProgressCoursesSection = () => {
         <Box
           sx={{
             display: "flex",
+            alignContent: "center",
             flexWrap: "wrap", // Permite que las tarjetas se envuelvan a la siguiente fila
             gap: theme.spacing(3), // Espacio entre las tarjetas
-            justifyContent: isSmallScreen ? "center" : "flex-start", // Centra en pantallas pequeñas, alinea a la izquierda en grandes
+        
           }}
         >
           {courses.map((curso) => (
             <Box
               key={curso.id}
               sx={{
-                width: isSmallScreen ? "100%" : "calc(50% - 1.5 * 8px)", // 50% para dos columnas, restamos el gap (3 * 8px = 24px total, dividido entre 2 tarjetas es 12px por tarjeta, o 1.5 * 8px por tarjeta)
+                display: "flex",
+                justifyContent: "center",
+                alignContent: "center",
+                width: isSmallScreen ? "100%" : "calc(50%)", // 50% para dos columnas, restamos el gap (3 * 8px = 24px total, dividido entre 2 tarjetas es 12px por tarjeta, o 1.5 * 8px por tarjeta)
                 // Para simplificar, puedes usar width: { xs: "100%", sm: "calc(50% - 12px)" } si el gap es fijo
                 minWidth: { xs: "280px", sm: "auto" }, // Asegura un ancho mínimo para la tarjeta
                 flexGrow: 1, // Permite que la tarjeta crezca si hay espacio adicional

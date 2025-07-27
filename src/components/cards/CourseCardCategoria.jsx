@@ -1,5 +1,5 @@
 // components/CourseCard.jsx
-import React from 'react';
+import React, { useState } from 'react'; // Importar useState
 import {
   Card,
   CardActionArea,
@@ -8,35 +8,60 @@ import {
   Typography,
   Button,
   Box,
-  IconButton, // Importar IconButton
-  Tooltip // Importar Tooltip
+  Tooltip,      // Importar Tooltip
+  IconButton    // Importar IconButton
 } from '@mui/material';
-import ShareIcon from '@mui/icons-material/Share'; // Importar el icono de compartir
 import { useNavigate } from 'react-router-dom';
+import ShareIcon from "@mui/icons-material/Share"; // Importar el icono de compartir
 
 const CourseCard = ({ course, categoryName }) => {
   const navigate = useNavigate();
+
+  // Estado para controlar el texto del tooltip del botón de compartir
+  const [shareTooltipText, setShareTooltipText] = useState("Copiar enlace del curso");
+
+  // Función para convertir el título en un slug amigable para URL
+  const slugify = (text) => {
+    return text
+      .toString()
+      .normalize("NFD") // Normaliza diacríticos (ej. é -> e)
+      .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos
+      .toLowerCase() // Convierte a minúsculas
+      .trim() // Elimina espacios en blanco al principio y al final
+      .replace(/\s+/g, "-") // Reemplaza espacios con guiones
+      .replace(/[^\w-]+/g, "") // Elimina caracteres no alfanuméricos excepto guiones
+      .replace(/--+/g, "-"); // Reemplaza múltiples guiones con uno solo
+  };
+
+  // Construir el enlace de compartir con el título slugificado y el ID
+  // El dominio se mantiene como https://academy.hitpoly.com/
+  const shareLink = `https://academy.hitpoly.com/curso/${slugify(course.titulo)}-${course.id}`;
 
   const handleCardClick = () => {
     navigate(`/curso/${course.id}`);
   };
 
-  // Enlace para compartir el curso
-  const shareLink = `http://localhost:3000/curso/${course.id}`;
-
   const handleShareClick = (event) => {
-    event.stopPropagation(); // Evita que el clic en el botón de compartir active el handleCardClick
-    navigator.clipboard.writeText(shareLink)
+    event.stopPropagation(); // Evita que el clic en el botón de compartir active el handleCardClick de CardActionArea
+    navigator.clipboard
+      .writeText(shareLink)
       .then(() => {
-        alert("Enlace del curso copiado al portapapeles.");
+        setShareTooltipText("¡Copiado!"); // Cambia el texto del tooltip a "Copiado"
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso"); // Vuelve al texto original después de un tiempo
+        }, 1500); // 1.5 segundos
       })
       .catch((err) => {
         console.error("Error al copiar el enlace: ", err);
+        setShareTooltipText("Error al copiar"); // Muestra un mensaje de error si falla
+        setTimeout(() => {
+          setShareTooltipText("Copiar enlace del curso");
+        }, 2000); // Más tiempo para leer el error
       });
   };
 
   return (
-    <Card sx={{ maxWidth: 345, width: '100%', m: 2, boxShadow: 3 }}>
+    <Card sx={{ maxWidth: 345, width: '100%', m: 2, boxShadow: 3, position: 'relative' }}> {/* Añadir position: 'relative' para posicionamiento futuro si se necesita */}
       <CardActionArea onClick={handleCardClick}>
         <CardMedia
           component="img"
@@ -59,20 +84,20 @@ const CourseCard = ({ course, categoryName }) => {
           </Typography>
         </CardContent>
       </CardActionArea>
-      <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> {/* Ajustar para alinear el botón y el icono */}
         <Button
           variant="contained"
           color="primary"
-          sx={{ flexGrow: 1, mr: 1 }} // El botón ocupa el espacio restante
+          sx={{ flexGrow: 1, mr: 1 }} // El botón ocupa la mayor parte del espacio
           onClick={handleCardClick}
         >
           Ver Curso
         </Button>
-        <Tooltip title="Compartir curso" placement="top">
+        <Tooltip title={shareTooltipText} placement="top">
           <IconButton
             aria-label="compartir"
             onClick={handleShareClick}
-            sx={{ color: '#1c1d1f' }}
+            sx={{ color: "#1c1d1f" }}
           >
             <ShareIcon />
           </IconButton>

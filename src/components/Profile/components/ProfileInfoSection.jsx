@@ -21,7 +21,6 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import SchoolIcon from "@mui/icons-material/School";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-// import Swal from "sweetalert2"; // <-- Puedes comentar o eliminar esta línea también si no lo usas más
 import axios from "axios";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -43,7 +42,7 @@ const ProfileInfoSection = () => {
     ? {
         ...user,
         nombre: user.nombre || "",
-        apellido: user.apellido || "", // Asumiendo que 'apellido' viene en user
+        apellido: user.apellido || "",
         bio: user.biografia || "",
         avatar: user.url_foto_perfil || "/images/default-avatar.png",
         cursosCulminados: user.cursosCulminados || [],
@@ -111,13 +110,8 @@ const ProfileInfoSection = () => {
         throw new Error("No se recibió una URL válida desde el backend de Cloudinary.");
       }
     } catch (error) {
-      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
-      //   icon: "error",
-      //   title: "Error al subir imagen",
-      //   text: "Ocurrió un error al intentar subir la imagen de perfil.",
-      // });
       setError("Ocurrió un error al intentar subir la imagen de perfil."); // Puedes agregar el error a la alerta pequeña
-      setTimeout(() => setError(null), 5000); // Para que desaparezca
+      setTimeout(() => setError(null), 5000);
       throw error;
     } finally {
       setUploadingAvatar(false);
@@ -128,7 +122,7 @@ const ProfileInfoSection = () => {
     setTempProfile({ ...profile });
     setEditMode(true);
     setSuccessMessage(null);
-    setError(null); // Limpiar errores previos al entrar en modo edición
+    setError(null);
     setNewAvatarFile(null);
     setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
@@ -139,9 +133,9 @@ const ProfileInfoSection = () => {
 
   const handleCancelClick = () => {
     setEditMode(false);
-    setTempProfile(null); // Restablecer tempProfile para que los campos muestren los valores originales
+    setTempProfile(null); 
     setError(null);
-    setSuccessMessage(null); // Limpiar mensaje de éxito al cancelar
+    setSuccessMessage(null);
     setNewAvatarFile(null);
     setPreviewAvatarUrl(null);
     setUrlLinkedinError(null);
@@ -187,7 +181,6 @@ const ProfileInfoSection = () => {
     setUrlInstagramError(null);
     setUrlTiktokError(null);
 
-    // Validaciones de URLs
     if (tempProfile.url_linkedin && !isValidUrl(tempProfile.url_linkedin)) {
       setUrlLinkedinError("URL de LinkedIn inválida. Debe incluir 'http://' o 'https://'.");
       hasValidationError = true;
@@ -206,11 +199,6 @@ const ProfileInfoSection = () => {
     }
 
     if (hasValidationError) {
-      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
-      //   icon: "error",
-      //   title: "Error de validación",
-      //   text: "Por favor, corrige las URLs de redes sociales inválidas.",
-      // });
       setError("Por favor, corrige las URLs de redes sociales inválidas."); // Puedes agregar el error a la alerta pequeña
       setTimeout(() => setError(null), 5000);
       return;
@@ -226,7 +214,7 @@ const ProfileInfoSection = () => {
         finalAvatarUrl = await uploadAvatarToCloudinary(newAvatarFile);
       } catch (uploadError) {
         setLoading(false);
-        return; // Detener el proceso si falla la subida de imagen
+        return;
       }
     }
 
@@ -282,43 +270,20 @@ const ProfileInfoSection = () => {
         setNewAvatarFile(null);
         setPreviewAvatarUrl(null);
         setSuccessMessage("¡Perfil actualizado con éxito!");
-        // MODIFICACIÓN: Desaparecer el mensaje de éxito después de 3 segundos
         setTimeout(() => {
           setSuccessMessage(null);
-        }, 3000); // 3000 milisegundos = 3 segundos
-
-        // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
-        //   icon: "success",
-        //   title: "¡Éxito!",
-        //   text: "Perfil actualizado correctamente.",
-        //   timer: 1500,
-        //   showConfirmButton: false,
-        // });
+        }, 3000);
       } else {
         setError(data.message || "Hubo un error al guardar los cambios.");
-        // MODIFICACIÓN: Desaparecer el mensaje de error después de 5 segundos
         setTimeout(() => {
           setError(null);
-        }, 5000); // 5000 milisegundos = 5 segundos
-
-        // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
-        //   icon: "error",
-        //   title: "Error",
-        //   text: data.message || "No se pudieron guardar los cambios.",
-        // });
+        }, 5000); 
       }
     } catch (err) {
       setError(`Error al guardar: ${err.message}`);
-      // MODIFICACIÓN: Desaparecer el mensaje de error después de 5 segundos
       setTimeout(() => {
         setError(null);
-      }, 5000); // 5000 milisegundos = 5 segundos
-
-      // Swal.fire({ // ELIMINA O COMENTA ESTA LÍNEA Y SU BLOQUE
-      //   icon: "error",
-      //   title: "Error de conexión",
-      //   text: "No se pudo conectar con el servidor para guardar los cambios.",
-      // });
+      }, 5000);
     } finally {
       setLoading(false);
     }
@@ -346,11 +311,9 @@ const ProfileInfoSection = () => {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        backgroundColor: "#ffff",
         flex: { xs: "0 0 100%", md: "1" },
         minWidth: { md: 280 },
         pt: 3,
-        overflowY: { xs: "visible", md: "auto" },
       }}
     >
       <Box
@@ -394,8 +357,6 @@ const ProfileInfoSection = () => {
             </IconButton>
           )}
         </Box>
-
-        {/* Sección de Nombre y Apellido */}
         <Box sx={{ width: "100%", maxWidth: 300, textAlign: "center" }}>
           {editMode ? (
             <Stack spacing={1} sx={{ mb: 2 }}>
@@ -405,7 +366,7 @@ const ProfileInfoSection = () => {
                 value={tempProfile.nombre}
                 onChange={handleChange}
                 fullWidth
-                variant="outlined" // Cambiado a outlined para mejor visibilidad en edición
+                variant="outlined" 
                 sx={{ mb: 1 }}
               />
               <TextField
@@ -414,7 +375,7 @@ const ProfileInfoSection = () => {
                 value={tempProfile.apellido}
                 onChange={handleChange}
                 fullWidth
-                variant="outlined" // Cambiado a outlined
+                variant="outlined"
               />
             </Stack>
           ) : (
@@ -441,7 +402,6 @@ const ProfileInfoSection = () => {
         </Box>
       </Box>
 
-      {/* Separador visual si no estás en modo edición y el nombre/apellido ya se muestra */}
       {!editMode && (
         <Box sx={{ width: "100%", borderTop: "1px solid #e0e0e0", my: 3 }}></Box>
       )}
@@ -453,12 +413,11 @@ const ProfileInfoSection = () => {
           gap: 2,
           mt: { xs: 3, md: 5 },
           width: "100%",
-          // Removido borderTop aquí, ya que el separador de arriba lo maneja
           pt: { xs: 3, md: 0 },
         }}
       >
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#333" }}>
-          Información del Usuario {/* Título cambiado */}
+          Información del Usuario
         </Typography>
 
         {successMessage && (
@@ -552,10 +511,9 @@ const ProfileInfoSection = () => {
             {profile.url_tiktok && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <img
-                  src="/images/tiktok-icon.png"
+                  src="/images/icons8-tik-tok.svg"
                   alt="TikTok"
-                  style={{ width: 24, height: 24, filter: 'grayscale(100%) brightness(0) invert(1) sepia(1) saturate(5000%) hue-rotate(250deg)' }}
-                />
+                  style={{ width: 24, height: 24, }}/>
                 <Typography variant="body1">
                   <Typography component="span" fontWeight="bold">
                     TikTok:
@@ -582,7 +540,7 @@ const ProfileInfoSection = () => {
                   Sobre mí:
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {profile.bio || "No hay biografía."} {/* Mostrar un mensaje si no hay biografía */}
+                  {profile.bio || "No hay biografía."} 
                 </Typography>
               </Box>
             </Box>
@@ -598,7 +556,6 @@ const ProfileInfoSection = () => {
           </Stack>
         ) : (
           <Stack spacing={2}>
-            {/* Estos campos SÍ deben aparecer aquí para la edición del resto de la información */}
             <TextField
               label="Email"
               name="email"

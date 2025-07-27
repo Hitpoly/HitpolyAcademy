@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Asegúrate de importar useEffect
 import {
   Box,
   TextField,
@@ -15,7 +15,8 @@ const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const EmailSubscriptionForm = ({ idCursoDestacado }) => {
+// Recibe la nueva prop 'onInputActivity'
+const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -26,6 +27,17 @@ const EmailSubscriptionForm = ({ idCursoDestacado }) => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+
+  // Nuevo useEffect para monitorear los inputs y notificar al componente padre
+  useEffect(() => {
+    // Si la prop onInputActivity fue pasada (lo cual esperamos de PortadaOne)
+    if (onInputActivity) {
+      // Determina si alguno de los campos de entrada tiene texto
+      const hasText = emailInput.length > 0 || phoneInput.length > 0;
+      // Llama a la función pasada por la prop, enviando el estado actual de los inputs
+      onInputActivity(hasText);
+    }
+  }, [emailInput, phoneInput, onInputActivity]); // Se ejecuta cada vez que emailInput o phoneInput cambian
 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") {

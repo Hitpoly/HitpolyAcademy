@@ -69,9 +69,9 @@ const CourseCardProgress = ({ curso }) => {
   return (
     <Card
       sx={{
-        width: {xs: "100%", md: 350},
+        width: {xs: "100%", md: 500},
         minWidth: 250,
-        maxWidth: {xs: "100%", md: 350},
+        maxWidth: {xs: "100%", md: 500},
         height: "auto",
         boxSizing: "border-box",
         display: "flex",
