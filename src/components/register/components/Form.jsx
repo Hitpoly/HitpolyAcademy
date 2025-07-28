@@ -21,6 +21,7 @@ import Ray from "../../UI/Ray";
 import { FONT_COLOR_GRAY } from "../../constant/Colors";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { MuiTelInput } from 'mui-tel-input'; // Importa MuiTelInput
 
 const fontFamily = "Inter";
 
@@ -33,11 +34,14 @@ const RegisterSchema = Yup.object().shape({
   pass: Yup.string()
     .min(6, "La contraseña debe tener al menos 6 caracteres")
     .required("La contraseña es requerida"),
+  // Actualización: Yup para el número de celular, ahora puede ser un string más flexible
+  // MuiTelInput se encarga de formatear y validar internamente, podemos ser menos restrictivos aquí.
+  numero_celular: Yup.string().required("El número de celular es requerido"),
   estado: Yup.string()
     .oneOf(["activo", "inactivo"], "Estado inválido")
     .required("El estado es requerido"),
   id_tipo_usuario: Yup.number()
-    .oneOf([2, 3], "Selecciona un tipo de usuario válido (Profesor o Alumno)") // ¡CAMBIO AQUÍ! Solo permite 2 y 3
+    .oneOf([2, 3], "Selecciona un tipo de usuario válido (Profesor o Alumno)")
     .required("El tipo de usuario es requerido"),
   avatarFile: Yup.mixed()
     .required("La foto de perfil es requerida")
@@ -47,8 +51,7 @@ const RegisterSchema = Yup.object().shape({
       (value) => {
         if (!value) return true;
         return (
-          value &&
-          ["image/jpeg", "image/png", "image/gif"].includes(value.type)
+          value && ["image/jpeg", "image/png", "image/gif"].includes(value.type)
         );
       }
     )
@@ -57,7 +60,6 @@ const RegisterSchema = Yup.object().shape({
       return value.size <= 5 * 1024 * 1024;
     }),
 });
-
 
 const Title = styled.p({
   fontSize: 32,
@@ -106,7 +108,7 @@ const RegisterUserForm = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const userTypes = [
-    { value: 2, label: "Profesor" }, // ¡CAMBIO AQUÍ! Eliminado Administrador
+    { value: 2, label: "Profesor" },
     { value: 3, label: "Alumno" },
   ];
 
@@ -192,8 +194,10 @@ const RegisterUserForm = () => {
       return;
     }
 
-    const registerUrl = "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php";
-    const loginUrl = "https://apiacademy.hitpoly.com/ajax/usuarioController.php"; // Endpoint de logueo
+    const registerUrl =
+      "https://apiacademy.hitpoly.com/ajax/registerUsuarioController.php";
+    const loginUrl =
+      "https://apiacademy.hitpoly.com/ajax/usuarioController.php"; // Endpoint de logueo
 
     const registerData = {
       accion: "registrarUsuario",
@@ -201,6 +205,7 @@ const RegisterUserForm = () => {
       apellido: values.apellido,
       email: values.email,
       pass: values.pass,
+      numero_celular: values.numero_celular, // Se envía el valor completo (ej. "+51987654321")
       estado: values.estado,
       id_tipo_usuario: values.id_tipo_usuario,
       url_foto_perfil: finalAvatarUrl,
@@ -235,7 +240,7 @@ const RegisterUserForm = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          funcion: "login", 
+          funcion: "login",
           email: values.email,
           pass: values.pass,
         }),
@@ -255,7 +260,8 @@ const RegisterUserForm = () => {
       } else {
         Swal.fire({
           icon: "warning",
-          title: "Registro exitoso, pero no se pudo iniciar sesión automáticamente",
+          title:
+            "Registro exitoso, pero no se pudo iniciar sesión automáticamente",
           text: "Por favor, inicia sesión manualmente con tus nuevas credenciales.",
         });
         navigate("/login");
@@ -296,6 +302,7 @@ const RegisterUserForm = () => {
           apellido: "",
           email: "",
           pass: "",
+          numero_celular: "", // Mantén vacío, MuiTelInput lo manejará
           estado: "activo",
           id_tipo_usuario: "",
           avatarFile: null,
@@ -303,7 +310,14 @@ const RegisterUserForm = () => {
         validationSchema={RegisterSchema}
         onSubmit={handleSubmit}
       >
-        {({ errors, touched, isSubmitting, values, handleChange, setFieldValue }) => (
+        {({
+          errors,
+          touched,
+          isSubmitting,
+          values,
+          handleChange,
+          setFieldValue,
+        }) => (
           <Form>
             <Box
               display="flex"
@@ -313,11 +327,13 @@ const RegisterUserForm = () => {
             >
               <Box sx={{ width: "100%", marginBottom: 2 }}>
                 <Title>¡Regístrate en nuestra plataforma!</Title>
-                <SubTitle>Crea tu cuenta para empezar tu camino hacia el éxito</SubTitle>
+                <SubTitle>
+                  Crea tu cuenta para empezar tu camino hacia el éxito
+                </SubTitle>
               </Box>
 
               {/* --- SECCIÓN DE AVATAR --- */}
-              <Box sx={{ position: 'relative', mb: 3, textAlign: 'center' }}>
+              <Box sx={{ position: "relative", mb: 3, textAlign: "center" }}>
                 <Avatar
                   src={previewAvatarUrl || "/images/default-avatar.png"}
                   alt="Foto de perfil"
@@ -326,19 +342,19 @@ const RegisterUserForm = () => {
                     height: 120,
                     border: "3px solid #F21D6B",
                     boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-                    mx: 'auto',
+                    mx: "auto",
                   }}
                 />
                 <IconButton
                   component="label"
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: 0,
                     right: 0,
-                    backgroundColor: '#F21D6B',
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#d81a5f' },
-                    transform: 'translate(25%, 25%)',
+                    backgroundColor: "#F21D6B",
+                    color: "white",
+                    "&:hover": { backgroundColor: "#d81a5f" },
+                    transform: "translate(25%, 25%)",
                   }}
                   disabled={uploadingAvatar}
                 >
@@ -356,13 +372,24 @@ const RegisterUserForm = () => {
                 </IconButton>
               </Box>
               {touched.avatarFile && errors.avatarFile && (
-                <Typography color="error" variant="caption" sx={{ mt: -2, mb: 1 }}>
+                <Typography
+                  color="error"
+                  variant="caption"
+                  sx={{ mt: -2, mb: 1 }}
+                >
                   {errors.avatarFile}
                 </Typography>
               )}
               {/* --- FIN SECCIÓN DE AVATAR --- */}
 
-              <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
+              >
                 <TextField
                   label="Nombre"
                   name="nombre"
@@ -385,6 +412,22 @@ const RegisterUserForm = () => {
                   fullWidth
                   size="small"
                 />
+                {/* --- Campo de Número de Celular con MuiTelInput --- */}
+                <MuiTelInput
+                  label="Número de Celular"
+                  name="numero_celular"
+                  value={values.numero_celular}
+                  onChange={(newValue) => setFieldValue("numero_celular", newValue)}
+                  error={touched.numero_celular && Boolean(errors.numero_celular)}
+                  helperText={touched.numero_celular && errors.numero_celular}
+                  required
+                  fullWidth
+                  size="small"
+                  defaultCountry="PE" // Establece Perú como país por defecto
+                  preferredCountries={['PE', 'CO', 'MX', 'CL', 'AR', 'ES', 'US']} // Países preferidos
+                  // Puedes añadir más props de MuiTelInput aquí si necesitas personalizar su comportamiento
+                />
+                {/* --- Fin Campo de Número de Celular --- */}
                 <TextField
                   label="Correo electrónico"
                   name="email"
@@ -415,7 +458,9 @@ const RegisterUserForm = () => {
                   name="id_tipo_usuario"
                   value={values.id_tipo_usuario}
                   onChange={handleChange}
-                  error={touched.id_tipo_usuario && Boolean(errors.id_tipo_usuario)}
+                  error={
+                    touched.id_tipo_usuario && Boolean(errors.id_tipo_usuario)
+                  }
                   helperText={touched.id_tipo_usuario && errors.id_tipo_usuario}
                   required
                   fullWidth
@@ -428,7 +473,6 @@ const RegisterUserForm = () => {
                   ))}
                 </TextField>
                 <input type="hidden" name="estado" value="activo" />
-
 
                 <Button
                   type="submit"

@@ -116,7 +116,7 @@ function App() {
             <Route
               path="/exam/:examName"
               element={
-                <ProtectedRoute allowedRoles={[3]}>
+                <ProtectedRoute allowedRoles={[3, 2, 1]}>
                   <ExamComponent />
                 </ProtectedRoute>
               }

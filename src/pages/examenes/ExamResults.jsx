@@ -41,8 +41,6 @@ const ExamResults = () => {
   const totalQuestions = questions.length;
   const percentage = (totalQuestions > 0) ? (score / totalQuestions) * 100 : 0;
 
-  const wrongAnswers = answers.filter((answer) => !answer.isCorrect);
-
   const getOptionText = (questionOptions, optionId) => {
     const option = questionOptions.find(opt => opt.id === optionId);
     return option ? option.text : 'N/A';
@@ -77,51 +75,41 @@ const ExamResults = () => {
           </Typography>
         </Box>
 
-        {wrongAnswers.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" gutterBottom color="error">
-              Respuestas Fallidas:
-            </Typography>
-            <List>
-              {wrongAnswers.map((answeredQuestion) => (
-                <Paper key={answeredQuestion.questionId} elevation={1} sx={{ mb: 2, p: 2 }}>
-                  <ListItem disablePadding sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <ListItemText
-                      primary={
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                          Pregunta: {answeredQuestion.questionText}
-                        </Typography>
-                      }
-                      secondary={
-                        <>
-                          <Typography variant="body2" color="error">
-                            Tu respuesta: {getOptionText(answeredQuestion.options, answeredQuestion.selectedAnswerId)}
-                            <CancelOutlinedIcon sx={{ fontSize: 'small', verticalAlign: 'middle', ml: 0.5 }} />
-                          </Typography>
-                          <Typography variant="body2" color="success.main">
-                            Respuesta correcta: {getOptionText(answeredQuestion.options, answeredQuestion.correctAnswerId)}
-                            <CheckCircleOutlineIcon sx={{ fontSize: 'small', verticalAlign: 'middle', ml: 0.5 }} />
-                          </Typography>
-                          {answeredQuestion.explanation && (
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                              Explicación: {answeredQuestion.explanation}
-                            </Typography>
-                          )}
-                        </>
-                      }
-                    />
-                  </ListItem>
-                </Paper>
-              ))}
-            </List>
-          </Box>
-        )}
-
-        {wrongAnswers.length === 0 && (
-          <Typography variant="h6" color="success.main" align="center" sx={{ mt: 4 }}>
-            ¡Felicidades! Has respondido correctamente todas las preguntas.
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>
+            Tus Respuestas:
           </Typography>
-        )}
+          <List>
+            {answers.map((answeredQuestion) => (
+              <Paper key={answeredQuestion.questionId} elevation={1} sx={{ mb: 2, p: 2 }}>
+                <ListItem disablePadding sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <ListItemText
+                    primary={
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Pregunta: {answeredQuestion.questionText}
+                      </Typography>
+                    }
+                    secondary={
+                      <>
+                        <Typography
+                          variant="body2"
+                          color={answeredQuestion.isCorrect ? 'success.main' : 'error'}
+                        >
+                          Tu respuesta: {getOptionText(answeredQuestion.options, answeredQuestion.selectedAnswerId)}
+                          {answeredQuestion.isCorrect ? (
+                            <CheckCircleOutlineIcon sx={{ fontSize: 'small', verticalAlign: 'middle', ml: 0.5 }} />
+                          ) : (
+                            <CancelOutlinedIcon sx={{ fontSize: 'small', verticalAlign: 'middle', ml: 0.5 }} />
+                          )}
+                        </Typography>
+                      </>
+                    }
+                  />
+                </ListItem>
+              </Paper>
+            ))}
+          </List>
+        </Box>
 
         <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
           <Button

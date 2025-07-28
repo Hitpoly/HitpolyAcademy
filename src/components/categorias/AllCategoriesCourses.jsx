@@ -305,8 +305,7 @@ const AllCategoriesCourses = () => {
           <Box component="span" sx={{ fontWeight: "bold" }}>
             estamos aquí para apoyarte en tu camino
           </Box>
-          . Avanza hacia tus metas este año. La oferta es válida hasta el 30 de
-          julio de 2025. {" "}
+          . Avanza hacia tus metas este año. La oferta es válida hasta finalizar el mes {" "}
           {/* CAMBIO AQUÍ: El href apunta al ID de la sección de FAQ */}
           <Link href="#preguntas-frecuentes" color="primary" sx={{ textDecoration: "underline" }}>
              Consulte las preguntas frecuentes a continuación para obtener más

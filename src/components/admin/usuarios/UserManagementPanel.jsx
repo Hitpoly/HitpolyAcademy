@@ -67,11 +67,10 @@ const UserManagementPanel = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.status === "success") {
         if (Array.isArray(data.clases)) {
           const usersWithNormalizedStateAndType = data.clases.map((user) => {
-            
             return {
               ...user,
               estado:
@@ -92,9 +91,9 @@ const UserManagementPanel = () => {
       }
     } catch (err) {
       setError(`Error al cargar usuarios: ${err.message}`);
-      } finally {
+    } finally {
       setLoading(false);
-      }
+    }
   };
 
   const handleToggleChange = async (event, userId) => {
@@ -138,7 +137,8 @@ const UserManagementPanel = () => {
       const data = await response.json();
 
       if (data.status === "success") {
-        } else {
+        // No es necesario hacer nada aquí, el estado ya se actualizó en el frontend
+      } else {
         setUsers((prevUsers) => {
           const revertedUsers = prevUsers.map((user) =>
             user.id === userId
@@ -179,16 +179,18 @@ const UserManagementPanel = () => {
     const apellido = (user.apellido || "").toLowerCase();
     const email = (user.email || "").toLowerCase();
     const tipoNombre = (user.tipoNombre || "").toLowerCase();
+    const numeroCelular = (user.numero_celular || "").toLowerCase();
 
     return (
       nombre.includes(term) ||
       apellido.includes(term) ||
       email.includes(term) ||
-      tipoNombre.includes(term)
+      tipoNombre.includes(term) ||
+      numeroCelular.includes(term)
     );
   });
 
-  const displayedUsers = filteredUsers;
+  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -224,9 +226,9 @@ const UserManagementPanel = () => {
         <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
           <CircularProgress />
         </Box>
-      ) : displayedUsers.length === 0 && searchTerm === "" ? (
+      ) : filteredUsers.length === 0 && searchTerm === "" ? (
         <Alert severity="info">No se encontraron usuarios. 🤷‍♂️</Alert>
-      ) : displayedUsers.length === 0 && searchTerm !== "" ? (
+      ) : filteredUsers.length === 0 && searchTerm !== "" ? (
         <Alert severity="info">No se encontraron usuarios que coincidan con "{searchTerm}". 🔍</Alert>
       ) : (
         <>
@@ -234,53 +236,41 @@ const UserManagementPanel = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellido</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Estado</TableCell>
+                  {/* Celdas de encabezado sin espacios intermedios */}
+                  <TableCell>ID</TableCell><TableCell>Nombre</TableCell><TableCell>Apellido</TableCell><TableCell>Email</TableCell><TableCell>Número de Celular</TableCell><TableCell>Tipo</TableCell><TableCell>Estado</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {displayedUsers
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((user) => {
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.nombre}</TableCell>
-                        <TableCell>{user.apellido}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.tipoNombre}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  checked={user.estado === "activo"}
-                                  onChange={(event) => handleToggleChange(event, user.id)}
-                                  color="primary"
-                                  disabled={editingUserId === user.id}
-                                />
-                              }
-                              label={user.estado === "activo" ? "Activo" : "Inactivo"}
+                {paginatedUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    {/* Celdas de datos sin espacios intermedios */}
+                    <TableCell>{user.id}</TableCell><TableCell>{user.nombre}</TableCell><TableCell>{user.apellido}</TableCell><TableCell>{user.email}</TableCell><TableCell>{user.numero_celular}</TableCell><TableCell>{user.tipoNombre}</TableCell><TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={user.estado === "activo"}
+                              onChange={(event) => handleToggleChange(event, user.id)}
+                              color="primary"
+                              disabled={editingUserId === user.id}
                             />
-                            {editingUserId === user.id && (
-                              <CircularProgress size={20} sx={{ ml: 1 }} />
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          }
+                          label={user.estado === "activo" ? "Activo" : "Inactivo"}
+                        />
+                        {editingUserId === user.id && (
+                          <CircularProgress size={20} sx={{ ml: 1 }} />
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[25, 50, 100, 200, 500]}
             component="div"
-            count={displayedUsers.length}
+            count={filteredUsers.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

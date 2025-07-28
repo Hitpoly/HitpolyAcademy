@@ -19,9 +19,10 @@ import EmailIcon from "@mui/icons-material/Email";
 import DescriptionIcon from "@mui/icons-material/Description";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
-import SchoolIcon from "@mui/icons-material/School";
+import PhoneIcon from "@mui/icons-material/Phone";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import axios from "axios";
+import { MuiTelInput } from "mui-tel-input";
 
 import { useAuth } from "../../../context/AuthContext";
 
@@ -50,6 +51,7 @@ const ProfileInfoSection = () => {
         url_facebook: user.url_facebook || "",
         url_instagram: user.url_instagram || "",
         url_tiktok: user.url_tiktok || "",
+        numero_celular: user.numero_celular || "",
       }
     : null;
 
@@ -62,7 +64,7 @@ const ProfileInfoSection = () => {
 
   const [newAvatarFile, setNewAvatarFile] = useState(null);
   const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null);
-  const [uploadingAvatar, setUploadingAvatar, ] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [urlLinkedinError, setUrlLinkedinError] = useState(null);
   const [urlFacebookError, setUrlFacebookError] = useState(null);
@@ -82,6 +84,7 @@ const ProfileInfoSection = () => {
         url_facebook: user.url_facebook || "",
         url_instagram: user.url_instagram || "",
         url_tiktok: user.url_tiktok || "",
+        numero_celular: user.numero_celular || "",
       });
     } else {
       setProfile(null);
@@ -110,7 +113,7 @@ const ProfileInfoSection = () => {
         throw new Error("No se recibió una URL válida desde el backend de Cloudinary.");
       }
     } catch (error) {
-      setError("Ocurrió un error al intentar subir la imagen de perfil."); // Puedes agregar el error a la alerta pequeña
+      setError("Ocurrió un error al intentar subir la imagen de perfil.");
       setTimeout(() => setError(null), 5000);
       throw error;
     } finally {
@@ -133,7 +136,7 @@ const ProfileInfoSection = () => {
 
   const handleCancelClick = () => {
     setEditMode(false);
-    setTempProfile(null); 
+    setTempProfile(null);
     setError(null);
     setSuccessMessage(null);
     setNewAvatarFile(null);
@@ -155,6 +158,13 @@ const ProfileInfoSection = () => {
     if (name === "url_facebook") setUrlFacebookError(null);
     if (name === "url_instagram") setUrlInstagramError(null);
     if (name === "url_tiktok") setUrlTiktokError(null);
+  };
+
+  const handlePhoneNumberChange = (value) => {
+    setTempProfile((prev) => ({
+      ...prev,
+      numero_celular: value,
+    }));
   };
 
   const handleAvatarChange = (e) => {
@@ -199,7 +209,7 @@ const ProfileInfoSection = () => {
     }
 
     if (hasValidationError) {
-      setError("Por favor, corrige las URLs de redes sociales inválidas."); // Puedes agregar el error a la alerta pequeña
+      setError("Por favor, corrige las URLs de redes sociales inválidas.");
       setTimeout(() => setError(null), 5000);
       return;
     }
@@ -225,6 +235,7 @@ const ProfileInfoSection = () => {
         nombre: tempProfile.nombre,
         apellido: tempProfile.apellido,
         email: tempProfile.email,
+        numero_celular: tempProfile.numero_celular,
         url_linkedin: tempProfile.url_linkedin,
         url_facebook: tempProfile.url_facebook,
         url_instagram: tempProfile.url_instagram,
@@ -257,6 +268,7 @@ const ProfileInfoSection = () => {
           nombre: tempProfile.nombre,
           apellido: tempProfile.apellido,
           email: tempProfile.email,
+          numero_celular: tempProfile.numero_celular, 
           url_linkedin: tempProfile.url_linkedin,
           url_facebook: tempProfile.url_facebook,
           url_instagram: tempProfile.url_instagram,
@@ -277,7 +289,7 @@ const ProfileInfoSection = () => {
         setError(data.message || "Hubo un error al guardar los cambios.");
         setTimeout(() => {
           setError(null);
-        }, 5000); 
+        }, 5000);
       }
     } catch (err) {
       setError(`Error al guardar: ${err.message}`);
@@ -366,7 +378,7 @@ const ProfileInfoSection = () => {
                 value={tempProfile.nombre}
                 onChange={handleChange}
                 fullWidth
-                variant="outlined" 
+                variant="outlined"
                 sx={{ mb: 1 }}
               />
               <TextField
@@ -442,6 +454,18 @@ const ProfileInfoSection = () => {
                 {profile.email}
               </Typography>
             </Box>
+            {profile.numero_celular && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <PhoneIcon color="action" sx={{ fontSize: 24, color: "#6C4DE2" }} />
+                <Typography variant="body1">
+                  <Typography component="span" fontWeight="bold">
+                    Número de Celular:
+                  </Typography>{" "}
+                  {profile.numero_celular}
+                </Typography>
+              </Box>
+            )}
+
             {profile.url_linkedin && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <LinkedInIcon color="action" sx={{ fontSize: 24, color: "#6C4DE2" }} />
@@ -513,7 +537,8 @@ const ProfileInfoSection = () => {
                 <img
                   src="/images/icons8-tik-tok.svg"
                   alt="TikTok"
-                  style={{ width: 24, height: 24, }}/>
+                  style={{ width: 24, height: 24 }}
+                />
                 <Typography variant="body1">
                   <Typography component="span" fontWeight="bold">
                     TikTok:
@@ -540,7 +565,7 @@ const ProfileInfoSection = () => {
                   Sobre mí:
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {profile.bio || "No hay biografía."} 
+                  {profile.bio || "No hay biografía."}
                 </Typography>
               </Box>
             </Box>
@@ -563,6 +588,15 @@ const ProfileInfoSection = () => {
               onChange={handleChange}
               fullWidth
               type="email"
+              variant="outlined"
+            />
+            <MuiTelInput
+              defaultCountry="PE" 
+              label="Número de Celular"
+              name="numero_celular"
+              value={tempProfile.numero_celular}
+              onChange={handlePhoneNumberChange}
+              fullWidth
               variant="outlined"
             />
             <TextField
