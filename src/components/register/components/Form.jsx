@@ -15,13 +15,13 @@ import {
   IconButton,
 } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Importa useLocation
 import Swal from "sweetalert2";
 import Ray from "../../UI/Ray";
 import { FONT_COLOR_GRAY } from "../../constant/Colors";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
-import { MuiTelInput } from 'mui-tel-input'; // Importa MuiTelInput
+import { MuiTelInput } from 'mui-tel-input';
 
 const fontFamily = "Inter";
 
@@ -34,8 +34,6 @@ const RegisterSchema = Yup.object().shape({
   pass: Yup.string()
     .min(6, "La contraseña debe tener al menos 6 caracteres")
     .required("La contraseña es requerida"),
-  // Actualización: Yup para el número de celular, ahora puede ser un string más flexible
-  // MuiTelInput se encarga de formatear y validar internamente, podemos ser menos restrictivos aquí.
   numero_celular: Yup.string().required("El número de celular es requerido"),
   estado: Yup.string()
     .oneOf(["activo", "inactivo"], "Estado inválido")
@@ -94,6 +92,7 @@ const TextGrayBold = styled(Typography)({
 
 const RegisterUserForm = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Importante: Hook para acceder a los parámetros de la URL
   const { login } = useAuth();
 
   const [loading, setLoading] = useState(false);
@@ -205,7 +204,7 @@ const RegisterUserForm = () => {
       apellido: values.apellido,
       email: values.email,
       pass: values.pass,
-      numero_celular: values.numero_celular, // Se envía el valor completo (ej. "+51987654321")
+      numero_celular: values.numero_celular,
       estado: values.estado,
       id_tipo_usuario: values.id_tipo_usuario,
       url_foto_perfil: finalAvatarUrl,
@@ -234,6 +233,8 @@ const RegisterUserForm = () => {
       resetForm();
       setNewAvatarFile(null);
       setPreviewAvatarUrl(null);
+
+      // --- Intenta iniciar sesión automáticamente después del registro ---
       const loginResponse = await fetch(loginUrl, {
         method: "POST",
         headers: {
@@ -250,13 +251,26 @@ const RegisterUserForm = () => {
 
       if (loginData.status === "success") {
         const userData = loginData.user;
-        login(userData);
+        login(userData); // Autentica al usuario en el contexto
         Swal.fire({
           icon: "success",
           title: "¡Bienvenido al master de hitpoly!",
-          text: "Has iniciado sesión correctamente",
+          text: "Has iniciado sesión correctamente.",
         });
-        navigate("/");
+
+        // --- LÓGICA DE REDIRECCIÓN INTELIGENTE ---
+        const queryParams = new URLSearchParams(location.search);
+        const redirectTo = queryParams.get("redirect"); // Obtiene el valor del parámetro 'redirect'
+
+        if (redirectTo) {
+          // Si hay un parámetro redirect, redirige a esa ruta de curso
+          // Asegúrate que esta ruta sea correcta para tus cursos
+          // Por ejemplo: /curso/117 o /curso/slug-del-curso-117
+          navigate(`/curso/${redirectTo}`);
+        } else {
+          // Si no hay parámetro redirect, redirige a la página principal o dashboard
+          navigate("/"); // O '/dashboard' o la ruta por defecto que desees
+        }
       } else {
         Swal.fire({
           icon: "warning",
@@ -264,7 +278,7 @@ const RegisterUserForm = () => {
             "Registro exitoso, pero no se pudo iniciar sesión automáticamente",
           text: "Por favor, inicia sesión manualmente con tus nuevas credenciales.",
         });
-        navigate("/login");
+        navigate("/login"); // Si no se pudo loguear, lo envía a la página de login
       }
     } catch (error) {
       setSnackbar({
@@ -302,7 +316,7 @@ const RegisterUserForm = () => {
           apellido: "",
           email: "",
           pass: "",
-          numero_celular: "", // Mantén vacío, MuiTelInput lo manejará
+          numero_celular: "",
           estado: "activo",
           id_tipo_usuario: "",
           avatarFile: null,
@@ -412,7 +426,6 @@ const RegisterUserForm = () => {
                   fullWidth
                   size="small"
                 />
-                {/* --- Campo de Número de Celular con MuiTelInput --- */}
                 <MuiTelInput
                   label="Número de Celular"
                   name="numero_celular"
@@ -423,11 +436,9 @@ const RegisterUserForm = () => {
                   required
                   fullWidth
                   size="small"
-                  defaultCountry="PE" // Establece Perú como país por defecto
-                  preferredCountries={['PE', 'CO', 'MX', 'CL', 'AR', 'ES', 'US']} // Países preferidos
-                  // Puedes añadir más props de MuiTelInput aquí si necesitas personalizar su comportamiento
+                  defaultCountry="PE"
+                  preferredCountries={['PE', 'CO', 'MX', 'CL', 'AR', 'ES', 'US']}
                 />
-                {/* --- Fin Campo de Número de Celular --- */}
                 <TextField
                   label="Correo electrónico"
                   name="email"
