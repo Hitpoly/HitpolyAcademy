@@ -251,25 +251,15 @@ const RegisterUserForm = () => {
 
       if (loginData.status === "success") {
         const userData = loginData.user;
-        login(userData); // Autentica al usuario en el contexto
-        Swal.fire({
-          icon: "success",
-          title: "¡Bienvenido al master de hitpoly!",
-          text: "Has iniciado sesión correctamente.",
-        });
+        login(userData); 
 
-        // --- LÓGICA DE REDIRECCIÓN INTELIGENTE ---
         const queryParams = new URLSearchParams(location.search);
         const redirectTo = queryParams.get("redirect"); // Obtiene el valor del parámetro 'redirect'
 
         if (redirectTo) {
-          // Si hay un parámetro redirect, redirige a esa ruta de curso
-          // Asegúrate que esta ruta sea correcta para tus cursos
-          // Por ejemplo: /curso/117 o /curso/slug-del-curso-117
           navigate(`/curso/${redirectTo}`);
         } else {
-          // Si no hay parámetro redirect, redirige a la página principal o dashboard
-          navigate("/"); // O '/dashboard' o la ruta por defecto que desees
+          navigate("/"); 
         }
       } else {
         Swal.fire({
