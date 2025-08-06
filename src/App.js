@@ -1,5 +1,3 @@
-// src/App.jsx
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React from "react";
 import "slick-carousel/slick/slick.css";
@@ -28,6 +26,11 @@ import AnunciosPage from "./components/admin/anuncios/AnunciosPage.jsx";
 import UserManagementPanel from "./components/admin/usuarios/UserManagementPanel.jsx";
 import SubscriptionPlans from "./components/admin/planes/SubscriptionPlans.jsx";
 
+// Importamos el nuevo componente para crear exámenes
+import CrearExamen from "./pages/examenes/CrearExamen.jsx";
+// NUEVO: Importamos el componente para editar exámenes
+import EditarExamen from "./pages/examenes/EditarExamen.jsx";
+
 /**
  * Componente ProtectedRoute mejorado para controlar el acceso basado en la autenticación y el rol del usuario.
  * @param {object} props
@@ -52,7 +55,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function App() {
   return (
-    // ELIMINA: <HelmetProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -158,6 +160,24 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={[1, 2]}>
                   <CourseModulesManager />
+                </ProtectedRoute>
+              }
+            />
+            {/* RUTA PARA CREAR UN EXAMEN */}
+            <Route
+              path="/cursos/:courseId/crear-examen"
+              element={
+                <ProtectedRoute allowedRoles={[1, 2]}>
+                  <CrearExamen />
+                </ProtectedRoute>
+              }
+            />
+            {/* NUEVA RUTA PARA EDITAR UN EXAMEN */}
+            <Route
+              path="/cursos/:courseId/editar-examen/:examId"
+              element={
+                <ProtectedRoute allowedRoles={[1, 2]}>
+                  <EditarExamen />
                 </ProtectedRoute>
               }
             />
