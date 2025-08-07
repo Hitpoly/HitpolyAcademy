@@ -14,7 +14,7 @@ import {
   Alert,
 } from '@mui/material';
 
-import { allExams } from './data/questionsData';
+import { allExams } from '../data/questionsData';
 
 const ExamComponent = () => {
   const { examName } = useParams();

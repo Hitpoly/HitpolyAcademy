@@ -1,10 +1,12 @@
-// ProgressBar.jsx
 import React from "react";
-import { LinearProgress, Box, Typography }
-from "@mui/material"; 
-const ProgressBar = ({ totalVideos = 0, completedVideosCount = 0 }) => {
+import { LinearProgress, Box, Typography } from "@mui/material";
 
-  const progress = totalVideos > 0 ? (completedVideosCount / totalVideos) * 100 : 0;
+const ProgressBar = ({ totalVideos = 0, completedVideosCount = 0 }) => {
+  // Aseguramos que el progreso nunca supere el 100%
+  const calculatedProgress =
+    totalVideos > 0 ? (completedVideosCount / totalVideos) * 100 : 0;
+  
+  const progress = Math.min(100, calculatedProgress);
 
   return (
     <Box sx={{ width: "100%", padding: "20px" }}>

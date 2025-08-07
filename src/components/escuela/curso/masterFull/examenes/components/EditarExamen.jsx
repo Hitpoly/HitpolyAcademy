@@ -23,9 +23,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../../../../context/AuthContext";
 
-// Endpoints
 const API_GET_EXAMEN =
   "https://apiacademy.hitpoly.com/ajax/getExamenController.php";
 const API_EDITAR_EXAMEN =
@@ -38,13 +37,15 @@ const API_CARGAR_PREGUNTAS =
   "https://apiacademy.hitpoly.com/ajax/preguntasExamenController.php";
 const CLOUDINARY_API_URL =
   "https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php";
+const API_GET_CURSOS = "https://apiacademy.hitpoly.com/ajax/traerCursosController.php"; // <--- Nueva API para obtener el nombre del curso
+const API_ELIMINAR_PREGUNTA =
+  "https://apiacademy.hitpoly.com/ajax/eliminarPregYrespController.php";
 
 const parseJsonSafe = (str) => {
   try {
     const parsed = JSON.parse(str);
     return parsed;
   } catch (e) {
-    console.warn("Error parsing JSON, returning original string or empty array:", str);
     return str || [];
   }
 };
@@ -71,12 +72,15 @@ const EditarExamen = () => {
     id: null,
   });
   const [editingIndex, setEditingIndex] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [courseName, setCourseName] = useState(""); // <-- Nuevo estado para el nombre del curso
+  const [isLoadingCourse, setIsLoadingCourse] = useState(true); // <-- Nuevo estado de carga
+
+  const [deletingQuestionId, setDeletingQuestionId] = useState(null);
 
   const uploadImage = async (file) => {
     const formDataImg = new FormData();
@@ -98,7 +102,6 @@ const EditarExamen = () => {
         title: "Error al subir imagen",
         text: "Ocurrió un error al intentar subir la imagen. Por favor, inténtalo de nuevo.",
       });
-      console.error("Error al subir imagen:", err);
       return null;
     } finally {
       setIsUploading(false);
@@ -117,6 +120,45 @@ const EditarExamen = () => {
     setError("");
   };
 
+  // useEffect para cargar el nombre del curso
+  useEffect(() => {
+    const fetchCourseName = async () => {
+      if (!courseId) {
+        setError("No se proporcionó un ID de curso.");
+        setIsLoadingCourse(false);
+        return;
+      }
+      try {
+        const response = await fetch(API_GET_CURSOS, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accion: "getCursos", id: null }),
+        });
+        const data = await response.json();
+        if (data.status === "success" && data.cursos && data.cursos.cursos) {
+          const coursesArray = data.cursos.cursos;
+          const foundCourse = coursesArray.find(
+            (curso) => String(curso.id) === String(courseId)
+          );
+          if (foundCourse) {
+            setCourseName(foundCourse.titulo);
+          } else {
+            setError("Curso no encontrado.");
+          }
+        } else {
+          setError("Error al cargar la información del curso.");
+        }
+      } catch (err) {
+        console.error("Error en la llamada a la API:", err);
+        setError("Error de red al obtener el nombre del curso.");
+      } finally {
+        setIsLoadingCourse(false);
+      }
+    };
+    fetchCourseName();
+  }, [courseId]);
+
+  // useEffect para cargar los datos del examen y las preguntas
   useEffect(() => {
     const fetchData = async () => {
       if (!examId) {
@@ -131,7 +173,10 @@ const EditarExamen = () => {
           axios.post(API_GET_PREGUNTAS, { accion: "get" }),
         ]);
 
-        if (examResponse.data.status !== "success" || !examResponse.data.examenes) {
+        if (
+          examResponse.data.status !== "success" ||
+          !examResponse.data.examenes
+        ) {
           throw new Error("Error al cargar los datos del examen principal.");
         }
         const foundExam = examResponse.data.examenes.find(
@@ -148,29 +193,42 @@ const EditarExamen = () => {
         });
         setImageUrl(foundExam.imagen_portada || "");
 
-        if (questionsResponse.data.status === "success" && questionsResponse.data.preguntasYrespuestas) {
-          const examQuestions = questionsResponse.data.preguntasYrespuestas.filter(
-            (q) => String(q.examen_id) === String(examId)
-          );
-          
-          console.log("Datos de preguntas crudos desde la API:", examQuestions); // Log para ver los datos sin procesar
+        if (
+          questionsResponse.data.status === "success" &&
+          questionsResponse.data.preguntasYrespuestas
+        ) {
+          const examQuestions =
+            questionsResponse.data.preguntasYrespuestas.filter(
+              (q) => String(q.examen_id) === String(examId)
+            );
 
-          setQuestions(examQuestions.map(q => ({
-            ...q,
-            // Asegurar que las opciones y la respuesta correcta se parseen correctamente
-            opciones: parseJsonSafe(q.opciones),
-            respuesta_correcta: Array.isArray(parseJsonSafe(q.respuesta_correcta)) ? parseJsonSafe(q.respuesta_correcta)[0] : parseJsonSafe(q.respuesta_correcta),
-          })));
-        }
-      } catch (err) {
-        console.error("Error en fetchData:", err);
-        setError(err.message || "Examen no encontrado o formato de datos incorrecto.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [examId]);
+          setQuestions(
+            examQuestions.map((q) => {
+              const parsedOptions = parseJsonSafe(q.opciones);
+              const parsedCorrectAnswer = Array.isArray(
+                parseJsonSafe(q.respuesta_correcta)
+              )
+                ? parseJsonSafe(q.respuesta_correcta)[0]
+                : parseJsonSafe(q.respuesta_correcta);
+
+              return {
+                ...q,
+                opciones: parsedOptions,
+                respuesta_correcta: parsedCorrectAnswer,
+              };
+            })
+          );
+        }
+      } catch (err) {
+        setError(
+          err.message || "Examen no encontrado o formato de datos incorrecto."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [examId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -226,7 +284,10 @@ const EditarExamen = () => {
     setCurrentQuestion((prev) => ({
       ...prev,
       opciones: reindexedOptions,
-      respuesta_correcta: prev.respuesta_correcta === prev.opciones[index].opcion ? "" : prev.respuesta_correcta
+      respuesta_correcta:
+        prev.respuesta_correcta === prev.opciones[index].opcion
+          ? ""
+          : prev.respuesta_correcta,
     }));
   };
 
@@ -240,7 +301,9 @@ const EditarExamen = () => {
       !hasValidOptions ||
       currentQuestion.opciones.length < 2
     ) {
-      setError("Por favor, completa el texto de la pregunta, al menos 2 opciones válidas y selecciona una respuesta correcta.");
+      setError(
+        "Por favor, completa el texto de la pregunta, al menos 2 opciones válidas y selecciona una respuesta correcta."
+      );
       return;
     }
 
@@ -253,7 +316,7 @@ const EditarExamen = () => {
         setError("Solo se pueden agregar 5 preguntas por examen.");
         return;
       }
-      setQuestions((prev) => [...prev, { ...currentQuestion, id: null }]); // Asegurar que el id de una nueva pregunta sea null
+      setQuestions((prev) => [...prev, { ...currentQuestion, id: null }]);
     }
     resetCurrentQuestion();
   };
@@ -262,126 +325,179 @@ const EditarExamen = () => {
     const questionToEdit = questions[index];
     if (!questionToEdit) return;
 
-    setCurrentQuestion({
+    const parsedOptions = Array.isArray(questionToEdit.opciones)
+      ? questionToEdit.opciones
+      : parseJsonSafe(questionToEdit.opciones);
+
+    const parsedCorrectAnswer = Array.isArray(
+      parseJsonSafe(questionToEdit.respuesta_correcta)
+    )
+      ? parseJsonSafe(questionToEdit.respuesta_correcta)[0]
+      : parseJsonSafe(questionToEdit.respuesta_correcta);
+
+    const newCurrentQuestion = {
       ...questionToEdit,
-      // Asegurar que las opciones y la respuesta correcta estén en el formato correcto
-      opciones: Array.isArray(questionToEdit.opciones) ? questionToEdit.opciones : parseJsonSafe(questionToEdit.opciones),
-      respuesta_correcta: Array.isArray(parseJsonSafe(questionToEdit.respuesta_correcta)) ? parseJsonSafe(questionToEdit.respuesta_correcta)[0] : parseJsonSafe(questionToEdit.respuesta_correcta),
-    });
+      opciones: parsedOptions,
+      respuesta_correcta: parsedCorrectAnswer,
+    };
+    setCurrentQuestion(newCurrentQuestion);
     setEditingIndex(index);
     setError("");
   };
 
-  const deleteQuestion = (index) => {
-    const newQuestions = questions.filter((_, i) => i !== index);
-    setQuestions(newQuestions);
-    if (editingIndex === index) {
-      resetCurrentQuestion();
-    } else if (editingIndex > index) {
-      setEditingIndex(editingIndex - 1);
+  const deleteQuestion = async (index) => {
+    const questionToDelete = questions[index];
+
+    if (questionToDelete.id) {
+      setDeletingQuestionId(questionToDelete.id);
+      try {
+        const response = await axios.post(
+          API_ELIMINAR_PREGUNTA,
+          { accion: "delete", id: questionToDelete.id },
+          { headers: { "Content-Type": "application/json" } }
+        );
+
+        if (response.data.status !== "success") {
+          throw new Error(
+            response.data.message ||
+              "Error al eliminar la pregunta en el servidor."
+          );
+        }
+
+        const newQuestions = questions.filter((_, i) => i !== index);
+        setQuestions(newQuestions);
+        if (editingIndex === index) {
+          resetCurrentQuestion();
+        } else if (editingIndex > index) {
+          setEditingIndex(editingIndex - 1);
+        }
+      } catch (err) {
+        Swal.fire(
+          "Error",
+          err.message || "Hubo un problema al intentar eliminar la pregunta.",
+          "error"
+        );
+      } finally {
+        setDeletingQuestionId(null);
+      }
+    } else {
+      const newQuestions = questions.filter((_, i) => i !== index);
+      setQuestions(newQuestions);
+      if (editingIndex === index) {
+        resetCurrentQuestion();
+      } else if (editingIndex > index) {
+        setEditingIndex(editingIndex - 1);
+      }
     }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSuccess("");
-    setError("");
+    e.preventDefault();
+    setSaving(true);
+    setSuccess("");
+    setError("");
 
-    if (!formData.titulo || !formData.descripcion) {
-      setError("El título y la descripción del examen son obligatorios.");
-      setSaving(false);
-      return;
-    }
-    if (questions.length === 0) {
-      setError("Debe agregar al menos una pregunta al examen.");
-      setSaving(false);
-      return;
-    }
+    if (!formData.titulo || !formData.descripcion) {
+      setError("El título y la descripción del examen son obligatorios.");
+      setSaving(false);
+      return;
+    }
+    if (questions.length === 0) {
+      setError("Debe agregar al menos una pregunta al examen.");
+      setSaving(false);
+      return;
+    }
 
-    let finalImageUrl = imageUrl;
-    if (selectedFile) {
-      finalImageUrl = await uploadImage(selectedFile);
-      if (!finalImageUrl) {
-        setSaving(false);
-        return;
-      }
-    }
+    let finalImageUrl = imageUrl;
+    if (selectedFile) {
+      finalImageUrl = await uploadImage(selectedFile);
+      if (!finalImageUrl) {
+        setSaving(false);
+        return;
+      }
+    }
 
-    if (!finalImageUrl) {
-      setError("La imagen de portada es obligatoria.");
-      setSaving(false);
-      return;
-    }
+    if (!finalImageUrl) {
+      setError("La imagen de portada es obligatoria.");
+      setSaving(false);
+      return;
+    }
 
-    try {
-      const examPayload = {
-        accion: "updateExamen",
-        id: formData.id,
-        curso_id: parseInt(courseId, 10),
-        titulo: formData.titulo,
-        descripcion: formData.descripcion,
-        imagen_portada: finalImageUrl,
-        creado_por: user?.id || null,
-      };
+    try {
+      const examPayload = {
+        accion: "updateExamen",
+        id: formData.id,
+        curso_id: parseInt(courseId, 10),
+        titulo: formData.titulo,
+        descripcion: formData.descripcion,
+        imagen_portada: finalImageUrl,
+        creado_por: user?.id || null,
+      };
 
-      const examResponse = await axios.post(API_EDITAR_EXAMEN, examPayload, {
-        headers: { "Content-Type": "application/json" },
-      });
-      if (examResponse.data.status !== "success") {
-        throw new Error(examResponse.data.message || "Error al editar el examen.");
-      }
+      const examResponse = await axios.post(API_EDITAR_EXAMEN, examPayload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      if (examResponse.data.status !== "success") {
+        throw new Error(
+          examResponse.data.message || "Error al editar el examen."
+        );
+      }
 
-      await Promise.all(
-        questions.map(async (question) => {
-          const optionsToSend = JSON.stringify(question.opciones);
-          const finalCorrectAnswer = JSON.stringify([question.respuesta_correcta]);
+      const questionPromises = questions.map(async (question) => {
+        const optionsToSend = question.opciones;
+        const finalCorrectAnswer = [question.respuesta_correcta];
 
-          const questionPayload = {
-            examen_id: formData.id,
-            texto_pregunta: question.texto_pregunta,
-            opciones: optionsToSend,
-            respuesta_correcta: finalCorrectAnswer,
-            explicacion: question.explicacion,
-            fecha_creacion: new Date().toISOString().slice(0, 19).replace("T", " "),
-          };
+        const basePayload = {
+          examen_id: formData.id,
+          texto_pregunta: question.texto_pregunta,
+          opciones: optionsToSend,
+          respuesta_correcta: finalCorrectAnswer,
+          explicacion: question.explicacion,
+          fecha_creacion: new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "),
+        };
 
-          if (question.id) {
-            // Llama a la API de edición de preguntas
-            const response = await axios.post(
-              API_EDITAR_PREGUNTA,
-              { ...questionPayload, accion: "edit", id: question.id },
-              { headers: { "Content-Type": "application/json" } }
-            );
-            
-            // --- LOG AGREGADO AQUÍ ---
-            console.log(`Respuesta de la API de edición de pregunta (ID: ${question.id}):`, response.data);
-            // -------------------------
+        if (question.id) {
+          const fullPayload = {
+            ...basePayload,
+            accion: "edit",
+            id: question.id,
+          };
+          const response = await axios.post(API_EDITAR_PREGUNTA, fullPayload, {
+            headers: { "Content-Type": "application/json" },
+          });
+        } else {
+          const newQuestionPayload = {
+            ...basePayload,
+            accion: "preguntasExamen",
+          };
+          const response = await axios.post(
+            API_CARGAR_PREGUNTAS,
+            newQuestionPayload,
+            { headers: { "Content-Type": "application/json" } }
+          );
+        }
+      });
 
-          } else {
-            // Llama a la API de carga de nuevas preguntas
-            await axios.post(
-              API_CARGAR_PREGUNTAS,
-              { ...questionPayload, accion: "preguntasExamen" },
-              { headers: { "Content-Type": "application/json" } }
-            );
-          }
-        })
-      );
+      await Promise.all(questionPromises);
 
-      setSuccess("¡Examen y preguntas actualizados con éxito! Redirigiendo...");
-      setTimeout(() => {
-        navigate(`/cursos/${courseId}/modulos`);
-      }, 2000);
-    } catch (err) {
-      console.error("Error en handleSubmit:", err);
-      setError(err.message || "Ocurrió un error al actualizar el examen y/o las preguntas.");
-    } finally {
-      setSaving(false);
-    }
-  };
+      setSuccess("¡Examen y preguntas actualizados con éxito! Redirigiendo...");
+      setTimeout(() => {
+        navigate(`/cursos/${courseId}/modulos`);
+      }, 2000);
+    } catch (err) {
+      setError(
+        err.message ||
+          "Ocurrió un error al actualizar el examen y/o las preguntas."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  if (loading) {
+  if (loading || isLoadingCourse) { // <-- Se verifica ambos estados de carga
     return (
       <Box
         sx={{
@@ -393,7 +509,7 @@ const EditarExamen = () => {
       >
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
-          Cargando datos del examen...
+          {isLoadingCourse ? "Cargando información del curso..." : "Cargando datos del examen..."}
         </Typography>
       </Box>
     );
@@ -403,7 +519,8 @@ const EditarExamen = () => {
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
         <Typography variant="h5" component="h2" gutterBottom align="center">
-          Editar Examen para el Curso ID: {courseId}
+          Editar Examen del Curso:{" "}
+          <span style={{ fontWeight: "bold" }}>{courseName}</span>
         </Typography>
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
@@ -507,22 +624,31 @@ const EditarExamen = () => {
                       Pregunta {qIndex + 1}: {q.texto_pregunta}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Respuesta Correcta:{" "}
-                      {q.respuesta_correcta || "N/A"}
+                      Respuesta Correcta: {q.respuesta_correcta || "N/A"}
                     </Typography>
                   </Grid>
                   <Grid item>
                     <IconButton
                       onClick={() => editQuestion(qIndex)}
                       color="primary"
+                      size="small"
+                      disabled={saving || isUploading || deletingQuestionId}
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton
                       onClick={() => deleteQuestion(qIndex)}
                       color="error"
+                      size="small"
+                      disabled={
+                        saving || isUploading || deletingQuestionId === q.id
+                      }
                     >
-                      <DeleteIcon />
+                      {deletingQuestionId === q.id ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        <DeleteIcon />
+                      )}
                     </IconButton>
                   </Grid>
                 </Grid>
@@ -615,7 +741,9 @@ const EditarExamen = () => {
                 isUploading ||
                 !currentQuestion.texto_pregunta ||
                 !currentQuestion.respuesta_correcta ||
-                !currentQuestion.opciones.every((opt) => opt.texto.trim() !== "")
+                !currentQuestion.opciones.every(
+                  (opt) => opt.texto.trim() !== ""
+                )
               }
             >
               {editingIndex !== null

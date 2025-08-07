@@ -1,7 +1,7 @@
 // hooks/useCourseVideoLogic.js
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useAuth } from "../../../../../context/AuthContext"; 
+import { useAuth } from "../../../../../context/AuthContext";
 
 const baseUrl = "https://apiacademy.hitpoly.com/";
 
@@ -32,9 +32,7 @@ const useCourseVideoLogic = (courseId) => {
 
   const registerClassProgressAPI = useCallback(
     async (claseId, completada, tiempoVistoSegundos) => {
-      
       if (!userId) {
-        
         return false;
       }
       try {
@@ -46,17 +44,15 @@ const useCourseVideoLogic = (courseId) => {
           tiempo_visto_segundos: Math.max(tiempoVistoSegundos || 1, 1),
           ultima_vez_visto: new Date().toISOString().slice(0, 19).replace("T", " "),
         };
-        
+
         const response = await axios.post(
           "https://apiacademy.hitpoly.com/ajax/registrarProgresoClaseController.php",
           payload
         );
 
-        
         if (response.data.status === "success") {
           return true;
         } else {
-          
           return false;
         }
       } catch (error) {
@@ -68,9 +64,7 @@ const useCourseVideoLogic = (courseId) => {
 
   const updateClassProgressAPI = useCallback(
     async (claseId, completada, tiempoVistoSegundos) => {
-      
       if (!userId) {
-        
         return false;
       }
       try {
@@ -83,17 +77,14 @@ const useCourseVideoLogic = (courseId) => {
           ultima_vez_visto: new Date().toISOString().slice(0, 19).replace("T", " "),
         };
 
-        
         const response = await axios.post(
           "https://apiacademy.hitpoly.com/ajax/actualizarProgresoController.php",
           payload
         );
 
-        
         if (response.data.status === "success") {
           return true;
         } else {
-          
           return false;
         }
       } catch (error) {
@@ -105,7 +96,6 @@ const useCourseVideoLogic = (courseId) => {
 
   useEffect(() => {
     const fetchDataAndProgress = async () => {
-      
       if (!courseId) {
         setError("No se proporcionó un ID de curso.");
         setLoading(false);
@@ -126,7 +116,7 @@ const useCourseVideoLogic = (courseId) => {
         );
         if (!modulesResponse.ok) throw new Error(`HTTP Error: ${modulesResponse.status}`);
         const modulesData = await modulesResponse.json();
-        
+
         if (modulesData.status === "success" && Array.isArray(modulesData.modulos)) {
           const sortedModules = modulesData.modulos.sort(
             (a, b) => a.orden - b.orden
@@ -156,7 +146,7 @@ const useCourseVideoLogic = (courseId) => {
                       videoUrl: clase.url_video,
                       progressPanels: clase.paneles_progreso || [],
                       orden: clase.orden,
-                      description: clase.descripcion || null, 
+                      description: clase.descripcion || null,
                     }))
                     .sort((a, b) => a.orden - b.orden);
                   return {
@@ -169,13 +159,12 @@ const useCourseVideoLogic = (courseId) => {
                   return { ...module, classes: [] };
                 }
               } catch (err) {
-                
                 return { ...module, classes: [] };
               }
             })
           );
           setModules(modulesWithClasses);
-          
+
           if (currentVideoId === null && modulesWithClasses.length > 0) {
             const firstModuleWithClasses = modulesWithClasses.find(
               (m) => m.classes && m.classes.length > 0
@@ -187,7 +176,7 @@ const useCourseVideoLogic = (courseId) => {
         } else {
           setError(
             modulesData.message ||
-              "Error al cargar los módulos o formato de datos inesperado."
+            "Error al cargar los módulos o formato de datos inesperado."
           );
           setModules([]);
         }
@@ -219,7 +208,6 @@ const useCourseVideoLogic = (courseId) => {
         }
 
         if (userId) {
-          
           const progressResponse = await axios.post(
             "https://apiacademy.hitpoly.com/ajax/getAllProgresoController.php",
             {
@@ -233,7 +221,7 @@ const useCourseVideoLogic = (courseId) => {
             Array.isArray(progressResponse.data.progreso)
           ) {
             const progressMap = {};
-            const apiCompletedIds = [];
+            const apiCompletedIds = new Set(); // Usar un Set para IDs únicos
             progressResponse.data.progreso.forEach((item) => {
               const claseIdNum = parseInt(item.clase_id, 10);
               progressMap[claseIdNum] = {
@@ -243,11 +231,11 @@ const useCourseVideoLogic = (courseId) => {
                 ultima_vez_visto: item.ultima_vez_visto,
               };
               if (progressMap[claseIdNum].completada) {
-                apiCompletedIds.push(claseIdNum);
+                apiCompletedIds.add(claseIdNum); // Añadir al Set
               }
             });
             setUserProgressMap(progressMap);
-            setCompletedVideoIdsLocal(apiCompletedIds); 
+            setCompletedVideoIdsLocal([...apiCompletedIds]); // Convertir el Set a un array
           } else {
             setUserProgressMap({});
             setCompletedVideoIdsLocal([]);
@@ -261,11 +249,12 @@ const useCourseVideoLogic = (courseId) => {
     };
 
     fetchDataAndProgress();
-  }, [courseId, userId]); 
+  }, [courseId, userId]);
+
   useEffect(() => {
     if (currentVideoId !== null) {
       localStorage.setItem(`currentVideoId_course_${courseId}`, currentVideoId.toString());
-      }
+    }
   }, [currentVideoId, courseId]);
 
   useEffect(() => {
@@ -299,7 +288,7 @@ const useCourseVideoLogic = (courseId) => {
     if (currentClass) {
       const claseId = currentClass.id;
       const timeStamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-      
+
       const hasExistingProgress = !!userProgressMap[claseId];
 
       setCompletedVideoIdsLocal((prev) => {
@@ -314,10 +303,8 @@ const useCourseVideoLogic = (courseId) => {
       }));
 
       if (hasExistingProgress) {
-        
         updateClassProgressAPI(claseId, true, 0);
       } else {
-        
         registerClassProgressAPI(claseId, true, 0);
       }
     }
@@ -328,7 +315,6 @@ const useCourseVideoLogic = (courseId) => {
       const isCurrentlyCompleted = completedVideoIdsLocal.includes(claseId);
       const newCompletedState = !isCurrentlyCompleted;
       const timeStamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-      
 
       const hasExistingProgress = !!userProgressMap[claseId];
 
@@ -345,10 +331,8 @@ const useCourseVideoLogic = (courseId) => {
       }));
 
       if (hasExistingProgress) {
-        
         updateClassProgressAPI(claseId, newCompletedState, 0);
       } else {
-      
         registerClassProgressAPI(claseId, newCompletedState, 0);
       }
     },

@@ -33,7 +33,6 @@ const CourseModulesManager = () => {
   const [examInfo, setExamInfo] = useState(null); 
   const [examExists, setExamExists] = useState(false);
 
-  // LÓGICA CORREGIDA para traer el examen
   const fetchExamByCourseId = async () => {
     try {
       const response = await fetch(API_GET_EXAMEN, {
@@ -45,10 +44,6 @@ const CourseModulesManager = () => {
         throw new Error("Error al obtener los exámenes.");
       }
       const data = await response.json();
-      
-      // LOG: Imprime la respuesta completa de la API en la consola
-      console.log('Respuesta de la API de exámenes:', data);
-      console.log('ID del curso actual (courseId):', courseId);
       
       if (data.status === "success" && data.examenes && Array.isArray(data.examenes)) {
         const foundExam = data.examenes.find(exam => String(exam.curso_id) === String(courseId));
@@ -64,7 +59,6 @@ const CourseModulesManager = () => {
         setExamExists(false);
       }
     } catch (err) {
-      console.error("Error al obtener el examen:", err);
       setExamInfo(null);
       setExamExists(false);
     }

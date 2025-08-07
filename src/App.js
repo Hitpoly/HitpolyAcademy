@@ -10,8 +10,6 @@ import Login from "./components/login/page.jsx";
 import Register from "./components/register/page.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import UserProfile from "./components/Profile/UserProfile.jsx";
-import ExamComponent from "./pages/examenes/ExamComponent.jsx";
-import ExamResults from "./pages/examenes/ExamResults.jsx";
 import CourseForm from "./components/escuela/curso/profesores/CourseForm.jsx";
 import CategoryManager from "./components/escuela/curso/components/categorias/CategoryManager.jsx";
 import CourseModulesManager from "./components/escuela/curso/profesores/modulos/CourseModulesManager.jsx";
@@ -27,9 +25,12 @@ import UserManagementPanel from "./components/admin/usuarios/UserManagementPanel
 import SubscriptionPlans from "./components/admin/planes/SubscriptionPlans.jsx";
 
 // Importamos el nuevo componente para crear exámenes
-import CrearExamen from "./pages/examenes/CrearExamen.jsx";
-// NUEVO: Importamos el componente para editar exámenes
-import EditarExamen from "./pages/examenes/EditarExamen.jsx";
+import CrearExamen from "./components/escuela/curso/masterFull/examenes/components/CrearExamen.jsx";
+// Importamos el componente para editar exámenes
+import EditarExamen from "./components/escuela/curso/masterFull/examenes/components/EditarExamen.jsx";
+// NUEVO: Importamos los componentes para el alumno
+import ExamenAlumno from "./components/escuela/curso/masterFull/examenes/ExamenAlumno.jsx";
+import ResultadosAlumno from "./components/escuela/curso/masterFull/examenes/ResultadosAlumno.jsx";
 
 /**
  * Componente ProtectedRoute mejorado para controlar el acceso basado en la autenticación y el rol del usuario.
@@ -116,22 +117,6 @@ function App() {
               }
             />
             <Route
-              path="/exam/:examName"
-              element={
-                <ProtectedRoute allowedRoles={[3, 2, 1]}>
-                  <ExamComponent />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/exam-results"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <ExamResults />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/datos-de-curso"
               element={
                 <ProtectedRoute allowedRoles={[1, 2]}>
@@ -163,7 +148,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* RUTA PARA CREAR UN EXAMEN */}
             <Route
               path="/cursos/:courseId/crear-examen"
               element={
@@ -172,12 +156,28 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* NUEVA RUTA PARA EDITAR UN EXAMEN */}
             <Route
               path="/cursos/:courseId/editar-examen/:examId"
               element={
                 <ProtectedRoute allowedRoles={[1, 2]}>
                   <EditarExamen />
+                </ProtectedRoute>
+              }
+            />
+            {/* NUEVAS RUTAS PARA EL ALUMNO */}
+            <Route
+              path="/cursos/:courseId/examen/:examId"
+              element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}>
+                  <ExamenAlumno />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cursos/:courseId/examen/:examId/resultados"
+              element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}>
+                  <ResultadosAlumno />
                 </ProtectedRoute>
               }
             />
