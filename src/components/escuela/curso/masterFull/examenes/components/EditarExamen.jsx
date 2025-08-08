@@ -37,7 +37,8 @@ const API_CARGAR_PREGUNTAS =
   "https://apiacademy.hitpoly.com/ajax/preguntasExamenController.php";
 const CLOUDINARY_API_URL =
   "https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php";
-const API_GET_CURSOS = "https://apiacademy.hitpoly.com/ajax/traerCursosController.php"; // <--- Nueva API para obtener el nombre del curso
+const API_GET_CURSOS =
+  "https://apiacademy.hitpoly.com/ajax/traerCursosController.php"; // <--- Nueva API para obtener el nombre del curso
 const API_ELIMINAR_PREGUNTA =
   "https://apiacademy.hitpoly.com/ajax/eliminarPregYrespController.php";
 
@@ -312,10 +313,6 @@ const EditarExamen = () => {
       updatedQuestions[editingIndex] = currentQuestion;
       setQuestions(updatedQuestions);
     } else {
-      if (questions.length >= 5) {
-        setError("Solo se pueden agregar 5 preguntas por examen.");
-        return;
-      }
       setQuestions((prev) => [...prev, { ...currentQuestion, id: null }]);
     }
     resetCurrentQuestion();
@@ -497,7 +494,8 @@ const EditarExamen = () => {
     }
   };
 
-  if (loading || isLoadingCourse) { // <-- Se verifica ambos estados de carga
+  if (loading || isLoadingCourse) {
+    // <-- Se verifica ambos estados de carga
     return (
       <Box
         sx={{
@@ -509,7 +507,9 @@ const EditarExamen = () => {
       >
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
-          {isLoadingCourse ? "Cargando información del curso..." : "Cargando datos del examen..."}
+          {isLoadingCourse
+            ? "Cargando información del curso..."
+            : "Cargando datos del examen..."}
         </Typography>
       </Box>
     );
@@ -641,10 +641,13 @@ const EditarExamen = () => {
                       color="error"
                       size="small"
                       disabled={
-                        saving || isUploading || deletingQuestionId === q.id
+                        saving ||
+                        isUploading ||
+                        // Esta es la parte clave, solo se evalúa la carga si la pregunta tiene un ID
+                        (q.id && deletingQuestionId === q.id)
                       }
                     >
-                      {deletingQuestionId === q.id ? (
+                      {q.id && deletingQuestionId === q.id ? (
                         <CircularProgress size={20} color="inherit" />
                       ) : (
                         <DeleteIcon />

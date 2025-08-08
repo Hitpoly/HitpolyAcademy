@@ -226,11 +226,6 @@ const CrearExamen = () => {
       return;
     }
 
-    if (questions.length >= 5) {
-      setError("Solo se pueden agregar 5 preguntas por examen.");
-      return;
-    }
-
     setQuestions((prev) => [...prev, currentQuestion]);
     setCurrentQuestion({
       texto_pregunta: "",
