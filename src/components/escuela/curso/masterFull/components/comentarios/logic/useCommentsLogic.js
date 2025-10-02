@@ -1,18 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '.././../../../../../../context/AuthContext'; // Ajusta la ruta si es necesario
-
-export const formatCommentDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-            return dateString;
-        }
-        return date.toLocaleDateString('es-ES', options);
-    } catch (e) {
-        return dateString;
-    }
-};
+import { useAuth } from '.././../../../../../../context/AuthContext';
 
 const API_BASE_URL = 'https://apiacademy.hitpoly.com/ajax/';
 const COMMENTS_GET_URL = `${API_BASE_URL}getComentariosController.php`;
@@ -24,19 +11,19 @@ const GET_USER_INFO_URL = 'https://apiacademy.hitpoly.com/ajax/traerAlumnoProfes
 export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
     const { user, isAuthenticated } = useAuth(); 
     const [comments, setComments] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); 
     const [error, setError] = useState(null);
     const [newCommentContent, setNewCommentContent] = useState('');
     const [replyingTo, setReplyingTo] = useState(null); 
     const [editingComment, setEditingComment] = useState(null); 
     const [sortOrder, setSortOrder] = useState(initialSortOrder);
-
     const [usersNamesMap, setUsersNamesMap] = useState(new Map()); 
+    const [usersPhotosMap, setUsersPhotosMap] = useState(new Map()); 
     const [usersLoading, setUsersLoading] = useState(false);
 
     const fetchUserName = useCallback(async (userId) => {
         if (!userId) return 'Usuario Desconocido';
-        if (usersNamesMap.has(userId)) {
+        if (usersNamesMap.has(userId) && usersPhotosMap.has(userId)) {
             return usersNamesMap.get(userId);
         }
 
@@ -50,30 +37,31 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+            
             if (data.status === 'success' && data.usuario) {
                 const fullName = `${data.usuario.nombre} ${data.usuario.apellido}`;
-                setUsersNamesMap(prevMap => {
-                    const newMap = new Map(prevMap);
-                    newMap.set(userId, fullName);
-                    return newMap;
-                });
+                const photoUrl = data.usuario.url_foto_perfil || null; 
+                
+                setUsersNamesMap(prevMap => new Map(prevMap).set(userId, fullName));
+                setUsersPhotosMap(prevMap => new Map(prevMap).set(userId, photoUrl));
+                
                 return fullName;
             } else {
                 return 'Usuario Desconocido';
             }
         } catch (err) {
+            console.error(`Error al cargar la info del usuario ${userId}:`, err);
             return 'Error al cargar usuario';
         }
-    }, [usersNamesMap]); 
+    }, [usersNamesMap, usersPhotosMap]); 
+
     const organizeComments = useCallback((rawComments, currentSortOrder) => {
         const processedComments = rawComments.map(c => ({
             ...c,
-            replies: Array.isArray(c.repllies) ? c.repllies : [],
-            fecha_comentario: c.fecha_comentario ? new Date(c.fecha_comentario) : new Date(),
+            fecha_comentario: new Date(c.fecha_comentario), 
         }));
 
         const commentsMap = new Map(processedComments.map(c => [c.id, c]));
-
         const topLevelCommentsMap = new Map();
 
         processedComments.forEach(c => {
@@ -82,7 +70,6 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
                     topLevelCommentsMap.set(c.id, { ...c, replies: [] }); 
                 }
             } else {
-
                 const parentComment = commentsMap.get(c.respuesta_a_comentario_id);
                 if (parentComment) {
                     if (!topLevelCommentsMap.has(parentComment.id)) {
@@ -96,23 +83,21 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
                 }
             }
         });
-       
+        
         let finalOrganizedComments = Array.from(topLevelCommentsMap.values());
-
         finalOrganizedComments.forEach(comment => {
             if (comment.replies && comment.replies.length > 0) {
                 comment.replies.sort((a, b) => a.fecha_comentario.getTime() - b.fecha_comentario.getTime());
             }
         });
-
         if (currentSortOrder === 'recent') {
             finalOrganizedComments.sort((a, b) => b.fecha_comentario.getTime() - a.fecha_comentario.getTime());
         } else if (currentSortOrder === 'oldest') {
             finalOrganizedComments.sort((a, b) => a.fecha_comentario.getTime() - b.fecha_comentario.getTime());
         }
+        
         return finalOrganizedComments;
     }, []);
-
 
     const fetchComments = useCallback(async () => {
         setLoading(true);
@@ -131,28 +116,8 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
 
             if (data.status === 'success' && Array.isArray(data.comentarios)) {
                 const filteredComments = data.comentarios.filter(comment => String(comment.clase_id) === String(claseId));
-                const uniqueUserIds = new Set();
-                filteredComments.forEach(comment => {
-                    uniqueUserIds.add(comment.usuario_id);
-                    if (Array.isArray(comment.repllies)) { 
-                        comment.repllies.forEach(reply => uniqueUserIds.add(reply.usuario_id));
-                    }
-                });
-                if (isAuthenticated && user?.id) {
-                    uniqueUserIds.add(user.id); 
-                }
-
-                const userIdsToFetch = Array.from(uniqueUserIds).filter(id => id && !usersNamesMap.has(id));
-
-                if (userIdsToFetch.length > 0) {
-                    setUsersLoading(true);
-                    await Promise.all(userIdsToFetch.map(id => fetchUserName(id)));
-                    setUsersLoading(false);
-                }
-
                 const organizedCommentsResult = organizeComments(filteredComments, sortOrder);
                 setComments(organizedCommentsResult);
-
             } else {
                 setComments([]);
             }
@@ -161,12 +126,36 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         } finally {
             setLoading(false);
         }
-    }, [claseId, isAuthenticated, user, sortOrder, organizeComments, usersNamesMap, fetchUserName]);
+    }, [claseId, sortOrder, organizeComments]);
 
     useEffect(() => {
         fetchComments();
     }, [fetchComments]); 
-        const handlePostComment = async () => {
+    useEffect(() => {
+        if (loading || comments.length === 0) return;
+
+        const userIds = new Set();
+        comments.forEach(c => {
+            userIds.add(c.usuario_id);
+            c.replies?.forEach(r => userIds.add(r.usuario_id));
+        });
+        if (isAuthenticated && user?.id) {
+            userIds.add(user.id); 
+        }
+
+        const userIdsToFetch = Array.from(userIds).filter(id => id && (!usersNamesMap.has(id) || !usersPhotosMap.has(id)));
+
+        if (userIdsToFetch.length > 0) {
+            setUsersLoading(true);
+            
+            Promise.all(userIdsToFetch.map(id => fetchUserName(id)))
+                .finally(() => {
+                    setUsersLoading(false);
+                });
+        }
+    }, [comments, isAuthenticated, user, usersNamesMap, usersPhotosMap, fetchUserName, loading]);
+
+    const handlePostComment = async () => {
         if (!isAuthenticated || !user?.id) {
             setError('Debes iniciar sesión para comentar.');
             return;
@@ -180,10 +169,10 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
             clase_id: claseId,
             usuario_id: user.id,
             contenido: newCommentContent.trim(),
-            fecha_comentario: new Date().toISOString().slice(0, 19).replace('T', ' '),
             respuesta_a_comentario_id: replyingTo,
             es_respuesta_profesor: user.id_tipo_usuario === 2 ? 1 : 0, 
             editado: 0,
+            destacado: 0,
         };
 
         try {
@@ -322,30 +311,6 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         setNewCommentContent('');
     };
 
-    const getReplyPlaceholderName = useCallback(() => {
-        if (replyingTo) {
-            let targetComment = null;
-            for (const comment of comments) {
-                if (comment.id === replyingTo) {
-                    targetComment = comment;
-                    break;
-                }
-                if (comment.replies) {
-                    const reply = comment.replies.find(r => r.id === replyingTo);
-                    if (reply) {
-                        targetComment = reply;
-                        break;
-                    }
-                }
-            }
-            if (targetComment) {
-                const name = usersNamesMap.get(targetComment.usuario_id);
-                return name || 'cargando usuario...'; 
-            }
-        }
-        return 'un comentario';
-    }, [replyingTo, comments, usersNamesMap]);
-
     return {
         comments,
         loading,
@@ -357,6 +322,7 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         sortOrder,
         setSortOrder, 
         usersNamesMap,
+        usersPhotosMap, 
         usersLoading,
         isAuthenticated,
         currentUser: user, 
@@ -366,6 +332,5 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         handleReplyClick,
         handleEditButtonClick,
         handleCancelEditOrReply,
-        getReplyPlaceholderName,
     };
 };

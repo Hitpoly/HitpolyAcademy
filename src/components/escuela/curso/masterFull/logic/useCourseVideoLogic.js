@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { useAuth } from "../../../../../context/AuthContext";
 
@@ -249,6 +249,14 @@ const useCourseVideoLogic = (courseId) => {
     );
   }, [completedVideoIdsLocal, courseId]);
 
+// ----------------------------------------------------
+// ✅ CORRECCIÓN: Definir handleVideoChange primero.
+// ----------------------------------------------------
+  const handleVideoChange = useCallback((clase) => {
+    setCurrentVideoId(clase.id);
+  }, []); // La definición va aquí para ser accesible por las funciones de navegación.
+
+
   const getCurrentClass = useCallback(() => {
     for (const module of modules) {
       const foundClass = module.classes?.find((clase) => clase.id === currentVideoId);
@@ -261,13 +269,60 @@ const useCourseVideoLogic = (courseId) => {
 
   const currentClass = getCurrentClass();
 
+// ----------------------------------------------------
+// ✅ LÓGICA DE NAVEGACIÓN (Usa handleVideoChange)
+// ----------------------------------------------------
+
+  // 1. Aplanar la lista de videos para facilitar la navegación
+  const allVideos = useMemo(() => {
+    if (!modules) return [];
+    // Recorre todos los módulos y extrae el array 'classes'
+    return modules.flatMap(module => module.classes || []); 
+  }, [modules]);
+
+  // 2. Encontrar el índice del video actual
+  const currentVideoIndex = useMemo(() => {
+    // Buscar el índice del video actual en la lista plana
+    return allVideos.findIndex(video => video.id === currentVideoId);
+  }, [allVideos, currentVideoId]);
+
+  // 3. Estados de control para deshabilitar botones
+  // El video actual está en el índice 0, y la lista no está vacía
+  const isFirstVideo = allVideos.length > 0 && currentVideoIndex === 0; 
+  // El video actual es el último (índice = longitud total - 1)
+  const isLastVideo = allVideos.length > 0 && currentVideoIndex === allVideos.length - 1; 
+
+  // 4. Implementación de las funciones de navegación
+  const navigateToPreviousClass = useCallback(() => {
+    // Solo navega si no es el primer video
+    if (currentVideoIndex > 0) {
+      const previousVideo = allVideos[currentVideoIndex - 1];
+      if (previousVideo) {
+        // Usa la función handleVideoChange (que ya está definida arriba)
+        handleVideoChange(previousVideo); 
+      }
+    }
+  }, [currentVideoIndex, allVideos, handleVideoChange]);
+
+  const navigateToNextClass = useCallback(() => {
+    // Solo navega si no es el último video
+    if (currentVideoIndex < allVideos.length - 1) {
+      const nextVideo = allVideos[currentVideoIndex + 1];
+      if (nextVideo) {
+        // Usa la función handleVideoChange (que ya está definida arriba)
+        handleVideoChange(nextVideo);
+      }
+    }
+  }, [currentVideoIndex, allVideos, handleVideoChange]);
+
+// ----------------------------------------------------
+// FIN LÓGICA DE NAVEGACIÓN
+// ----------------------------------------------------
+
   const currentClassResources = currentVideoId
     ? allResources.filter((resource) => String(resource.clase_id) === String(currentVideoId))
     : [];
 
-  const handleVideoChange = useCallback((clase) => {
-    setCurrentVideoId(clase.id);
-  }, []);
 
   const handleVideoEnd = useCallback(async () => {
     if (currentClass) {
@@ -365,6 +420,11 @@ const useCourseVideoLogic = (courseId) => {
     handleVideoChange,
     handleVideoEnd,
     toggleCompletedVideo,
+    // ✅ Se añaden las nuevas funciones y estados
+    navigateToPreviousClass,
+    navigateToNextClass,
+    isFirstVideo,
+    isLastVideo,
   };
 };
 

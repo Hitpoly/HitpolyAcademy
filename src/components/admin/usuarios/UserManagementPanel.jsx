@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -20,6 +20,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 
 const API_BASE_URL = "https://apiacademy.hitpoly.com/ajax/";
+const INACTIVATION_DAYS = 6;
 
 const getUserTypeName = (idTipo) => {
   switch (idTipo) {
@@ -31,6 +32,21 @@ const getUserTypeName = (idTipo) => {
       return "Alumno";
     default:
       return "Desconocido";
+  }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date)) return "Fecha Inválida";
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch (e) {
+    return "Error de Formato";
   }
 };
 
@@ -70,7 +86,7 @@ const UserManagementPanel = () => {
 
       if (data.status === "success") {
         if (Array.isArray(data.clases)) {
-          const usersWithNormalizedStateAndType = data.clases.map((user) => {
+          const usersWithNormalizedType = data.clases.map((user) => {
             return {
               ...user,
               estado:
@@ -82,7 +98,7 @@ const UserManagementPanel = () => {
               tipoNombre: getUserTypeName(Number(user.id_tipo_usuario)),
             };
           });
-          setUsers(usersWithNormalizedStateAndType);
+          setUsers(usersWithNormalizedType);
         } else {
           throw new Error("Formato de datos de usuarios inesperado desde el servidor.");
         }
@@ -96,12 +112,36 @@ const UserManagementPanel = () => {
     }
   };
 
+  const getDisplayState = (user) => {
+    const isAlumno = Number(user.id_tipo_usuario) === 3;
+    const isManuallyActive = user.estado === "activo"; 
+    if (user.estado === "inactivo") {
+      return "inactivo";
+    }
+
+    if (isAlumno && user.fecha_de_registro) {
+      const registrationDate = new Date(user.fecha_de_registro);
+      const cutoffDate = new Date(
+        registrationDate.getTime() + INACTIVATION_DAYS * 24 * 60 * 60 * 1000
+      );
+      const now = new Date();
+
+      if (now > cutoffDate) {
+        if (isManuallyActive) {
+          return "activo";
+        }
+        return "inactivo";
+      }
+    }
+    return user.estado;
+  };
+
   const handleToggleChange = async (event, userId) => {
-    const newEstado = event.target.checked ? "activo" : "inactivo";
+    const newEstadoToSave = event.target.checked ? "activo" : "inactivo";
 
     setUsers((prevUsers) => {
       const updatedUsers = prevUsers.map((user) =>
-        user.id === userId ? { ...user, estado: newEstado } : user
+        user.id === userId ? { ...user, estado: newEstadoToSave } : user
       );
       return updatedUsers;
     });
@@ -112,7 +152,7 @@ const UserManagementPanel = () => {
       const payload = {
         accion: "editar",
         id: userId,
-        estado: newEstado,
+        estado: newEstadoToSave,
       };
 
       const response = await fetch(`${API_BASE_URL}editarUsuarioController.php`, {
@@ -122,39 +162,21 @@ const UserManagementPanel = () => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        setUsers((prevUsers) => {
-          const revertedUsers = prevUsers.map((user) =>
-            user.id === userId
-              ? { ...user, estado: newEstado === "activo" ? "inactivo" : "activo" }
-              : user
-          );
-          return revertedUsers;
-        });
-        throw new Error(`Error HTTP! Estado: ${response.status} - ${errorText}`);
+        await response.text();
+        throw new Error(`Error HTTP! Fallo al actualizar el estado.`);
       }
 
       const data = await response.json();
 
-      if (data.status === "success") {
-        // No es necesario hacer nada aquí, el estado ya se actualizó en el frontend
-      } else {
-        setUsers((prevUsers) => {
-          const revertedUsers = prevUsers.map((user) =>
-            user.id === userId
-              ? { ...user, estado: newEstado === "activo" ? "inactivo" : "activo" }
-              : user
-          );
-          return revertedUsers;
-        });
+      if (data.status !== "success") {
         throw new Error(data.message || "Error al actualizar el estado del usuario.");
       }
     } catch (err) {
-      setError(`Error al guardar estado: ${err.message}`);
+      setError(`Error al guardar estado: ${err.message}. Revirtiendo cambio.`);
       setUsers((prevUsers) => {
         const revertedUsers = prevUsers.map((user) =>
           user.id === userId
-            ? { ...user, estado: newEstado === "activo" ? "inactivo" : "activo" }
+            ? { ...user, estado: newEstadoToSave === "activo" ? "inactivo" : "activo" }
             : user
         );
         return revertedUsers;
@@ -173,29 +195,36 @@ const UserManagementPanel = () => {
     setPage(0);
   };
 
-  const filteredUsers = users.filter((user) => {
-    const term = searchTerm.toLowerCase();
-    const nombre = (user.nombre || "").toLowerCase();
-    const apellido = (user.apellido || "").toLowerCase();
-    const email = (user.email || "").toLowerCase();
-    const tipoNombre = (user.tipoNombre || "").toLowerCase();
-    const numeroCelular = (user.numero_celular || "").toLowerCase();
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const term = searchTerm.toLowerCase();
+      const nombre = (user.nombre || "").toLowerCase();
+      const apellido = (user.apellido || "").toLowerCase();
+      const email = (user.email || "").toLowerCase();
+      const tipoNombre = (user.tipoNombre || "").toLowerCase();
+      const numeroCelular = (user.numero_celular || "").toLowerCase();
+      const estadoDisplay = getDisplayState(user); 
 
-    return (
-      nombre.includes(term) ||
-      apellido.includes(term) ||
-      email.includes(term) ||
-      tipoNombre.includes(term) ||
-      numeroCelular.includes(term)
-    );
-  });
+      return (
+        nombre.includes(term) ||
+        apellido.includes(term) ||
+        email.includes(term) ||
+        tipoNombre.includes(term) ||
+        numeroCelular.includes(term) ||
+        estadoDisplay.includes(term)
+      );
+    });
+  }, [users, searchTerm]);
 
-  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Panel de Administración de Usuarios
+        Panel de Administración de Usuarios 🛠️
       </Typography>
 
       {error && (
@@ -203,6 +232,8 @@ const UserManagementPanel = () => {
           {error}
         </Alert>
       )}
+
+      {/* --- */}
 
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}>
         <TextField
@@ -222,6 +253,8 @@ const UserManagementPanel = () => {
         />
       </Box>
 
+      {/* --- */}
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
           <CircularProgress />
@@ -229,44 +262,95 @@ const UserManagementPanel = () => {
       ) : filteredUsers.length === 0 && searchTerm === "" ? (
         <Alert severity="info">No se encontraron usuarios. 🤷‍♂️</Alert>
       ) : filteredUsers.length === 0 && searchTerm !== "" ? (
-        <Alert severity="info">No se encontraron usuarios que coincidan con "{searchTerm}". 🔍</Alert>
+        <Alert severity="info">
+          No se encontraron usuarios que coincidan con "{searchTerm}". 🔍
+        </Alert>
       ) : (
         <>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  {/* Celdas de encabezado sin espacios intermedios */}
-                  <TableCell>ID</TableCell><TableCell>Nombre</TableCell><TableCell>Apellido</TableCell><TableCell>Email</TableCell><TableCell>Número de Celular</TableCell><TableCell>Tipo</TableCell><TableCell>Estado</TableCell>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Nombre</TableCell>
+                  <TableCell>Apellido</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Número de Celular</TableCell>
+                  <TableCell>Tipo</TableCell>
+                  <TableCell>Fecha de Registro</TableCell>
+                  <TableCell>Estado</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    {/* Celdas de datos sin espacios intermedios */}
-                    <TableCell>{user.id}</TableCell><TableCell>{user.nombre}</TableCell><TableCell>{user.apellido}</TableCell><TableCell>{user.email}</TableCell><TableCell>{user.numero_celular}</TableCell><TableCell>{user.tipoNombre}</TableCell><TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={user.estado === "activo"}
-                              onChange={(event) => handleToggleChange(event, user.id)}
-                              color="primary"
-                              disabled={editingUserId === user.id}
-                            />
-                          }
-                          label={user.estado === "activo" ? "Activo" : "Inactivo"}
-                        />
-                        {editingUserId === user.id && (
-                          <CircularProgress size={20} sx={{ ml: 1 }} />
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {paginatedUsers.map((user) => {
+                  const displayState = getDisplayState(user);
+                  const isChecked = displayState === "activo";
+                  const isAlumnoInactivoByTime =
+                    Number(user.id_tipo_usuario) === 3 &&
+                    user.estado === "inactivo" &&
+                    displayState === "inactivo";
+                  const isManuallySuspended =
+                    user.estado === "inactivo" &&
+                    displayState === "inactivo";
+
+                  return (
+                    <TableRow
+                      key={user.id}
+                      sx={{
+                        backgroundColor:
+                          isAlumnoInactivoByTime && !isManuallySuspended
+                            ? "rgba(255, 179, 0, 0.1)"
+                            : "inherit",
+                      }}
+                    >
+                      <TableCell>{user.id}</TableCell>
+                      <TableCell>{user.nombre}</TableCell>
+                      <TableCell>{user.apellido}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.numero_celular}</TableCell>
+                      <TableCell>{user.tipoNombre}</TableCell>
+                      <TableCell>{formatDate(user.fecha_de_registro)}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={isChecked}
+                                onChange={(event) =>
+                                  handleToggleChange(event, user.id)
+                                }
+                                color="primary"
+                                disabled={editingUserId === user.id || loading}
+                              />
+                            }
+                            label={
+                              <>
+                                {displayState === "activo" ? (
+                                  "Activo"
+                                ) : (
+                                  <span style={{ color: "red", fontWeight: "bold" }}>
+                                    Inactivo
+                                  </span>
+                                )}
+                                {displayState === "inactivo" &&
+                                  Number(user.id_tipo_usuario) === 3 &&
+                                  user.estado === "activo" &&
+                                  " (Auto)"}
+                              </>
+                            }
+                          />
+                          {editingUserId === user.id && (
+                            <CircularProgress size={20} sx={{ ml: 1 }} />
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
+          
           <TablePagination
             rowsPerPageOptions={[25, 50, 100, 200, 500]}
             component="div"

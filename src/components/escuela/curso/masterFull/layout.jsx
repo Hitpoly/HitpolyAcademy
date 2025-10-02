@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
   CircularProgress,
   Alert,
   Button,
+  IconButton, 
   Paper,
 } from "@mui/material";
 import ProgressBar from "./components/progreso.jsx";
@@ -15,6 +16,8 @@ import Resources from "./components/resources.jsx";
 import CommentSection from "./components/comentarios/CommentSection.jsx";
 import useCourseVideoLogic from "./logic/useCourseVideoLogic";
 import QuizIcon from "@mui/icons-material/Quiz";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; 
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos"; 
 import { useNavigate } from "react-router-dom";
 
 const VideoLayout = ({ courseId, finalExamId }) => {
@@ -32,7 +35,11 @@ const VideoLayout = ({ courseId, finalExamId }) => {
     handleVideoChange: originalHandleVideoChange,
     handleVideoEnd,
     toggleCompletedVideo,
-  } = useCourseVideoLogic(courseId);
+    navigateToPreviousClass, 
+    navigateToNextClass, 
+    isFirstVideo, 
+    isLastVideo, 
+  } = useCourseVideoLogic(courseId); 
 
   const [showFullDescription, setShowFullDescription] = useState(false);
   const videoPlayerRef = useRef(null);
@@ -44,6 +51,7 @@ const VideoLayout = ({ courseId, finalExamId }) => {
     setShowFullDescription(false);
   }, [currentClass]);
 
+  // Función para la selección manual de la lista
   const handleVideoChangeAndScroll = (clase) => {
     originalHandleVideoChange(clase);
     if (videoPlayerRef.current) {
@@ -54,11 +62,27 @@ const VideoLayout = ({ courseId, finalExamId }) => {
     }
   };
 
+  // ✅ CORRECCIÓN CON LOGS: Navegación de botones
+  const handlePreviousClick = () => {
+    navigateToPreviousClass();
+    if (videoPlayerRef.current) {
+        videoPlayerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleNextClick = () => {
+    navigateToNextClass();
+    if (videoPlayerRef.current) {
+        videoPlayerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  // FIN CORRECCIÓN CON LOGS
+
   const handleExamClick = () => {
     if (finalExamId) {
       navigate(`/cursos/${courseId}/examen/${finalExamId}`);
     } else {
-      }
+    }
   };
 
   const descriptionText = currentClass?.description || "";
@@ -134,7 +158,6 @@ const VideoLayout = ({ courseId, finalExamId }) => {
           completedVideosCount={completedVideosCount}
         />
 
-        {/* Lógica de renderizado condicional para el botón del examen */}
         {allVideosCompleted && finalExamId && (
           <Box sx={{ mt: 2, mb: 2, padding: { xs: "0px 20px", md: "0px" } }}>
             <Button
@@ -179,6 +202,43 @@ const VideoLayout = ({ courseId, finalExamId }) => {
             onVideoCompleted={handleVideoEnd}
             ref={videoPlayerRef}
           />
+          
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mt: 2,
+              mb: 3,
+              p: { xs: 0, md: 1 }, 
+              bgcolor: 'transparent', 
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={handlePreviousClick}
+              disabled={isFirstVideo} 
+              startIcon={<ArrowBackIosNewIcon />}
+              sx={{ minWidth: { xs: 'auto', md: '150px' } }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+                Clase Anterior
+              </Box>
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={handleNextClick}
+              disabled={isLastVideo || allVideosCompleted} 
+              endIcon={<ArrowForwardIosIcon />}
+              sx={{ minWidth: { xs: 'auto', md: '150px' } }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+                Clase Siguiente
+              </Box>
+            </Button>
+          </Box>
+
           {currentClass?.description && (
             <Box
               sx={{
