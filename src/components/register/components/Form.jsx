@@ -17,14 +17,16 @@ import {
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { Link, useNavigate, useLocation } from "react-router-dom"; // Importa useLocation
 import Swal from "sweetalert2";
-import Ray from "../../UI/Ray";
-import { FONT_COLOR_GRAY } from "../../constant/Colors";
+import Ray from "../../UI/Ray"; // Asegúrate de que esta ruta sea correcta
+import { FONT_COLOR_GRAY } from "../../constant/Colors"; // Asegúrate de que esta ruta sea correcta
 import axios from "axios";
-import { useAuth } from "../../../context/AuthContext";
-import { MuiTelInput } from 'mui-tel-input';
+import { useAuth } from "../../../context/AuthContext"; // Asegúrate de que esta ruta sea correcta
+import { MuiTelInput } from "mui-tel-input";
 
 const fontFamily = "Inter";
 
+// --- VALIDACIÓN YUP MODIFICADA ---
+// Se eliminaron las restricciones de tipo y tamaño de archivo
 const RegisterSchema = Yup.object().shape({
   nombre: Yup.string().required("El nombre es requerido"),
   apellido: Yup.string().required("El apellido es requerido"),
@@ -41,22 +43,8 @@ const RegisterSchema = Yup.object().shape({
   id_tipo_usuario: Yup.number()
     .oneOf([2, 3], "Selecciona un tipo de usuario válido (Profesor o Alumno)")
     .required("El tipo de usuario es requerido"),
-  avatarFile: Yup.mixed()
-    .required("La foto de perfil es requerida")
-    .test(
-      "fileType",
-      "Formato de imagen no válido (solo JPG, PNG, GIF)",
-      (value) => {
-        if (!value) return true;
-        return (
-          value && ["image/jpeg", "image/png", "image/gif"].includes(value.type)
-        );
-      }
-    )
-    .test("fileSize", "La imagen es demasiado grande (máx. 5MB)", (value) => {
-      if (!value) return true;
-      return value.size <= 5 * 1024 * 1024;
-    }),
+  // Solo se valida que exista un archivo, pero no el tipo ni el tamaño
+  avatarFile: Yup.mixed().required("La foto de perfil es requerida"),
 });
 
 const Title = styled.p({
@@ -93,7 +81,7 @@ const TextGrayBold = styled(Typography)({
 const RegisterUserForm = () => {
   const navigate = useNavigate();
   const location = useLocation(); // Importante: Hook para acceder a los parámetros de la URL
-  const { login } = useAuth();
+  const { login } = useAuth(); // Asumiendo que useAuth proporciona una función de login
 
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -137,17 +125,19 @@ const RegisterUserForm = () => {
       if (response.data?.url) {
         return response.data.url;
       } else {
+        // Si Cloudinary.php devuelve un error, puede que no sea un error de red
         throw new Error(
-          "No se recibió una URL válida desde el backend de Cloudinary."
+          response.data?.message ||
+            "El archivo podría ser muy grande o el formato incorrecto."
         );
       }
     } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Error al subir imagen",
-        text: "Ocurrió un error al intentar subir la imagen de perfil. Por favor, inténtalo de nuevo.",
+        text: `Ocurrió un error al intentar subir la imagen de perfil. Por favor, asegúrate que es un formato válido (JPG, PNG, GIF) y que no excede el límite del servidor 5MB. Detalle: ${error.message}`,
       });
-      throw error;
+      throw error; // Propagar el error para detener el proceso de registro
     } finally {
       setUploadingAvatar(false);
     }
@@ -166,6 +156,7 @@ const RegisterUserForm = () => {
     }
   };
 
+  // --- LÓGICA DE MANEJO DE ERRORES MEJORADA EN handleSubmit ---
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     setLoading(true);
     setSubmitting(true);
@@ -178,11 +169,13 @@ const RegisterUserForm = () => {
       try {
         finalAvatarUrl = await uploadAvatarToCloudinary(newAvatarFile);
       } catch (uploadError) {
+        // Error ya manejado en uploadAvatarToCloudinary con Swal
         setLoading(false);
         setSubmitting(false);
-        return;
+        return; // Detiene el flujo de registro si falla la subida de imagen
       }
     } else {
+      // Esta validación debería ser atrapada por Formik/Yup, pero se deja un respaldo.
       setSnackbar({
         open: true,
         message: "Error: La foto de perfil es requerida.",
@@ -219,12 +212,21 @@ const RegisterUserForm = () => {
         body: JSON.stringify(registerData),
       });
 
-      if (!registerResponse.ok) {
-        const errorData = await registerResponse.json();
-        throw new Error(errorData.message || "Error desconocido al registrar.");
+      const registerResult = await registerResponse.json();
+
+      if (
+        !registerResponse.ok ||
+        registerResult.status === "error" ||
+        registerResult.error
+      ) {
+        // Si la respuesta HTTP no es 2xx o el backend indica un error en el cuerpo
+        const errorMessage =
+          registerResult.message ||
+          registerResult.error ||
+          "Error desconocido al registrar.";
+        throw new Error(errorMessage);
       }
 
-      const registerResult = await registerResponse.json();
       setSnackbar({
         open: true,
         message: "¡Usuario registrado exitosamente!",
@@ -251,7 +253,7 @@ const RegisterUserForm = () => {
 
       if (loginData.status === "success") {
         const userData = loginData.user;
-        login(userData); 
+        login(userData); // Función del contexto de autenticación
 
         const queryParams = new URLSearchParams(location.search);
         const redirectTo = queryParams.get("redirect"); // Obtiene el valor del parámetro 'redirect'
@@ -259,7 +261,7 @@ const RegisterUserForm = () => {
         if (redirectTo) {
           navigate(`/curso/${redirectTo}`);
         } else {
-          navigate("/"); 
+          navigate("/"); // Redirige a la página principal por defecto
         }
       } else {
         Swal.fire({
@@ -271,15 +273,50 @@ const RegisterUserForm = () => {
         navigate("/login"); // Si no se pudo loguear, lo envía a la página de login
       }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Error: ${error.message}`,
-        severity: "error",
-      });
+      // Manejo de errores de registro
+      const errorText = error.message.toLowerCase();
+      let friendlyTitle = "Error en el registro";
+      let friendlyText = `Hubo un problema: ${error.message}. Por favor, verifica tus datos e inténtalo de nuevo.`;
+
+      switch (true) {
+        case errorText.includes("el correo electrónico ya existe"):
+          friendlyTitle = "Correo electrónico ya registrado 📧";
+          friendlyText =
+            "Parece que ya existe una cuenta con este correo. ¿Quieres ir a **Iniciar Sesión**?";
+          break;
+        case errorText.includes("número de celular ya existe"):
+          friendlyTitle = "Número de celular duplicado 📱";
+          friendlyText =
+            "Este número de celular ya está asociado a otra cuenta. Por favor, verifica el número o utiliza uno diferente.";
+          break;
+        case errorText.includes("datos incompletos"):
+          friendlyTitle = "Datos incompletos 📝";
+          friendlyText =
+            "Asegúrate de haber llenado **todos los campos requeridos** y de seleccionar tu tipo de usuario y foto de perfil.";
+          break;
+        case errorText.includes("falló la conexión"):
+        case errorText.includes("network error"):
+          friendlyTitle = "Error de conexión 📶";
+          friendlyText =
+            "No pudimos conectar con el servidor. Por favor, revisa tu conexión a internet e inténtalo de nuevo.";
+          break;
+        case errorText.includes("url válida desde el backend de cloudinary"):
+          // Este error ya se maneja en uploadAvatarToCloudinary con un Swal más específico, pero se mantiene el caso por si acaso.
+          friendlyTitle = "Error con la foto de perfil 🖼️";
+          friendlyText =
+            "No se pudo procesar tu foto de perfil. Intenta con una imagen diferente o de menor tamaño (aunque no haya una restricción visible, el servidor de Cloudinary puede tener límites).";
+          break;
+        default:
+          // Manejo genérico para otros errores de la API o de la promesa
+          friendlyTitle = "Error de servidor 🚧";
+          friendlyText = `Ocurrió un error inesperado. Por favor, intenta de nuevo más tarde o contacta a soporte si persiste el problema. Detalle: ${error.message}`;
+          break;
+      }
+
       Swal.fire({
         icon: "error",
-        title: "Error en el proceso",
-        text: `Hubo un problema: ${error.message}`,
+        title: friendlyTitle,
+        text: friendlyText,
       });
     } finally {
       setLoading(false);
@@ -421,13 +458,15 @@ const RegisterUserForm = () => {
                   name="numero_celular"
                   value={values.numero_celular}
                   onChange={(newValue) => setFieldValue("numero_celular", newValue)}
-                  error={touched.numero_celular && Boolean(errors.numero_celular)}
+                  error={
+                    touched.numero_celular && Boolean(errors.numero_celular)
+                  }
                   helperText={touched.numero_celular && errors.numero_celular}
                   required
                   fullWidth
                   size="small"
                   defaultCountry="PE"
-                  preferredCountries={['PE', 'CO', 'MX', 'CL', 'AR', 'ES', 'US']}
+                  preferredCountries={["PE", "CO", "MX", "CL", "AR", "ES", "US"]}
                 />
                 <TextField
                   label="Correo electrónico"
