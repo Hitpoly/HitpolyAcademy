@@ -6,7 +6,14 @@ const useCourseActions = () => {
     const [uploadingCardCover, setUploadingCardCover] = useState(false);
     const [responseMessage, setResponseMessage] = useState({ type: '', message: '' });
 
-    const uploadImageToCloudinary = async (imageFile, setImageUploadingState, fieldName) => {
+    /**
+     * Sube imágenes al nuevo sistema de almacenamiento (ImageKit / Almacenamiento Infinito)
+     * @param {File} imageFile - El archivo físico
+     * @param {Function} setImageUploadingState - Setter para el estado de carga (loading)
+     * @param {string} fieldName - Nombre descriptivo para errores
+     * @param {number|string} userId - ID del profesor para gestionar su cuota de espacio
+     */
+    const uploadImageToCloudinary = async (imageFile, setImageUploadingState, fieldName, userId) => {
         if (!imageFile) {
             return { success: false, message: `El archivo ${fieldName} es obligatorio.` };
         }
@@ -17,6 +24,8 @@ const useCourseActions = () => {
         const formDataImage = new FormData();
         formDataImage.append('file', imageFile);
         formDataImage.append('accion', 'upload');
+        formDataImage.append('userId', userId); // Requerido por tu nuevo PHP
+        formDataImage.append('type', 'banner'); // Para que se guarde en /perfiles/banners
 
         try {
             const response = await fetch('https://apiacademy.hitpoly.com/ajax/cloudinary.php', {
@@ -26,19 +35,24 @@ const useCourseActions = () => {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Error HTTP al subir ${fieldName}: ${response.status}, mensaje: ${errorText}`);
+                throw new Error(`Error HTTP: ${response.status}, mensaje: ${errorText}`);
             }
 
             const data = await response.json();
-            if (data.url && data.status !== 'error') {
-                setResponseMessage({ type: 'success', message: `${fieldName} subida correctamente a Cloudinary.` });
+
+            // Tu nuevo PHP devuelve data.success: true
+            if (data.success && data.url) {
+                setResponseMessage({ type: 'success', message: `${fieldName} subida correctamente.` });
                 return { success: true, url: data.url };
             } else {
-                return { success: false, message: data.message || `Error al subir la imagen ${fieldName} al servidor.` };
+                return { 
+                    success: false, 
+                    message: data.message || `Error al procesar la imagen ${fieldName} en ImageKit.` 
+                };
             }
         } catch (error) {
-            setResponseMessage({ type: 'error', message: `Error de red o interno al subir la imagen ${fieldName}: ${error.message}` });
-            return { success: false, message: `Error de red o interno al subir la imagen ${fieldName}: ${error.message}` };
+            setResponseMessage({ type: 'error', message: `Error al subir ${fieldName}: ${error.message}` });
+            return { success: false, message: error.message };
         } finally {
             setImageUploadingState(false);
         }
@@ -46,7 +60,7 @@ const useCourseActions = () => {
 
     const syncFaqsWithBackend = async (courseId, faqsData) => {
         if (!courseId || faqsData.length === 0) {
-            return { success: true, message: 'No FAQs to sync or no course ID.' };
+            return { success: true, message: 'No hay FAQs para sincronizar.' };
         }
 
         try {
@@ -60,20 +74,12 @@ const useCourseActions = () => {
                 }),
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error HTTP al sincronizar FAQs: ${response.status}, mensaje: ${errorText}`);
-            }
-
             const data = await response.json();
-
-            if (data.status === 'success') {
-                return { success: true, message: data.message || 'FAQs sincronizadas correctamente.' };
-            } else {
-                return { success: false, message: data.message || 'Error al sincronizar FAQs.' };
-            }
+            return data.status === 'success' 
+                ? { success: true, message: data.message } 
+                : { success: false, message: data.message };
         } catch (error) {
-            return { success: false, message: `Error de red o interno al sincronizar FAQs: ${error.message}` };
+            return { success: false, message: `Error en FAQs: ${error.message}` };
         }
     };
 
@@ -81,59 +87,44 @@ const useCourseActions = () => {
         setLoading(true);
         setResponseMessage({ type: '', message: '' });
 
+        // 1. Validaciones básicas
         if (!formData.titulo || !formData.descripcion_corta || !formData.precio || !formData.categoria_id) {
-            const errorMessage = 'Por favor, rellena los campos obligatorios del curso (Título, Descripción Corta, Precio, Categoría).';
-            setResponseMessage({ type: 'error', message: errorMessage });
+            const msg = 'Rellena los campos obligatorios (Título, Descripción, Precio, Categoría).';
+            setResponseMessage({ type: 'error', message: msg });
             setLoading(false);
-            return { success: false, message: errorMessage };
+            return { success: false, message: msg };
         }
 
-        if ((!isEditing && !bannerFile) || (isEditing && !bannerFile && !formData.url_banner)) {
-            const errorMessage = 'El banner del curso es obligatorio.';
-            setResponseMessage({ type: 'error', message: errorMessage });
-            setLoading(false);
-            return { success: false, message: errorMessage };
-        }
-        if ((!isEditing && !portadaTarjetaFile) || (isEditing && !portadaTarjetaFile && !formData.portada_targeta)) { 
-            const errorMessage = 'La portada de tarjeta del curso es obligatoria.';
-            setResponseMessage({ type: 'error', message: errorMessage });
-            setLoading(false);
-            return { success: false, message: errorMessage };
-        }
+        const userIdForStorage = formData.profesor_id;
 
+        // 2. Gestión de Imágenes
         let finalBannerUrl = formData.url_banner;
         let finalPortadaTarjetaUrl = formData.portada_targeta;
 
+        // Subir Banner si existe archivo nuevo
         if (bannerFile) {
-            const bannerUploadResult = await uploadImageToCloudinary(bannerFile, setUploadingBanner, 'banner del curso');
-            if (!bannerUploadResult.success) {
-                setResponseMessage({ type: 'error', message: bannerUploadResult.message });
-                setLoading(false);
-                return { success: false, message: bannerUploadResult.message };
-            }
-            finalBannerUrl = bannerUploadResult.url;
-            } else {
-            }
+            const res = await uploadImageToCloudinary(bannerFile, setUploadingBanner, 'banner del curso', userIdForStorage);
+            if (!res.success) { setLoading(false); return res; }
+            finalBannerUrl = res.url;
+        }
 
+        // Subir Portada si existe archivo nuevo
         if (portadaTarjetaFile) {
-            const cardCoverUploadResult = await uploadImageToCloudinary(portadaTarjetaFile, setUploadingCardCover, 'portada de tarjeta');
-            if (!cardCoverUploadResult.success) {
-                setResponseMessage({ type: 'error', message: cardCoverUploadResult.message });
-                setLoading(false);
-                return { success: false, message: cardCoverUploadResult.message };
-            }
-            finalPortadaTarjetaUrl = cardCoverUploadResult.url;
-            } else {
-            }
+            const res = await uploadImageToCloudinary(portadaTarjetaFile, setUploadingCardCover, 'portada de tarjeta', userIdForStorage);
+            if (!res.success) { setLoading(false); return res; }
+            finalPortadaTarjetaUrl = res.url;
+        }
 
+        // 3. Preparar datos para el servidor
         const duracionEstimadaCompleta = `${formData.duracion_estimada_valor} ${formData.duracion_estimada_unidad}`;
+        const timestamp = new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 8);
 
         const dataToSend = {
             ...formData,
             url_banner: finalBannerUrl,
             portada_targeta: finalPortadaTarjetaUrl, 
             duracion_estimada: duracionEstimadaCompleta,
-            fecha_actualizacion: new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 8),
+            fecha_actualizacion: timestamp,
             duracion_estimada_valor: undefined,
             duracion_estimada_unidad: undefined,
             marca_plataforma: formData.marca_plataforma || [],
@@ -141,76 +132,44 @@ const useCourseActions = () => {
             preguntas_frecuentes: undefined,
         };
         
-        let apiUrl = '';
-        let courseId = null;
+        let apiUrl = isEditing 
+            ? 'https://apiacademy.hitpoly.com/ajax/editarCursoController.php' 
+            : 'https://apiacademy.hitpoly.com/ajax/insertarCursoController.php';
 
-        if (!isEditing) {
-            dataToSend.fecha_publicacion = new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 8);
-            dataToSend.accion = 'curso';
-            apiUrl = 'https://apiacademy.hitpoly.com/ajax/insertarCursoController.php';
-            } else {
-            dataToSend.accion = 'update';
-            if (!formData.id) {
-                const errorMessage = 'ID del curso es requerido para actualizar.';
-                setResponseMessage({ type: 'error', message: errorMessage });
-                setLoading(false);
-                return { success: false, message: errorMessage };
-            }
-            courseId = formData.id;
-            apiUrl = 'https://apiacademy.hitpoly.com/ajax/editarCursoController.php';
-            }
+        if (!isEditing) dataToSend.fecha_publicacion = timestamp;
 
         try {
-            setResponseMessage({ type: 'info', message: isEditing ? 'Actualizando curso...' : 'Registrando curso...' });
+            setResponseMessage({ type: 'info', message: 'Guardando datos del curso...' });
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend),
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error HTTP al ${isEditing ? 'actualizar' : 'insertar'} curso: ${response.status}, mensaje: ${errorText}`);
-            }
-
             const data = await response.json();
             
             if (data.status === 'success') {
-                if (!isEditing && data.id_curso) {
-                    courseId = data.id_curso;
-                } else if (isEditing && formData.id) {
-                    courseId = formData.id;
-                }
+                const courseId = isEditing ? formData.id : data.id_curso;
 
-                if (!courseId) {
-                    throw new Error("No se pudo obtener el ID del curso después de guardar/actualizar.");
-                }
-
-                const faqsSyncResult = await syncFaqsWithBackend(courseId, preguntasFrecuentes);
-                if (!faqsSyncResult.success) {
-                    setResponseMessage({ type: 'warning', message: `Curso guardado, pero hubo un problema al sincronizar FAQs: ${faqsSyncResult.message}` });
-                    } else {
-                    setResponseMessage({ type: 'success', message: data.message || `Curso ${isEditing ? 'actualizado' : 'registrado'} correctamente y FAQs sincronizadas.` });
-                    }
-
+                // 4. Sincronizar FAQs
+                const faqsRes = await syncFaqsWithBackend(courseId, preguntasFrecuentes);
+                
                 setLoading(false);
                 return {
                     success: true,
-                    message: data.message || `Curso ${isEditing ? 'actualizado' : 'registrado'} correctamente.`,
+                    message: faqsRes.success ? data.message : `Curso guardado, pero error en FAQs: ${faqsRes.message}`,
                     id: courseId,
                 };
             } else {
-                setResponseMessage({ type: 'error', message: data.message || `Error al ${isEditing ? 'actualizar' : 'insertar'} el curso.` });
+                setResponseMessage({ type: 'error', message: data.message });
                 setLoading(false);
                 return { success: false, message: data.message };
             }
         } catch (error) {
-            setResponseMessage({ type: 'error', message: `No se pudo conectar con el servidor al ${isEditing ? 'actualizar' : 'registrar'} el curso: ${error.message}` });
+            setResponseMessage({ type: 'error', message: `Error de conexión: ${error.message}` });
             setLoading(false);
-            return { success: false, message: `Error de red o interno: ${error.message}` };
-        } finally {
-            setLoading(false);
-            }
+            return { success: false, message: error.message };
+        }
     };
 
     return {

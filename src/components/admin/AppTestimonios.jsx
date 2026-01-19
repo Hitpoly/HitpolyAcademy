@@ -5,7 +5,6 @@ import {
   CircularProgress,
   Alert,
   Typography,
-  Button,
   Checkbox,
   FormControlLabel,
   FormGroup,
@@ -42,20 +41,14 @@ const AppTestimonios = () => {
       );
       const commentsData = await commentsResponse.json();
 
-      if (
-        !commentsResponse.ok ||
-        commentsData.status !== "success" ||
-        !Array.isArray(commentsData.comentarios)
-      ) {
-        throw new Error(
-          commentsData.message ||
-            "La API de comentarios no devolvió una lista válida."
-        );
+      if (!commentsResponse.ok || commentsData.status !== "success") {
+        throw new Error(commentsData.message || "Error al cargar comentarios.");
       }
-      
-      commentsData.comentarios.forEach(comment => {
-       });
-      setAllCommentsFromApi(commentsData.comentarios);
+
+      // 1. Validamos que comentarios sea un array, si no, ponemos array vacío
+      const validComments = Array.isArray(commentsData.comentarios) ? commentsData.comentarios : [];
+      setAllCommentsFromApi(validComments);
+
       const allUsersResponse = await fetch(
         "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
         {
@@ -65,6 +58,7 @@ const AppTestimonios = () => {
         }
       );
       const allUsersData = await allUsersResponse.json();
+      
       let mappedUsers = {};
       if (allUsersData.status === "success" && Array.isArray(allUsersData.clases)) {
         mappedUsers = allUsersData.clases.reduce((acc, user) => {
@@ -84,13 +78,11 @@ const AppTestimonios = () => {
     fetchCommentsAndUsers();
   }, []); 
 
-
   const handleEditReview = (comment) => {
-    const newEditedDestacado = Number(comment.destacado) === 1 ? 1 : 0;
-
     setEditingCommentId(comment.id);
-    setEditedContent(comment.contenido);
-    setEditedDestacado(newEditedDestacado);
+    // 2. Aseguramos que el contenido no sea null al editar
+    setEditedContent(comment.contenido || "");
+    setEditedDestacado(Number(comment.destacado) === 1 ? 1 : 0);
   };
 
   const handleCancelEdit = () => {
@@ -101,8 +93,6 @@ const AppTestimonios = () => {
 
   const handleSaveEditedReview = async (commentId) => {
     setLoading(true);
-    setError(null);
-
     try {
       const response = await fetch(
         "https://apiacademy.hitpoly.com/ajax/editarComentariosController.php",
@@ -120,19 +110,13 @@ const AppTestimonios = () => {
       const data = await response.json();
 
       if (!response.ok || data.status !== "success") {
-        throw new Error(data.message || "Error al actualizar el comentario.");
+        throw new Error(data.message || "Error al actualizar.");
       }
-      setAllCommentsFromApi((prevComments) =>
-        prevComments.map((comment) =>
-          comment.id === commentId
-            ? { ...comment, contenido: editedContent, destacado: editedDestacado }
-            : comment
-        )
-      );
 
-      setEditingCommentId(null); 
-      setEditedContent("");
-      setEditedDestacado(0);
+      setAllCommentsFromApi((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, contenido: editedContent, destacado: editedDestacado } : c))
+      );
+      setEditingCommentId(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -141,17 +125,8 @@ const AppTestimonios = () => {
   };
 
   const handleDeleteReview = async (commentId) => {
-    if (
-      !window.confirm(
-        `¿Estás seguro de que quieres eliminar el comentario con ID ${commentId}?`
-      )
-    ) {
-      return;
-    }
-
+    if (!window.confirm("¿Eliminar este comentario?")) return;
     setLoading(true);
-    setError(null);
-
     try {
       const response = await fetch(
         "https://apiacademy.hitpoly.com/ajax/eliminarComentarioController.php",
@@ -162,14 +137,9 @@ const AppTestimonios = () => {
         }
       );
       const data = await response.json();
-
-      if (!response.ok || data.status !== "success") {
-        throw new Error(data.message || "Error al eliminar el comentario.");
+      if (data.status === "success") {
+        setAllCommentsFromApi((prev) => prev.filter((c) => c.id !== commentId));
       }
-
-      setAllCommentsFromApi((prevComments) =>
-        prevComments.filter((comment) => comment.id !== commentId)
-      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -179,137 +149,95 @@ const AppTestimonios = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
         Panel de Administración de Testimonios
       </Typography>
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Desde aquí puedes **editar el contenido y el estado "destacado"** de
-        cada comentario, o **eliminarlos** de forma permanente.
-      </Typography>
-      <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
-        Comentarios disponibles:
-      </Typography>
-      {loading && <CircularProgress />}
-      {error && <Alert severity="error">{error}</Alert>}
-      {!loading && !error && allCommentsFromApi.length === 0 && (
-        <Typography>No se encontraron comentarios para administrar.</Typography>
+      
+      {loading && <CircularProgress sx={{ my: 2 }} />}
+      {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
+      
+      {!loading && allCommentsFromApi.length === 0 && (
+        <Typography>No hay comentarios.</Typography>
       )}
-      {!loading && !error && allCommentsFromApi.length > 0 && (
-        <FormGroup>
-          {allCommentsFromApi.map((comment) => {
-            const isDestacado = Number(comment.destacado) === 1;
-            return (
-              <Box
-                key={comment.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  border: "1px solid #eee",
-                  p: 1,
-                  my: 0.5,
-                  borderRadius: 1,
-                  backgroundColor: isDestacado ? "#e6ffe6" : "transparent", 
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="body2">
-                      **ID:** {comment.id} | **Usuario ID:**{" "}
-                      {comment.usuario_id}
-                      {usersById[comment.usuario_id]
-                        ? ` (${
-                            usersById[comment.usuario_id]?.nombre ||
-                            "Nombre Desconocido"
-                          })`
-                        : ""}
+
+      <FormGroup>
+        {allCommentsFromApi.map((comment) => {
+          const isDestacado = Number(comment.destacado) === 1;
+          // 3. Blindaje crítico: Si contenido es null, usamos string vacío para que .length no rompa
+          const contenidoSeguro = comment.contenido || "";
+
+          return (
+            <Box
+              key={comment.id}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                border: "1px solid #eee",
+                p: 2,
+                my: 1,
+                borderRadius: 2,
+                backgroundColor: isDestacado ? "#f0fdf4" : "white",
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    ID: {comment.id} | Usuario: {usersById[comment.usuario_id]?.nombre || "Anonimo"} (ID: {comment.usuario_id})
+                  </Typography>
+
+                  {editingCommentId === comment.id ? (
+                    <TextField
+                      fullWidth
+                      multiline
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                      sx={{ mt: 1 }}
+                    />
+                  ) : (
+                    <Typography variant="body1" sx={{ mt: 1, fontStyle: "italic" }}>
+                      "{contenidoSeguro.length > 100
+                        ? contenidoSeguro.substring(0, 100) + "..."
+                        : contenidoSeguro}"
                     </Typography>
-                    {editingCommentId === comment.id ? (
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ mt: 1, mb: 1 }}
-                      />
-                    ) : (
-                      <Typography variant="body2" sx={{ fontStyle: "italic" }}>
-                        "{comment.contenido.length > 100
-                          ? comment.contenido.substring(0, 100) + "..."
-                          : comment.contenido}"
-                      </Typography>
-                    )}
-                  </Box>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, ml: 1 }}>
-                    {editingCommentId === comment.id ? (
-                      <>
-                        <IconButton
-                          aria-label="guardar"
-                          onClick={() => handleSaveEditedReview(comment.id)}
-                          color="success"
-                          size="small"
-                          disabled={loading}
-                        >
-                          <SaveIcon />
-                        </IconButton>
-                        <IconButton
-                          aria-label="cancelar"
-                          onClick={handleCancelEdit}
-                          color="warning"
-                          size="small"
-                          disabled={loading}
-                        >
-                          <CancelIcon />
-                        </IconButton>
-                      </>
-                    ) : (
-                      <IconButton
-                        aria-label="editar"
-                        onClick={() => handleEditReview(comment)}
-                        color="info"
-                        size="small"
-                        disabled={loading}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    )}
-                    <IconButton
-                      aria-label="eliminar"
-                      onClick={() => handleDeleteReview(comment.id)}
-                      color="error"
-                      size="small"
-                      disabled={loading || editingCommentId === comment.id}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
+                  )}
                 </Box>
-                {editingCommentId === comment.id && (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={editedDestacado === 1} 
-                        onChange={(e) => setEditedDestacado(e.target.checked ? 1 : 0)}
-                        disabled={loading}
-                      />
-                    }
-                    label="Destacado"
-                    sx={{ ml: 0, mt: 1 }}
-                  />
-                )}
-                  {editingCommentId !== comment.id && ( 
-                     <Typography variant="caption" sx={{ mt: 0.5, ml: 1 }}>
-                       Estado: {isDestacado ? "Destacado" : "Normal"}
-                     </Typography>
-                   )}
+
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+                  {editingCommentId === comment.id ? (
+                    <>
+                      <IconButton onClick={() => handleSaveEditedReview(comment.id)} color="success">
+                        <SaveIcon />
+                      </IconButton>
+                      <IconButton onClick={handleCancelEdit} color="error">
+                        <CancelIcon />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <IconButton onClick={() => handleEditReview(comment)} color="primary">
+                      <EditIcon />
+                    </IconButton>
+                  )}
+                  <IconButton onClick={() => handleDeleteReview(comment.id)} color="error">
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
               </Box>
-            );
-          })}
-        </FormGroup>
-      )}
+
+              {editingCommentId === comment.id && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={editedDestacado === 1}
+                      onChange={(e) => setEditedDestacado(e.target.checked ? 1 : 0)}
+                    />
+                  }
+                  label="Marcar como Destacado"
+                />
+              )}
+            </Box>
+          );
+        })}
+      </FormGroup>
     </Box>
   );
 };

@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   IconButton,
-  Button,
   TextField,
   Drawer,
   Typography,
@@ -25,7 +24,6 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import CommentIcon from '@mui/icons-material/Comment';
 
 import ListaDeCategorias from "./components/MenuHamburguesa";
-import TemporaryDrawer from "./components/drawer";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import SequencePopup from "../../components/popups/SequencePopup";
@@ -61,7 +59,10 @@ const MenuDeNavegacion = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAffiliatePopupOpen, setIsAffiliatePopupOpen] = useState(false);
-  const { user, userRole } = useAuth();
+  
+  // Extraemos userRole y userCargo del contexto de autenticación
+  const { user, userRole, userCargo } = useAuth(); 
+  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -73,20 +74,23 @@ const MenuDeNavegacion = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
 
+  // --- Lógica de Permisos ---
+  const role = Number(userRole);
+  const cargo = Number(userCargo);
+
+  const isAdmin = role === 1;
+  const isEmpresario = role === 2;
+  const isProfesorAutorizado = role === 3 && cargo === 159; // Lógica para Pablo
+
+  // Variable maestra para mostrar botones de Creador (Crear curso / Mis cursos)
+  const puedeGestionarCursos = isAdmin || isEmpresario || isProfesorAutorizado;
+
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-  };
-
-  const handleRegisterClick = () => {
-    navigate("/register");
-  };
-
-  const handleLoginClick = () => {
-    navigate("/login");
   };
 
   const handleOpenAffiliatePopup = () => {
@@ -113,7 +117,6 @@ const MenuDeNavegacion = () => {
     navigate("/mis-cursos");
   };
 
-  // Funciones para los botones adicionales
   const handleCreateAdsClick = () => {
     navigate("/crear-anuncios");
   };
@@ -150,32 +153,15 @@ const MenuDeNavegacion = () => {
           ),
         ]);
 
-        if (!categoriesResponse.ok) {
-          const errorText = await categoriesResponse.text();
-          throw new Error(
-            `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`
-          );
-        }
+        if (!categoriesResponse.ok) throw new Error("Error al cargar categorías");
         const categoriesData = await categoriesResponse.json();
-        if (
-          categoriesData.status !== "success" ||
-          !Array.isArray(categoriesData.categorias)
-        ) {
-          throw new Error(
-            categoriesData.message || "Datos de categorías inválidos."
-          );
-        }
         const newCategoryMap = categoriesData.categorias.reduce((map, cat) => {
           map[cat.id] = cat.nombre;
           return map;
         }, {});
         setCategoryMap(newCategoryMap);
-        if (!coursesResponse.ok) {
-          const errorText = await coursesResponse.text();
-          throw new Error(
-            `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`
-          );
-        }
+
+        if (!coursesResponse.ok) throw new Error("Error al cargar cursos");
         const coursesData = await coursesResponse.json();
 
         let fetchedCoursesArray;
@@ -184,7 +170,7 @@ const MenuDeNavegacion = () => {
         } else if (coursesData.status === "success" && Array.isArray(coursesData.cursos)) {
           fetchedCoursesArray = coursesData.cursos;
         } else {
-          throw new Error(coursesData.message || "Datos de cursos inválidos para búsqueda: La estructura del array de cursos no es la esperada.");
+          throw new Error("Estructura de cursos no válida");
         }
 
         const publishedCourses = fetchedCoursesArray.filter(
@@ -203,38 +189,21 @@ const MenuDeNavegacion = () => {
   }, []);
 
   useEffect(() => {
-    if (loadingSearchData) return;
-
-    if (searchTerm === '') {
+    if (loadingSearchData || searchTerm === '') {
       setFilteredCourses([]);
-    } else {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
-
-      const results = allCourses.filter((course) => {
-        const courseName = course.titulo ? String(course.titulo).toLowerCase() : '';
-        const courseSubtitle = course.subtitulo ? String(course.subtitulo).toLowerCase() : '';
-        const categoryName = course.categoria_id
-          ? (categoryMap[course.categoria_id] || '').toLowerCase()
-          : '';
-
-        const match = (
-          courseName.includes(lowercasedSearchTerm) ||
-          courseSubtitle.includes(lowercasedSearchTerm) ||
-          categoryName.includes(lowercasedSearchTerm)
-        );
-        return match;
-      });
-      setFilteredCourses(results);
+      return;
     }
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    const results = allCourses.filter((course) => {
+      const courseName = course.titulo ? String(course.titulo).toLowerCase() : '';
+      const categoryName = course.categoria_id ? (categoryMap[course.categoria_id] || '').toLowerCase() : '';
+      return courseName.includes(lowercasedSearchTerm) || categoryName.includes(lowercasedSearchTerm);
+    });
+    setFilteredCourses(results);
   }, [searchTerm, allCourses, categoryMap, loadingSearchData]);
-
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
-    setIsSearchActive(true);
-  };
-
-  const handleSearchFocus = () => {
     setIsSearchActive(true);
   };
 
@@ -243,19 +212,7 @@ const MenuDeNavegacion = () => {
       setIsSearchActive(false);
       setSearchTerm('');
       setFilteredCourses([]);
-    }, 100);
-  };
-
-
-  const getCategoryName = (categoryId) => {
-    return categoryMap[categoryId] || 'Categoría Desconocida';
-  };
-
-  const handleCourseClick = (course) => {
-    navigate(`/curso/${course.id}`);
-    setIsSearchActive(false);
-    setSearchTerm('');
-    setFilteredCourses([]);
+    }, 150);
   };
 
   const isNotHomePage = location.pathname !== '/';
@@ -264,29 +221,21 @@ const MenuDeNavegacion = () => {
     <>
       <Box
         sx={{
-          width: "100vw",
-          height: "65px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0 16px",
-          boxShadow: 1,
-          backgroundColor: "#fff",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 1200,
+          width: "100vw", height: "65px", display: "flex", justifyContent: "space-between",
+          alignItems: "center", padding: "0 16px", pr: 5, boxShadow: 1, backgroundColor: "#fff",
+          position: "fixed", top: 0, left: 0, zIndex: 1200,
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
           {isNotHomePage && (
-            <IconButton onClick={handleGoHome} color="primary" aria-label="ir al inicio">
+            <IconButton onClick={handleGoHome} color="primary">
               <HomeIcon />
             </IconButton>
           )}
           <IconButton onClick={toggleDrawer(true)} color="inherit">
             <MenuIcon />
           </IconButton>
+          
           <Box sx={{ position: 'relative' }}>
             <TextField
               sx={{ display: { xs: "none", md: "flex" } }}
@@ -295,266 +244,80 @@ const MenuDeNavegacion = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={handleSearchChange}
-              onFocus={handleSearchFocus}
+              onFocus={() => setIsSearchActive(true)}
               onBlur={handleSearchBlur}
             />
-            {isSearchActive && (searchTerm !== '' || (filteredCourses.length > 0 && !loadingSearchData)) && (
-                <Paper
-                    sx={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      zIndex: 1300,
-                      mt: 0.5,
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      boxShadow: 3,
-                      backgroundColor: 'white',
-                      minWidth: 600,
-                      width: 'auto',
-                    }}
-                >
-                    {loadingSearchData ? (
-                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CircularProgress size={20} />
-                            <Typography variant="body2" sx={{ ml: 1 }}>Cargando cursos y categorías...</Typography>
-                        </Box>
-                    ) : searchError ? (
-                        <Alert severity="error" sx={{ m: 1 }}>
-                            Error al cargar la búsqueda: {searchError}
-                        </Alert>
-                    ) : filteredCourses.length === 0 ? (
-                        searchTerm !== '' ? (
-                            <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                                No se encontraron resultados para "{searchTerm}".
-                            </Typography>
-                        ) : (
-                            <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                                Escribe para buscar cursos por nombre o categoría.
-                            </Typography>
-                        )
-                    ) : (
-                        <List dense>
-                            {filteredCourses.map((course) => (
-                                <React.Fragment key={course.id}>
-                                    <ListItem
-                                        alignItems="flex-start"
-                                        onClick={() => handleCourseClick(course)}
-                                        onMouseDown={(e) => e.preventDefault()}
-                                    >
-                                        <ListItemText
-                                            primary={
-                                                <Typography
-                                                    sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}
-                                                    component="span"
-                                                    variant="body1"
-                                                    color="text.primary"
-                                                >
-                                                    {course.titulo}
-                                                </Typography>
-                                            }
-                                            secondary={
-                                                <Typography
-                                                    sx={{ display: 'block', fontSize: '0.8rem' }}
-                                                    component="span"
-                                                    variant="body2"
-                                                    color="text.secondary"
-                                                >
-                                                    Categoría: {getCategoryName(course.categoria_id)}
-                                                </Typography>
-                                            }
-                                        />
-                                    </ListItem>
-                                    <Divider component="li" />
-                                </React.Fragment>
-                            ))}
-                        </List>
-                    )}
-                </Paper>
+            {isSearchActive && (searchTerm !== '' || filteredCourses.length > 0) && (
+              <Paper sx={{ position: 'absolute', top: '100%', left: 0, zIndex: 1300, mt: 0.5, maxHeight: '300px', overflowY: 'auto', boxShadow: 3, width: 400 }}>
+                {loadingSearchData ? (
+                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}><CircularProgress size={20} /></Box>
+                ) : filteredCourses.length === 0 ? (
+                  <Typography sx={{ p: 2, color: 'text.secondary' }}>No hay resultados</Typography>
+                ) : (
+                  <List dense>
+                    {filteredCourses.map((course) => (
+                      <ListItem button key={course.id} onClick={() => navigate(`/curso/${course.id}`)}>
+                        <ListItemText primary={course.titulo} secondary={categoryMap[course.categoria_id]} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </Paper>
             )}
           </Box>
         </Box>
-        <Box
-          sx={{ display: "flex", flexDirection: "row" }}
-          alignItems="center"
-          marginRight={1}
-          gap={2}
-        >
-          {!user ? (
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {/* BOTONES PARA PABLO, ADMIN Y EMPRESARIO */}
+          {puedeGestionarCursos && (
             <>
-              <Button
-                sx={{
-                  border: "1px #F21C63 solid",
-                  display: { xs: "none", md: "flex" },
-                  width: "200px",
-                  color: "#F21C63",
-                  padding: "10px",
-                }}
-                color="primary"
-                onClick={handleRegisterClick}
-              >
-                Registrarse
-              </Button>
-              <Button
-                sx={{
-                  backgroundColor: "#F21C63 ",
-                  width: { xs: "120px", md: "200px" },
-                  padding: { xs: "5px", md: "10px" },
-                }}
-                variant="contained"
-                color="primary"
-                onClick={handleLoginClick}
-              >
-                Ingresar
-              </Button>
-            </>
-          ) : (
-            <Box
-              sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 2 }}
-            >
-              {(userRole === 1 || userRole === 2) && (
-                <Tooltip title="Crear curso">
-                  <IconButton
-                    color="primary"
-                    onClick={handleCreateCourseClick}
-                    sx={{
-                      border: '1px solid #1976d2',
-                      borderRadius: '50%',
-                      width: 40,
-                      height: 40,
-                      p: 0,
-                      '&:hover': {
-                        backgroundColor: '#e3f2fd',
-                      }
-                    }}
-                    aria-label="Crear nuevo curso"
-                  >
-                    <AddCircleOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {(userRole === 1 || userRole === 2) && (
-                <Tooltip title="Mis cursos">
-                  <IconButton
-                    color="primary"
-                    onClick={handleMyCoursesClick}
-                    sx={{
-                      border: '1px solid #1976d2',
-                      borderRadius: '50%',
-                      width: 40,
-                      height: 40,
-                      p: 0,
-                      '&:hover': {
-                        backgroundColor: '#e3f2fd',
-                      }
-                    }}
-                    aria-label="Ir a mis cursos"
-                  >
-                    <BookIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {/* Nuevos botones para el rol 1 */}
-              {userRole === 1 && (
-                <>
-                  <Tooltip title="Crear anuncios">
-                    <IconButton
-                      color="primary"
-                      onClick={handleCreateAdsClick}
-                      sx={{
-                        border: '1px solid #1976d2',
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        p: 0,
-                        '&:hover': {
-                          backgroundColor: '#e3f2fd',
-                        }
-                      }}
-                      aria-label="Crear anuncios"
-                    >
-                      <CampaignIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Administración de Comentarios">
-                    <IconButton
-                      color="primary"
-                      onClick={handleAdminDashboardClick}
-                      sx={{
-                        border: '1px solid #1976d2',
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        p: 0,
-                        '&:hover': {
-                          backgroundColor: '#e3f2fd',
-                        }
-                      }}
-                      aria-label="Ir a la sección de comentarios y administración"
-                    >
-                      <CommentIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Editar perfiles">
-                    <IconButton
-                      color="primary"
-                      onClick={handleEditProfilesClick}
-                      sx={{
-                        border: '1px solid #1976d2',
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        p: 0,
-                        '&:hover': {
-                          backgroundColor: '#e3f2fd',
-                        }
-                      }}
-                      aria-label="Editar perfiles de usuario"
-                    >
-                      <PersonOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </>
-              )}
-
-              {/* El botón de afiliado solo se muestra si el userRole NO es 1 (administrador) */}
-              {userRole !== 1 && (
-                <Tooltip title="Afiliado">
-                  <IconButton
-                    color="secondary"
-                    onClick={handleOpenAffiliatePopup}
-                    sx={{
-                      border: '1px solid #1976d2',
-                      borderRadius: '50%',
-                      width: 40,
-                      height: 40,
-                      p: 0,
-                      '&:hover': {
-                        backgroundColor: '#e3f2fd',
-                      }
-                    }}
-                  >
-                    <EmojiEventsIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              <Tooltip title="Perfil">
-                <TemporaryDrawer />
+              <Tooltip title="Crear curso">
+                <IconButton color="primary" onClick={handleCreateCourseClick} sx={{ border: '1px solid #1976d2' }}>
+                  <AddCircleOutlineIcon fontSize="small" />
+                </IconButton>
               </Tooltip>
-            </Box>
+              <Tooltip title="Mis cursos">
+                <IconButton color="primary" onClick={handleMyCoursesClick} sx={{ border: '1px solid #1976d2' }}>
+                  <BookIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          {/* SOLO ADMINISTRADOR */}
+          {isAdmin && (
+            <>
+              <Tooltip title="Crear anuncios">
+                <IconButton color="primary" onClick={handleCreateAdsClick} sx={{ border: '1px solid #1976d2' }}>
+                  <CampaignIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Comentarios">
+                <IconButton color="primary" onClick={handleAdminDashboardClick} sx={{ border: '1px solid #1976d2' }}>
+                  <CommentIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Editar perfiles">
+                <IconButton color="primary" onClick={handleEditProfilesClick} sx={{ border: '1px solid #1976d2' }}>
+                  <PersonOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          {/* AFILIADO (TODOS MENOS ADMIN) */}
+          {!isAdmin && (
+            <Tooltip title="Afiliado">
+              <IconButton color="secondary" onClick={handleOpenAffiliatePopup} sx={{ border: '1px solid #9c27b0' }}>
+                <EmojiEventsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
       </Box>
+
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <Box
-          sx={{ width: 250 }}
-          role="presentation"
-        >
+        <Box sx={{ width: 250 }}>
           <ListaDeCategorias onCloseDrawer={handleCloseDrawer} />
         </Box>
       </Drawer>

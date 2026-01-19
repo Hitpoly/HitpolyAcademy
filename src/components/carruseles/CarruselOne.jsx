@@ -30,6 +30,20 @@ const CarouselWithSwiper = () => {
   const [isHovered, setIsHovered] = useState({});
   const [tooltipOpen, setTooltipOpen] = useState({});
 
+  // FUNCIÓN LÓGICA: Verifica si la imagen existe y carga
+  const verificarImagen = (url) => {
+    return new Promise((resolve) => {
+      if (!url) {
+        resolve(false);
+        return;
+      }
+      const img = new Image();
+      img.src = url;
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+    });
+  };
+
   useEffect(() => {
     const fetchAlumnos = async () => {
       setLoading(true);
@@ -51,29 +65,27 @@ const CarouselWithSwiper = () => {
         const data = await response.json();
 
         if (data.status === "success" && Array.isArray(data.clases)) {
-          // Primero, filtrar solo los usuarios activos
-          const activeUsers = data.clases.filter(
-            (user) => user.estado === "Activo"
-          );
-
-          // >>> CAMBIO CLAVE AQUÍ: Filtrar usuarios que SÍ tienen url_foto_perfil y luego mapear
-          const usersWithImages = activeUsers.filter(
-            (user) => user.url_foto_perfil // Solo si url_foto_perfil NO es null, undefined o cadena vacía
-          );
-
-          const processedUsers = usersWithImages.map((user) => ({
+          // 1. Mapeo inicial de todos los usuarios
+          const rawUsers = data.clases.map((user) => ({
             id: user.id,
-            nombre: user.nombre || "Nombre no disponible",
-            img: user.url_foto_perfil, // Ya no necesitamos el fallback aquí
+            nombre: user.nombre || "Estudiante",
+            img: user.avatar || user.url_foto_perfil || null, // Prioriza avatar de Cloudinary
             linkedin: user.url_linkedin || "",
           }));
 
-          setAlumnos(processedUsers);
-        } else {
-          throw new Error(
-            data.message ||
-            "No se encontraron datos de usuarios o el formato es incorrecto."
+          // 2. LÓGICA DE VALIDACIÓN: Solo los que NO tienen problemas de imagen
+          const validados = await Promise.all(
+            rawUsers.map(async (user) => {
+              const esValida = await verificarImagen(user.img);
+              return esValida ? user : null;
+            })
           );
+
+          // 3. Filtrar los nulos y guardar
+          const alumnosFinales = validados.filter((u) => u !== null);
+          setAlumnos(alumnosFinales);
+        } else {
+          throw new Error(data.message || "Error en el formato de datos.");
         }
       } catch (err) {
         setError(`No se pudieron cargar los usuarios: ${err.message}`);
@@ -105,14 +117,7 @@ const CarouselWithSwiper = () => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "200px",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
           Cargando usuarios para el carrusel...
@@ -123,35 +128,14 @@ const CarouselWithSwiper = () => {
 
   if (error) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "200px",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
         <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
-  // Se añadió un mensaje específico si no hay alumnos después del filtro
   if (alumnos.length === 0) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "200px",
-        }}
-      >
-        <Typography variant="body1" color="text.secondary">
-          No hay usuarios activos con imágenes de perfil disponibles para mostrar en el carrusel.
-        </Typography>
-      </Box>
-    );
+    return null; // No mostramos nada si no hay fotos perfectas
   }
 
   return (
@@ -178,7 +162,7 @@ const CarouselWithSwiper = () => {
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
           }}
-          loop={true}
+          loop={alumnos.length > 5}
           spaceBetween={10}
           centeredSlides={true}
           slidesPerView={isMobile ? 3 : 5}
@@ -286,4 +270,4 @@ const CarouselWithSwiper = () => {
   );
 };
 
-export default CarouselWithSwiper; 
+export default CarouselWithSwiper;

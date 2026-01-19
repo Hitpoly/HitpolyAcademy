@@ -14,11 +14,13 @@ import {
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import axios from 'axios';
 
+// --- CONFIGURACIÓN DE ENDPOINTS ---
 const ENDPOINT_CARGAR_ANUNCIOS = "https://apiacademy.hitpoly.com/ajax/cargarAnunciosController.php";
 const ENDPOINT_EDITAR_ANUNCIO = "https://apiacademy.hitpoly.com/ajax/editarAnuncioController.php";
-const CLOUDINARY_UPLOAD_ENDPOINT = "https://apisistemamembresia.hitpoly.com/ajax/Cloudinary.php";
+const CLOUDINARY_UPLOAD_ENDPOINT = "https://apiacademy.hitpoly.com/ajax/cloudinary.php";
 
 function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCancelEdit }) {
+  // Estados del Anuncio
   const [id, setId] = useState(null);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -27,65 +29,73 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
   const [estado, setEstado] = useState('A');
   const [orden, setOrden] = useState('');
 
+  // Estados de Imagen
   const [imagenFile, setImagenFile] = useState(null);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
+  // Estados de Control UI
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
+  // Efecto para Cargar Datos en Edición
   useEffect(() => {
     if (anuncioToEdit) {
       setId(anuncioToEdit.id);
-      setTitulo(anuncioToEdit.titulo);
-      setDescripcion(anuncioToEdit.descripcion);
-      setEnlace(anuncioToEdit.enlace);
-      setUrlImagen(anuncioToEdit.urlImagen || anuncioToEdit.urlimagen || '');
+      setTitulo(anuncioToEdit.titulo || '');
+      setDescripcion(anuncioToEdit.descripcion || '');
+      setEnlace(anuncioToEdit.enlace || '');
+      const currentImg = anuncioToEdit.urlImagen || anuncioToEdit.urlimagen || '';
+      setUrlImagen(currentImg);
       setEstado(anuncioToEdit.estado || 'A');
-      setOrden(anuncioToEdit.orden !== undefined && anuncioToEdit.orden !== null ? String(anuncioToEdit.orden) : '');
-
-      const imageUrlToPreview = anuncioToEdit.urlImagen || anuncioToEdit.urlimagen;
-      if (imageUrlToPreview) {
-        setPreviewImageUrl(imageUrlToPreview);
-      } else {
-        setPreviewImageUrl(null);
-      }
+      setOrden(anuncioToEdit.orden !== undefined ? String(anuncioToEdit.orden) : '');
+      setPreviewImageUrl(currentImg || null);
     } else {
-      setId(null);
-      setTitulo('');
-      setDescripcion('');
-      setEnlace('');
-      setUrlImagen('');
-      setEstado('A');
-      setOrden('');
-      setImagenFile(null);
-      setPreviewImageUrl(null);
+      resetLocalForm();
     }
   }, [anuncioToEdit]);
 
+  const resetLocalForm = () => {
+    setId(null);
+    setTitulo('');
+    setDescripcion('');
+    setEnlace('');
+    setUrlImagen('');
+    setEstado('A');
+    setOrden('');
+    setImagenFile(null);
+    setPreviewImageUrl(null);
+  };
+
+  /**
+   * Sube la imagen al sistema ImageKit (vía tu PHP intermedio)
+   */
   const uploadImageToCloudinary = async (file) => {
     const formDataImg = new FormData();
     formDataImg.append("file", file);
+    
+    // IMPORTANTE: Parámetros requeridos por tu nuevo StorageModel.php
+    formDataImg.append("userId", "1"); // Cambiar por el ID real del admin si es dinámico
+    formDataImg.append("type", "banner"); 
 
     try {
       setUploadingImage(true);
       const response = await axios.post(
         CLOUDINARY_UPLOAD_ENDPOINT,
-        formDataImg,
-        { headers: { "Content-Type": "multipart/form-type" } }
+        formDataImg
       );
 
-      if (response.data?.url) {
+      // El nuevo PHP devuelve { success: true, url: "..." }
+      if (response.data?.success && response.data?.url) {
         return response.data.url;
       } else {
-        throw new Error("No se recibió una URL válida desde el backend de Cloudinary.");
+        throw new Error(response.data?.message || "Error al procesar imagen en ImageKit.");
       }
     } catch (error) {
-      setErrorMessage("Ocurrió un error al subir la imagen del anuncio.");
-      setSnackbarOpen(true);
-      throw error;
+      const msg = error.response?.data?.message || "Error crítico de conexión al subir imagen.";
+      throw new Error(msg);
     } finally {
       setUploadingImage(false);
     }
@@ -96,10 +106,7 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
     if (file) {
       setImagenFile(file);
       setPreviewImageUrl(URL.createObjectURL(file));
-      setUrlImagen('');
-    } else {
-      setImagenFile(null);
-      setPreviewImageUrl(urlImagen);
+      setUrlImagen(''); // Limpiamos la URL vieja para asegurar que use la nueva al subir
     }
   };
 
@@ -112,11 +119,14 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
 
     let finalImageUrl = urlImagen;
 
+    // 1. Validar y Subir Imagen si hay archivo nuevo
     if (imagenFile) {
       try {
         finalImageUrl = await uploadImageToCloudinary(imagenFile);
         setUrlImagen(finalImageUrl);
       } catch (uploadError) {
+        setErrorMessage(uploadError.message);
+        setSnackbarOpen(true);
         setIsLoading(false);
         return;
       }
@@ -127,80 +137,61 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
       return;
     }
 
+    // 2. Validar Orden
     const parsedOrden = parseInt(orden, 10);
     if (isNaN(parsedOrden) || parsedOrden <= 0) {
-      setErrorMessage("Por favor, introduce un número de orden válido y positivo.");
+      setErrorMessage("Introduce un número de orden válido y positivo.");
       setSnackbarOpen(true);
       setIsLoading(false);
       return;
     }
 
+    // 3. Determinar Acción y Endpoint
     const esEdicion = id !== null;
     const endpoint = esEdicion ? ENDPOINT_EDITAR_ANUNCIO : ENDPOINT_CARGAR_ANUNCIOS;
     const accion = esEdicion ? "editar" : "anuncios";
 
-    let requestBody;
-    let requestHeaders = {
-      'Content-Type': 'application/json'
-    };
-
-    requestBody = JSON.stringify({
+    const payload = {
       accion: accion,
       id: esEdicion ? id : undefined,
-      titulo: titulo,
-      descripcion: descripcion,
-      enlace: enlace,
+      titulo,
+      descripcion,
+      enlace,
       urlImagen: finalImageUrl,
-      estado: estado,
+      estado,
       orden: parsedOrden,
-    });
+    };
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: requestHeaders,
-        body: requestBody,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      // Leer la respuesta como texto primero para inspeccionarla
       const rawResponse = await response.text();
-      console.log("Respuesta RAW de la API:", rawResponse); // ✨ IMPORTANTE: Para depuración ✨
-
-      if (!response.ok) {
-        // Si el estado HTTP no es 2xx, siempre es un error
-        let errorMsg = `Error al ${esEdicion ? 'editar' : 'crear'} el anuncio: ${response.status}`;
-        try {
-          const errorJson = JSON.parse(rawResponse);
-          errorMsg = errorJson.message || rawResponse;
-        } catch (jsonErr) {
-          errorMsg = rawResponse; // Si no es JSON, usa el texto crudo
-        }
-        throw new Error(errorMsg);
-      }
-
-      // Si la respuesta HTTP es OK (2xx), intentamos parsear JSON
-      // Si falla, asumimos éxito basado en response.ok
-      let responseData = {};
+      let responseData;
+      
       try {
         responseData = JSON.parse(rawResponse);
-      } catch (jsonErr) {
-        // No es JSON, pero response.ok fue true, asumimos éxito.
-        // Puedes agregar una verificación más específica si sabes qué texto devuelve la API en caso de éxito.
-        if (rawResponse.includes('éxito') || rawResponse.includes('success') || rawResponse.includes('correctamente')) {
-            responseData = { success: true, message: rawResponse };
-        } else {
-            // Si no contiene palabras de éxito, podría ser un éxito vacío o algo inesperado
-            responseData = { success: true, message: rawResponse || `Operación ${esEdicion ? 'de edición' : 'de creación'} exitosa (respuesta no-JSON).` };
-        }
+      } catch (e) {
+        // Fallback si la API devuelve texto plano pero el status HTTP es OK
+        responseData = { success: response.ok, message: rawResponse };
       }
 
-      // Verifica el campo 'status' o 'success' dentro del JSON (si existe y es un JSON)
-      // O si el fallback anterior ya determinó el éxito
-      if (responseData.status === 'error' || (responseData.success !== undefined && !responseData.success)) {
-        throw new Error(responseData.message || "Error al procesar la solicitud (respuesta de API).");
+      // 4. Verificación de éxito (Cubre tus formatos status='success' o success=true)
+      const isActuallySuccessful = response.ok && (
+        responseData.success === true || 
+        responseData.status === 'success' || 
+        rawResponse.toLowerCase().includes('éxito') || 
+        rawResponse.toLowerCase().includes('correctamente')
+      );
+
+      if (!isActuallySuccessful) {
+        throw new Error(responseData.message || "Error al procesar la solicitud en el servidor.");
       }
 
-      // Si llegamos aquí, la operación fue exitosa
+      // 5. Finalización con Éxito
       setSuccessMessage(`¡Anuncio ${esEdicion ? 'editado' : 'creado'} con éxito!`);
       setSnackbarOpen(true);
 
@@ -208,18 +199,11 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
         onAnuncioEditado();
       } else if (!esEdicion && onAnuncioCreado) {
         onAnuncioCreado();
-        setTitulo('');
-        setDescripcion('');
-        setEnlace('');
-        setUrlImagen('');
-        setImagenFile(null);
-        setPreviewImageUrl(null);
-        setEstado('A');
-        setOrden('');
+        resetLocalForm();
       }
 
     } catch (error) {
-      setErrorMessage(`Error: ${error.message}`);
+      setErrorMessage(error.message);
       setSnackbarOpen(true);
     } finally {
       setIsLoading(false);
@@ -231,151 +215,75 @@ function AnuncioForm({ onAnuncioCreado, anuncioToEdit, onAnuncioEditado, onCance
     setSnackbarOpen(false);
   };
 
-  const handleCancelClick = () => {
-    if (onCancelEdit) {
-      onCancelEdit();
-    }
-  };
-
   return (
     <Box
       component="form"
       sx={{
-        maxWidth: 500,
-        p: 3,
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
+        maxWidth: 500, p: 3, border: '1px solid #ccc', borderRadius: '8px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)', display: 'flex',
+        flexDirection: 'column', gap: 2, bgcolor: 'background.paper'
       }}
-      noValidate
-      autoComplete="off"
       onSubmit={handleSubmit}
     >
-      <Typography variant="h5" align="center">
-        {id ? 'Editar Anuncio' : 'Crear Nuevo Anuncio'}
+      <Typography variant="h5" align="center" gutterBottom>
+        {id ? '✏️ Editar Anuncio' : '📢 Nuevo Anuncio'}
       </Typography>
 
-      <TextField
-        label="Título del Anuncio"
-        value={titulo}
-        onChange={(e) => setTitulo(e.target.value)}
-        fullWidth
-        required
-      />
-      <TextField
-        label="Descripción"
-        multiline
-        rows={4}
-        value={descripcion}
-        onChange={(e) => setDescripcion(e.target.value)}
-        fullWidth
-        required
-      />
-      <TextField
-        label="Enlace (URL)"
-        type="url"
-        value={enlace}
-        onChange={(e) => setEnlace(e.target.value)}
-        fullWidth
-        required
-      />
+      <TextField label="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} fullWidth required size="small" />
+      
+      <TextField label="Descripción" multiline rows={3} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} fullWidth required size="small" />
+      
+      <TextField label="Enlace (URL)" type="url" value={enlace} onChange={(e) => setEnlace(e.target.value)} fullWidth required size="small" />
 
-      <TextField
-        label="Orden del Anuncio"
-        type="number"
-        value={orden}
-        onChange={(e) => setOrden(e.target.value)}
-        fullWidth
-        required
+      <TextField 
+        label="Orden de visualización" type="number" value={orden} 
+        onChange={(e) => setOrden(e.target.value)} fullWidth required size="small"
         inputProps={{ min: "1" }}
-        helperText="Introduce un número único y positivo para el orden del anuncio."
+        helperText="Define en qué posición aparecerá"
       />
 
-      <Box sx={{ textAlign: 'center' }}>
-        <input
-          accept="image/*"
-          style={{ display: 'none' }}
-          id="upload-image-button"
-          type="file"
-          onChange={handleImageChange}
-        />
-        <label htmlFor="upload-image-button">
+      <Box sx={{ textAlign: 'center', my: 1 }}>
+        <input accept="image/*" style={{ display: 'none' }} id="upload-btn" type="file" onChange={handleImageChange} />
+        <label htmlFor="upload-btn">
           <Button
-            variant="outlined"
-            component="span"
+            variant="outlined" component="span" fullWidth
             startIcon={uploadingImage ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
-            disabled={uploadingImage}
-            fullWidth
+            disabled={uploadingImage || isLoading}
           >
-            {uploadingImage ? 'Subiendo Imagen...' : (imagenFile ? 'Imagen Seleccionada' : 'Seleccionar Imagen')}
+            {uploadingImage ? 'Subiendo...' : (imagenFile ? 'Imagen Seleccionada' : 'Seleccionar Imagen')}
           </Button>
         </label>
 
         {(previewImageUrl || urlImagen) && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">Previsualización:</Typography>
-            <Avatar src={previewImageUrl || urlImagen} sx={{ width: 100, height: 100, mx: 'auto' }} variant="square" />
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">Vista previa:</Typography>
+            <Avatar src={previewImageUrl || urlImagen} sx={{ width: 150, height: 80, mt: 1, borderRadius: 1 }} variant="square" />
           </Box>
         )}
       </Box>
 
       {id && (
         <FormControlLabel
-          control={
-            <Switch
-              checked={estado === 'A'}
-              onChange={(e) => setEstado(e.target.checked ? 'A' : 'I')}
-              color="primary"
-            />
-          }
-          label={estado === 'A' ? 'Anuncio Activo' : 'Anuncio Inactivo'}
+          control={<Switch checked={estado === 'A'} onChange={(e) => setEstado(e.target.checked ? 'A' : 'I')} />}
+          label={estado === 'A' ? 'Anuncio Visible' : 'Anuncio Oculto'}
         />
       )}
 
-      <Box sx={{ position: 'relative', display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
         {id && (
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleCancelClick}
-            disabled={isLoading || uploadingImage}
-            fullWidth
-          >
+          <Button variant="outlined" color="secondary" onClick={onCancelEdit} disabled={isLoading} fullWidth>
             Cancelar
           </Button>
         )}
-        <Button
-          variant="contained"
-          color="primary"
-          type="submit"
-          disabled={isLoading || uploadingImage}
-          fullWidth
-        >
-          {isLoading
-            ? (id ? 'Editando Anuncio...' : 'Creando Anuncio...')
-            : (id ? 'Guardar Cambios' : 'Publicar Anuncio')}
+        <Button variant="contained" color="primary" type="submit" disabled={isLoading || uploadingImage} fullWidth>
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : (id ? 'Guardar Cambios' : 'Publicar')}
         </Button>
-        {isLoading && (
-          <CircularProgress
-            size={24}
-            sx={{ position: 'absolute', top: '50%', left: '50%', mt: '-12px', ml: '-12px' }}
-          />
-        )}
       </Box>
 
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        {successMessage ? (
-          <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
-            {successMessage}
-          </Alert>
-        ) : (
-          <Alert onClose={handleSnackbarClose} severity="error" sx={{ width: '100%' }}>
-            {errorMessage}
-          </Alert>
-        )}
+      <Snackbar open={snackbarOpen} autoHideDuration={5000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity={successMessage ? "success" : "error"} variant="filled">
+          {successMessage || errorMessage}
+        </Alert>
       </Snackbar>
     </Box>
   );

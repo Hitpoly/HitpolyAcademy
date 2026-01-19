@@ -17,7 +17,6 @@ const PortadaOne = () => {
   const [slideData, setSlideData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Nuevo estado para controlar si el carrusel debe detenerse por interacción con el formulario
   const [shouldStopAutoplay, setShouldStopAutoplay] = useState(false);
 
   const fetchFeaturedCourses = useCallback(async () => {
@@ -33,10 +32,8 @@ const PortadaOne = () => {
         }
       );
 
-      
       if (!response.ok) {
         const errorText = await response.text();
-        
         throw new Error(
           `Error al cargar cursos destacados: ${response.status} ${response.statusText} - ${errorText}`
         );
@@ -52,39 +49,32 @@ const PortadaOne = () => {
           backgroundImage: curso.url_banner,
         }));
         setSlideData(formattedSlides);
-        } else {
+      } else {
         throw new Error(
           data.message || "Formato de respuesta de cursos destacados inválido."
         );
       }
     } catch (err) {
-      
       setError(err.message);
     } finally {
       setLoading(false);
-      }
+    }
   }, []);
 
   useEffect(() => {
     fetchFeaturedCourses();
   }, [fetchFeaturedCourses]);
 
+  // Aseguramos la vinculación de la navegación cuando los datos cargan
   useEffect(() => {
-    if (
-      swiperRef.current &&
-      swiperRef.current.params &&
-      navigationNextRef.current
-    ) {
-      swiperRef.current.params.navigation = {
-        ...swiperRef.current.params.navigation,
-        nextEl: navigationNextRef.current,
-      };
+    if (swiperRef.current && navigationNextRef.current) {
+      swiperRef.current.params.navigation.nextEl = navigationNextRef.current;
+      swiperRef.current.navigation.destroy();
       swiperRef.current.navigation.init();
       swiperRef.current.navigation.update();
     }
   }, [slideData]);
 
-  // Efecto para controlar el autoplay basado en 'shouldStopAutoplay'
   useEffect(() => {
     if (swiperRef.current && swiperRef.current.autoplay) {
       if (shouldStopAutoplay) {
@@ -93,7 +83,7 @@ const PortadaOne = () => {
         swiperRef.current.autoplay.start();
       }
     }
-  }, [shouldStopAutoplay]); // Depende de shouldStopAutoplay
+  }, [shouldStopAutoplay]);
 
   if (loading) {
     return (
@@ -168,7 +158,14 @@ const PortadaOne = () => {
         autoplay={{
           delay: 5000,
           disableOnInteraction: false,
-          pauseOnMouseEnter: true,
+          pauseOnMouseEnter: false,
+        }}
+        // CONFIGURACIÓN CLAVE PARA LA FLECHA
+        navigation={{
+          nextEl: navigationNextRef.current,
+        }}
+        onBeforeInit={(swiper) => {
+          swiper.params.navigation.nextEl = navigationNextRef.current;
         }}
         speed={800}
         onSwiper={(swiper) => {
@@ -261,14 +258,14 @@ const PortadaOne = () => {
                     </Typography>
                   </Tooltip>
                 )}
-                {/* Pasamos la función para actualizar el estado del autoplay */}
                 <EmailSubscriptionForm idCursoDestacado={slide.id} onInputActivity={setShouldStopAutoplay} />
-
               </Box>
             </Box>
           </SwiperSlide>
         ))}
       </Swiper>
+
+      {/* FLECHA CON Z-INDEX CORREGIDO */}
       <Box
         ref={navigationNextRef}
         sx={{
@@ -276,13 +273,14 @@ const PortadaOne = () => {
           top: {xs: "35%", md: "50%"},
           right: { xs: "5px", md: "20px" },
           transform: "translateY(-50%)",
-          zIndex: 10,
+          zIndex: 100, // Aumentado para estar por encima de los slides
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           animation: "arrow-pulse-move 2s infinite ease-in-out",
           color: "white",
+          pointerEvents: "auto", // Asegura que capture el clic
           "& svg": {
             fontSize: { xs: "25px", md: "35px" },
           },

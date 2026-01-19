@@ -1,154 +1,112 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { toast, ToastContainer } from 'react-toastify'; 
-import 'react-toastify/dist/ReactToastify.css'; 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AuthContext = createContext();
-const API_BASE_URL = "https://apiacademy.hitpoly.com/ajax/"; 
-
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }) => {
-  // const navigate = useNavigate(); 
-
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const storedAuth = localStorage.getItem("isAuthenticated") === "true";
-    return storedAuth;
-  });
-
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-    return parsedUser;
-  });
-
-  const userRole = user ? user.id_tipo_usuario : undefined;
-  
-  const login = (userData) => {
-    setIsAuthenticated(true);
-    setUser(userData);
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("user");
-  };
-
-  const verifyUserActivity = useCallback(async () => {
-    if (isAuthenticated && user && user.id) {
-      try {
-        const response = await fetch(`${API_BASE_URL}getAllUserController.php`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ accion: "getAllUser" }), 
-        });
-        const data = await response.json();
-        
-        if (data && data.status === 'success' && Array.isArray(data.clases)) {
-          const currentUserFromApi = data.clases.find(u => u.id === user.id); 
-
-          if (currentUserFromApi) {
-            const userCurrentStatus = currentUserFromApi.estado; 
-
-            if (userCurrentStatus === 'Inactivo') {
-              logout(); 
-              toast.error(
-                <div>
-                  <p>Tu cuenta ha sido **desactivada**.</p>
-                  <p>Por favor, contacta a soporte o reactívala.</p>
-                  <button 
-                    onClick={() => {
-                      window.location.href = '/ofertas'; 
-                      toast.dismiss(); 
-                    }}
-                    style={{ 
-                      marginTop: '15px', 
-                      padding: '10px 20px', 
-                      backgroundColor: '#4CAF50', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '5px', 
-                      cursor: 'pointer',
-                      fontSize: '1em'
-                    }}
-                  >
-                    Ir a la página de pago
-                  </button>
-                </div>,
-                {
-                  position: "top-center", 
-                  autoClose: false, 
-                  closeOnClick: false,
-                  pauseOnHover: true,
-                  draggable: true,
-                  className: 'toast-inactive-user', 
-                }
-              );
-            } 
-          } else {
-            logout();
-            toast.error(
-              <div>
-                <p>Tu sesión ha expirado o tu usuario no está disponible.</p>
-                <button 
-                  onClick={() => {
-                    // navigate('/login');
-                    window.location.href = '/login';
-                    toast.dismiss();
-                  }}
-                  style={{ 
-                    marginTop: '15px', 
-                    padding: '10px 20px', 
-                    backgroundColor: '#007bff', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '5px', 
-                    cursor: 'pointer',
-                    fontSize: '1em'
-                  }}
-                >
-                  Iniciar sesión
-                </button>
-              </div>,
-              {
-                position: "top-center",
-                autoClose: false,
-                closeOnClick: false,
-                pauseOnHover: true,
-                draggable: true,
-              }
-            );
-          }
-        } 
-      } catch (error) {
-        // Manejo de errores
-      }
-    } 
-  }, [isAuthenticated, user, logout]);
-
-  useEffect(() => {
-    let intervalId;
-    if (isAuthenticated && user && user.id) {
-      verifyUserActivity(); 
-      intervalId = setInterval(verifyUserActivity, 300000); 
-    } 
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [isAuthenticated, user, verifyUserActivity]);
-
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, user, userRole, login, logout }}>
-      {children}
-      <ToastContainer /> 
-    </AuthContext.Provider>
-  );
+const getUserIdFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("user_id");
+    if (id) console.log("🔗 [Bridge] ID recibido del sistema externo:", id);
+    return id;
 };
+
+const API_URL = "https://apiweb.hitpoly.com/ajax/usuarioMasterController.php";
+
+export const AuthProvider = ({ children }) => {
+    const urlUserId = getUserIdFromUrl();
+    const storedUserId = localStorage.getItem("userId");
+
+    const [user, setUser] = useState(null);
+    // Cambiado a false por defecto para validar primero con la API
+    const [isAuthenticated, setIsAuthenticated] = useState(false); 
+    const [isLoading, setIsLoading] = useState(true);
+
+    const logout = useCallback(() => {
+        console.log("🚪 [Auth] Cerrando sesión...");
+        setIsAuthenticated(false);
+        setUser(null);
+        localStorage.removeItem("userId");
+    }, []);
+
+    const loadUserData = useCallback(async (id) => {
+        console.log(`📡 [API] Validando ID ${id} contra la Base de Datos Maestra...`);
+        setIsLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    funcion: "getUsuario",
+                    id_usuario: id,
+                }),
+            });
+
+            const text = await res.text();
+            let data;
+            
+            try {
+                data = JSON.parse(text);
+                console.log("📥 [API] Datos recuperados para auditoría:", data);
+            } catch (e) {
+                console.error("❌ [Error] Error al parsear JSON.");
+                throw new Error("JSON inválido");
+            }
+
+            if (data.status === "success" && data.user) {
+                const userData = {
+                    id: id,
+                    email: data.user.correo,
+                    nombre: data.user.nombre,
+                    apellido: data.user.apellido,
+                    id_tipo: Number(data.user.id_tipo),
+                    id_cargo: Number(data.user.id_cargo),
+                    avatar: data.user.avatar,
+                };
+
+                setUser(userData);
+                setIsAuthenticated(true);
+                localStorage.setItem("userId", id);
+                console.log(`✅ [Auth] Acceso concedido: ${userData.nombre} (Tipo: ${userData.id_tipo}, Cargo: ${userData.id_cargo})`);
+
+                if (window.location.href.includes("user_id=")) {
+                    const clean = window.location.pathname;
+                    window.history.replaceState({}, "", clean);
+                }
+            } else {
+                logout();
+            }
+        } catch (error) {
+            console.error("🔥 [Error] Fallo en la conexión:", error);
+            logout();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [logout]);
+
+    useEffect(() => {
+        const activeId = urlUserId || storedUserId;
+        if (!activeId) {
+            setIsLoading(false);
+            return;
+        }
+        loadUserData(activeId);
+    }, [urlUserId, storedUserId, loadUserData]);
+
+    return (
+        <AuthContext.Provider value={{ 
+            isAuthenticated, 
+            user, 
+            isLoading, 
+            logout,
+            userRole: user?.id_tipo, 
+            userCargo: user?.id_cargo 
+        }}>
+            {children}
+            <ToastContainer /> 
+        </AuthContext.Provider>
+    );
+};
+
+export default AuthProvider;
