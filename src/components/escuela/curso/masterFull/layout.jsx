@@ -14,7 +14,7 @@ import VideoList from "./components/VideoList.jsx";
 import Footer from "../../../footer/pieDePagina.jsx";
 import Resources from "./components/resources.jsx";
 import CommentSection from "./components/comentarios/CommentSection.jsx";
-import useCourseVideoLogic from "./logic/useCourseVideoLogic";
+import useCourseVideoLogic from "./logic/course/useCourseVideoLogic.js";
 import QuizIcon from "@mui/icons-material/Quiz";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; 
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos"; 

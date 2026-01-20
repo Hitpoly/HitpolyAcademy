@@ -9,8 +9,8 @@ import {
   registerInterest,
   getCourseDetailsById,
   checkUserEnrollmentByTitle,
-} from "../logic/api";
-import { extractCourseIdFromSlug } from "../logic/courseUtils";
+} from "./api";
+import { extractCourseIdFromSlug } from "./courseUtils";
 
 export const useEnrollmentLogic = (urlSlugFromParams) => {
   const { isAuthenticated, login, user } = useAuth();

@@ -1,4 +1,3 @@
-// src/components/videos/Videopopup.jsx
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import YouTube from 'react-youtube';
@@ -9,14 +8,14 @@ const getYouTubeVideoId = (url) => {
   return match && match[1] ? match[1] : null;
 };
 
-// Asegúrate de que onYouTubeStateChange se recibe aquí
-const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => { // <--- Agregamos onYouTubeStateChange
+const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => {
   const videoRef = useRef(null);
-
   const youtubeVideoId = getYouTubeVideoId(videoUrl);
   const isYouTubeVideo = !!youtubeVideoId;
 
   const youtubeOpts = {
+    height: '100%',
+    width: '100%',
     playerVars: {
       autoplay: 0,
       controls: 0,
@@ -24,51 +23,42 @@ const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => { // <
       rel: 0,
       disablekb: 1,
       fs: 0,
+      iv_load_policy: 3,
+      enablejsapi: 1,
+      // Usar origin dinámico para evitar el mismatch que vimos en tus logs
+      origin: window.location.origin, 
     },
   };
 
-  const fillParentStyles = {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    border: 0,
-    pointerEvents: 'none',
-  };
-
   const handleYouTubeReady = useCallback((event) => {
-    if (onPlayerReady) {
+    // Verificamos que event.target exista antes de pasarlo
+    if (event?.target) {
+      console.log("🎯 [Videopopup] YouTube API lista");
       onPlayerReady(event.target);
     }
   }, [onPlayerReady]);
 
-  // Manejador de cambio de estado para YouTube
   const handleYouTubeStateChange = useCallback((event) => {
-    if (onYouTubeStateChange) { // <--- Llama al callback si existe
-      onYouTubeStateChange(event.data); // event.data contiene el estado (PLAYING, PAUSED, ENDED, etc.)
+    // Agregamos una capa de seguridad para evitar "Script Error"
+    try {
+      if (onYouTubeStateChange && event?.data !== undefined) {
+        onYouTubeStateChange(event.data);
+      }
+    } catch (e) {
+      console.warn("⚠️ Error en cambio de estado de YT controlado");
     }
   }, [onYouTubeStateChange]);
 
   useEffect(() => {
     if (!videoUrl) return;
 
-    if (videoRef.current && isYouTubeVideo) {
-      videoRef.current.src = "";
-    }
-
-    if (!isYouTubeVideo) {
-      if (videoRef.current) {
-        if (onPlayerReady) {
-          onPlayerReady(videoRef.current);
-        }
-      }
+    if (!isYouTubeVideo && videoRef.current) {
+      onPlayerReady(videoRef.current);
     }
 
     return () => {
       if (videoRef.current && !isYouTubeVideo) {
         videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
-        videoRef.current.load();
       }
     };
   }, [videoUrl, isYouTubeVideo, onPlayerReady]);
@@ -78,33 +68,28 @@ const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => { // <
   return (
     <Box
       sx={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: '16 / 9',
-        backgroundColor: '#000',
-        overflow: 'hidden',
-        '& iframe': {
-          ...fillParentStyles,
-        },
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        backgroundColor: '#000', overflow: 'hidden', zIndex: 1,
+        '& .yt-container': { width: '100%', height: '100%' },
+        '& iframe': { width: '100%', height: '100%', pointerEvents: 'none' }, // 'none' para que el clic lo reciba tu capa superior
       }}
-      onContextMenu={(e) => e.preventDefault()}
     >
       {isYouTubeVideo ? (
         <YouTube
           videoId={youtubeVideoId}
           opts={youtubeOpts}
-          className="yt-player"
-          style={fillParentStyles}
+          className="yt-container"
           onReady={handleYouTubeReady}
           onStateChange={handleYouTubeStateChange}
+          onError={(e) => console.error("❌ Error de YouTube:", e)}
         />
       ) : (
         <video
           ref={videoRef}
           src={videoUrl}
           controls={false}
-          style={{ ...fillParentStyles, objectFit: 'contain' }}
-          title="Video del curso"
+          playsInline
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain' }}
         />
       )}
     </Box>

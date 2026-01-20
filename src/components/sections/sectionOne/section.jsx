@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -19,6 +20,7 @@ const createSlug = (title) => {
 };
 
 const SectionCardGrid = () => {
+  const navigate = useNavigate();
   const [activeCategoryName, setActiveCategoryName] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [coursesByCategory, setCoursesByCategory] = useState({});
@@ -28,6 +30,19 @@ const SectionCardGrid = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // 3. NUEVA FUNCIÓN: Maneja el click y guarda el ID
+  const handleCourseSelection = (courseId, title) => {
+    const slug = createSlug(title);
+
+    // Guardamos en el "baúl" de la sesión para que EnrollmentForm lo lea
+    sessionStorage.setItem("selectedCourseId", courseId);
+    sessionStorage.setItem("selectedCourseSlug", slug);
+
+    // Navegamos a la ruta de la academia (limpia, sin parámetros)
+    // Ajusta esta ruta a la que uses para mostrar el EnrollmentForm
+    navigate("/systems/academia");
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +56,7 @@ const SectionCardGrid = () => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ accion: "getcategorias" }),
-            }
+            },
           ),
           fetch(
             "https://apiacademy.hitpoly.com/ajax/traerCursosController.php",
@@ -49,14 +64,14 @@ const SectionCardGrid = () => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ accion: "getCursos" }),
-            }
+            },
           ),
         ]);
 
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           throw new Error(
-            `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`
+            `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`,
           );
         }
         const categoriesData = await categoriesResponse.json();
@@ -65,14 +80,14 @@ const SectionCardGrid = () => {
           !Array.isArray(categoriesData.categorias)
         ) {
           throw new Error(
-            categoriesData.message || "Datos de categorías inválidos."
+            categoriesData.message || "Datos de categorías inválidos.",
           );
         }
 
         if (!coursesResponse.ok) {
           const errorText = await coursesResponse.text();
           throw new Error(
-            `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`
+            `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`,
           );
         }
         const coursesData = await coursesResponse.json();
@@ -83,7 +98,7 @@ const SectionCardGrid = () => {
         ) {
           throw new Error(
             coursesData.message ||
-              "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada."
+              "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada.",
           );
         }
 
@@ -93,9 +108,9 @@ const SectionCardGrid = () => {
         }, {});
 
         const publishedCourses = coursesData.cursos.cursos.filter(
-          (curso) => curso.estado === "Publicado"
+          (curso) => curso.estado === "Publicado",
         );
-        
+
         const uniqueInstructorIds = [
           ...new Set(publishedCourses.map((curso) => curso.profesor_id)),
         ];
@@ -107,10 +122,9 @@ const SectionCardGrid = () => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ accion: "getAlumnoProfesor", id: id }),
-              }
+              },
             );
             if (!instructorResponse.ok) {
-              
               return { id, name: "Instructor Desconocido" };
             }
             const instructorData = await instructorResponse.json();
@@ -120,11 +134,9 @@ const SectionCardGrid = () => {
                 name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`,
               };
             } else {
-              
               return { id, name: "Instructor Desconocido" };
             }
           } catch (fetchErr) {
-            
             return { id, name: "Instructor Desconocido" };
           }
         });
@@ -135,7 +147,7 @@ const SectionCardGrid = () => {
             map[instructor.id] = instructor.name;
             return map;
           },
-          {}
+          {},
         );
         setInstructorNamesMap(newInstructorNamesMap);
 
@@ -158,13 +170,12 @@ const SectionCardGrid = () => {
               "Instructor Desconocido",
             rating: curso.valoracion || null,
             reviews: curso.numero_resenas || null,
-            students: curso.total_estudiantes || null, 
+            students: curso.total_estudiantes || null,
             totalHours: curso.duracion_estimada,
             price: `${curso.precio} ${curso.moneda}`,
-            level: curso.nivel || null, 
+            level: curso.nivel || null,
           };
 
-          
           acc[categoryName].push(mappedCourse);
           return acc;
         }, {});
@@ -187,13 +198,13 @@ const SectionCardGrid = () => {
 
   const categoryNames = useMemo(
     () => Object.keys(coursesByCategory),
-    [coursesByCategory]
+    [coursesByCategory],
   );
 
   const currentCourses = useMemo(
     () =>
       activeCategoryName ? coursesByCategory[activeCategoryName] || [] : [],
-    [activeCategoryName, coursesByCategory]
+    [activeCategoryName, coursesByCategory],
   );
 
   const coursesToDisplay = useMemo(() => {
@@ -303,10 +314,7 @@ const SectionCardGrid = () => {
                   margin: { xs: "0px", md: "0 3px" },
                   width: { xs: "auto", md: "100%" },
                   minWidth: {
-                    xs: `${
-                      coursesToDisplay.length *
-                      (CARD_CONTENT_WIDTH_XS + CARD_MARGIN_XS * 2)
-                    }px`,
+                    xs: `${coursesToDisplay.length * (280 + 8 * 2)}px`,
                     md: "100%",
                   },
                 }}
@@ -315,16 +323,26 @@ const SectionCardGrid = () => {
                   coursesToDisplay.map((course) => (
                     <Box
                       key={course.id}
+                      // 4. ASIGNAR EL CLICK AQUÍ
+                      onClick={() =>
+                        handleCourseSelection(course.id, course.title)
+                      }
                       sx={{
                         mb: 2,
+                        cursor: "pointer", // Para que el usuario sepa que es clickable
                         width: {
-                          xs: `${CARD_CONTENT_WIDTH_XS}px`,
+                          xs: `280px`,
                           sm: "calc(50% - 16px)",
                           md: "calc(33.33% - 16px)",
                           lg: "calc(25% - 16px)",
                         },
                         flexShrink: 0,
-                        margin: `0 ${CARD_MARGIN_XS}px 16px ${CARD_MARGIN_XS}px`,
+                        margin: `0 8px 16px 8px`,
+                        // Efecto opcional para resaltar al pasar el mouse
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          transition: "transform 0.3s ease-in-out",
+                        },
                       }}
                     >
                       <CursoCard {...course} />
