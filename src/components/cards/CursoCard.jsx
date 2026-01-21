@@ -1,5 +1,4 @@
-import React, { useState } from "react"; // Importar useState
-
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,294 +9,182 @@ import {
   Rating,
   Tooltip,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
-
 import ShareIcon from "@mui/icons-material/Share";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 const CursoCard = ({
+  id, // Recibimos el id directamente del objeto organizado en SectionCardGrid
   title,
   subtitle,
   banner,
-  accessLink,
+  accessLink = "",
   instructorName,
   rating,
   reviews,
-  students,
-  totalHours,
   price,
-  level,
 }) => {
-  // Estado para controlar el texto del tooltip del botón de compartir
-  const [shareTooltipText, setShareTooltipText] = useState("Copiar enlace del curso");
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
 
-  // Función para convertir el título en un slug amigable para URL
-  const slugify = (text) => {
-    return text
-      .toString()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]+/g, "")
-      .replace(/--+/g, "-");
+  // 1. URL Dinámica para Redes Sociales (Apunta al puente PHP para leer Meta Tags)
+  // Usamos el ID del curso para que compartir.php busque en la tabla raulzoto_academy.cursos
+  const dynamicShareLink = `https://apiacademy.hitpoly.com/ajax/compartir.php?id=${id}`;
+
+  const handleOpenMenu = (e) => {
+    e.stopPropagation();
+    setAnchorEl(e.currentTarget);
   };
 
-  // Extraer el ID del curso de accessLink, asumiendo que es el último segmento numérico
-  const courseId = accessLink.split("/").pop();
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
 
-  // Construir el enlace de compartir con el título slugificado y el ID
-  const shareLink = `https://academy.hitpoly.com/curso/${slugify(title)}-${courseId}`;
+  const handleShare = (platform) => {
+    const encodedUrl = encodeURIComponent(dynamicShareLink);
+    const encodedTitle = encodeURIComponent(`¡Mira este curso en Hitpoly: ${title}!`);
 
-  const handleShareClick = () => {
-    navigator.clipboard
-      .writeText(shareLink)
-      .then(() => {
-        setShareTooltipText("¡Copiado!"); // Cambia el texto del tooltip a "Copiado"
-        setTimeout(() => {
-          setShareTooltipText("Copiar enlace del curso"); // Vuelve al texto original después de un tiempo
-        }, 1500); // 1.5 segundos
-      })
-      .catch((err) => {
-        console.error("Error al copiar el enlace: ", err);
-        setShareTooltipText("Error al copiar"); // Muestra un mensaje de error si falla
-        setTimeout(() => {
-          setShareTooltipText("Copiar enlace del curso");
-        }, 2000); // Más tiempo para leer el error
-      });
+    const links = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    };
+
+    if (platform === "copy") {
+      navigator.clipboard.writeText(dynamicShareLink);
+      alert("¡Enlace dinámico copiado al portapapeles!");
+    } else if (platform === "instagram") {
+      // Instagram no permite enlaces directos, copiamos el link para que lo peguen
+      navigator.clipboard.writeText(dynamicShareLink);
+      alert("Enlace copiado. Instagram no permite compartir links directos desde la web; puedes pegarlo en tus mensajes o biografía.");
+    } else {
+      window.open(links[platform], "_blank", "width=600,height=400");
+    }
+    handleCloseMenu();
   };
 
   return (
     <Card
       sx={{
-        width: 300,
-        minWidth: 200,
-        maxWidth: 300,
-        height: "auto",
-        boxSizing: "border-box",
+        width: { xs: "300px", md: "100%" },
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRadius: "4px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08)",
+        borderRadius: "12px", // Bordes un poco más modernos
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         transition: "transform 0.2s ease-in-out",
-        "&:hover": {
-          transform: "translateY(-4px)",
-        },
+        "&:hover": { transform: "translateY(-4px)" },
         overflow: "hidden",
       }}
     >
+      {/* Imagen del curso (Columna url_banner en tu DB) */}
       {banner && (
-        <CardMedia
-          component="img"
-          height="140"
-          image={banner}
-          alt={title}
-          sx={{ objectFit: "cover" }}
+        <CardMedia 
+          component="img" 
+          height="160" 
+          image={banner} 
+          alt={title} 
+          sx={{ objectFit: "cover", bgcolor: "#f0f0f0" }} 
         />
       )}
 
-      <CardContent
-        sx={{
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "12px",
-          paddingBottom: "12px !important",
-        }}
-      >
-        <Box>
-          <Tooltip title={title} placement="top">
-            <Typography
-              gutterBottom
-              variant="h6"
-              component="div"
-              sx={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                lineHeight: "1.3em",
-                minHeight: "2.6em",
-                fontWeight: "bold",
-                fontSize: { xs: "1rem", sm: "1.05rem" },
-                mb: 0.5,
-                color: "#1c1d1f",
-              }}
-            >
-              {title}
-            </Typography>
-          </Tooltip>
-
-          {instructorName && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 0.5, fontSize: "0.8rem" }}
-            >
-              {instructorName}
-            </Typography>
-          )}
-
-          {subtitle && (
-            <Tooltip title={subtitle} placement="bottom">
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1.4,
-                  minHeight: "2.8em",
-                  fontSize: "0.85rem",
-                  mb: 1,
-                }}
-              >
-                {subtitle}
-              </Typography>
-            </Tooltip>
-          )}
-
-          <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-            {rating && (
-              <Typography
-                variant="body2"
-                color="orange"
-                sx={{ fontWeight: "bold", mr: 0.5, fontSize: "0.9rem" }}
-              >
-                {rating}
-              </Typography>
-            )}
-            {rating && (
-              <Rating
-                name="read-only"
-                value={parseFloat(rating)}
-                precision={0.1}
-                readOnly
-                size="small"
-                sx={{ color: "#e59819" }}
-              />
-            )}
-            {reviews && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: 0.5, fontSize: "0.8rem" }}
-              >
-                ({reviews})
-              </Typography>
-            )}
-          </Box>
-
-          <Box
+      <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", p: 2 }}>
+        <Box sx={{ mb: 1 }}>
+          <Typography
+            variant="h6"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 1,
-              flexWrap: "wrap",
+              fontWeight: "bold",
+              fontSize: "1rem",
+              lineHeight: 1.2,
+              height: "2.4em",
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              color: "#1c1d1f",
             }}
           >
-            {students && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.8rem", mr: 1, whiteSpace: "nowrap" }}
-              >
-                {students} estudiantes
-              </Typography>
-            )}
-            {totalHours && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.8rem", mr: 1, whiteSpace: "nowrap" }}
-              >
-                {totalHours}
-              </Typography>
-            )}
-            {level && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: "0.8rem",
-                  ml: students || totalHours ? 0.5 : 0,
-                  border: "1px solid #d1d7dc",
-                  borderRadius: "3px",
-                  px: 0.5,
-                  py: 0.2,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {level}
-              </Typography>
-            )}
-          </Box>
+            {title}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {instructorName || "Instructor Academia"}
+          </Typography>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            pt: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              width: "100%",
-              mb: 1,
-            }}
-          >
-            {price && (
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                  fontWeight: "bold",
-                  color: "#1c1d1f",
-                  fontSize: "1.2rem",
-                }}
-              >
-                {price}
-              </Typography>
-            )}
-            {/* El Tooltip ahora usa el estado shareTooltipText */}
-            <Tooltip title={shareTooltipText} placement="top">
-              <IconButton
-                aria-label="compartir"
-                onClick={handleShareClick}
-                sx={{ color: "#1c1d1f" }}
-              >
-                <ShareIcon />
+        {/* Rating Dinámico */}
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: "bold", color: "#b4690e", mr: 0.5 }}>
+            {rating || "0.0"}
+          </Typography>
+          <Rating value={parseFloat(rating) || 0} precision={0.1} readOnly size="small" sx={{ color: "#e59819" }} />
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+            ({reviews || 0})
+          </Typography>
+        </Box>
+
+        <Box sx={{ mt: "auto" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#1c1d1f" }}>
+              {price}
+            </Typography>
+            
+            <Tooltip title="Compartir este curso">
+              <IconButton onClick={handleOpenMenu} size="small" sx={{ color: "#6F4CE0" }}>
+                <ShareIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={openMenu}
+              onClose={handleCloseMenu}
+              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+              transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              PaperProps={{ sx: { borderRadius: '10px', mt: 1 } }}
+            >
+              <MenuItem onClick={() => handleShare("facebook")}>
+                <ListItemIcon><FacebookIcon fontSize="small" sx={{ color: "#1877F2" }} /></ListItemIcon>
+                <ListItemText>Facebook</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleShare("whatsapp")}>
+                <ListItemIcon><WhatsAppIcon fontSize="small" sx={{ color: "#25D366" }} /></ListItemIcon>
+                <ListItemText>WhatsApp</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleShare("linkedin")}>
+                <ListItemIcon><LinkedInIcon fontSize="small" sx={{ color: "#0A66C2" }} /></ListItemIcon>
+                <ListItemText>LinkedIn</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleShare("instagram")}>
+                <ListItemIcon><InstagramIcon fontSize="small" sx={{ color: "#E4405F" }} /></ListItemIcon>
+                <ListItemText>Instagram</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleShare("copy")}>
+                <ListItemIcon><ContentCopyIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Copiar Enlace</ListItemText>
+              </MenuItem>
+            </Menu>
           </Box>
+
           <Button
-            size="small"
             variant="outlined"
+            fullWidth
+            href={accessLink}
             sx={{
-              backgroundColor: "transparent",
-              color: "#1c1d1f",
-              borderColor: "#1c1d1f",
-              padding: "8px 16px",
-              borderRadius: "4px",
               textTransform: "none",
               fontWeight: "bold",
-              width: "100%",
-              "&:hover": {
-                backgroundColor: "#f7f9fa",
-                borderColor: "#1c1d1f",
-              },
+              borderColor: "#1c1d1f",
+              color: "#1c1d1f",
+              borderRadius: "8px",
+              "&:hover": { bgcolor: "#f7f9fa", borderColor: "#1c1d1f" },
             }}
-            href={accessLink}
           >
             Ver más información
           </Button>

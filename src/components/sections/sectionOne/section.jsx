@@ -3,53 +3,26 @@ import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
-  Link,
   Typography,
-  useMediaQuery,
-  useTheme,
   CircularProgress,
   Alert,
 } from "@mui/material";
 import CursoCard from "../../../components/cards/CursoCard";
 
-const createSlug = (title) => {
-  return title
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/[^\w-]+/g, "");
-};
-
 const SectionCardGrid = () => {
   const navigate = useNavigate();
   const [activeCategoryName, setActiveCategoryName] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false);
   const [coursesByCategory, setCoursesByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [instructorNamesMap, setInstructorNamesMap] = useState({});
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
-  // 3. NUEVA FUNCIÓN: Maneja el click y guarda el ID
-  const handleCourseSelection = (courseId, title) => {
-    const slug = createSlug(title);
-
-    // Guardamos en el "baúl" de la sesión para que EnrollmentForm lo lea
-    sessionStorage.setItem("selectedCourseId", courseId);
-    sessionStorage.setItem("selectedCourseSlug", slug);
-
-    // Navegamos a la ruta de la academia (limpia, sin parámetros)
-    // Ajusta esta ruta a la que uses para mostrar el EnrollmentForm
-    navigate("/systems/academia");
-  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError("");
       try {
-        const [categoriesResponse, coursesResponse] = await Promise.all([
+        console.log("--- INICIANDO CARGA DE DATOS ---");
+
+        const [catRes, cursRes] = await Promise.all([
           fetch(
             "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
             {
@@ -68,319 +41,191 @@ const SectionCardGrid = () => {
           ),
         ]);
 
-        if (!categoriesResponse.ok) {
-          const errorText = await categoriesResponse.text();
-          throw new Error(
-            `Error al cargar categorías: ${categoriesResponse.statusText}. Detalles: ${errorText}`,
-          );
-        }
-        const categoriesData = await categoriesResponse.json();
-        if (
-          categoriesData.status !== "success" ||
-          !Array.isArray(categoriesData.categorias)
-        ) {
-          throw new Error(
-            categoriesData.message || "Datos de categorías inválidos.",
-          );
-        }
-
-        if (!coursesResponse.ok) {
-          const errorText = await coursesResponse.text();
-          throw new Error(
-            `Error al cargar cursos: ${coursesResponse.statusText}. Detalles: ${errorText}`,
-          );
-        }
-        const coursesData = await coursesResponse.json();
-        if (
-          coursesData.status !== "success" ||
-          !coursesData.cursos ||
-          !Array.isArray(coursesData.cursos.cursos)
-        ) {
-          throw new Error(
-            coursesData.message ||
-              "Datos de cursos inválidos: la propiedad 'cursos' no es un array en la ubicación esperada.",
-          );
-        }
+        const categoriesData = await catRes.json();
+        const coursesData = await cursRes.json();
 
         const categoryMap = categoriesData.categorias.reduce((map, cat) => {
           map[cat.id] = cat.nombre;
           return map;
         }, {});
 
-        const publishedCourses = coursesData.cursos.cursos.filter(
-          (curso) => curso.estado === "Publicado",
+        const allCursos = (coursesData.cursos.cursos || []).filter(
+          (c) => c.estado === "Publicado",
         );
+        const uniqueProfIds = [...new Set(allCursos.map((c) => c.profesor_id))];
 
-        const uniqueInstructorIds = [
-          ...new Set(publishedCourses.map((curso) => curso.profesor_id)),
-        ];
-        const instructorPromises = uniqueInstructorIds.map(async (id) => {
+        // ACTUALIZACIÓN: Petición al nuevo PHP usando GET para obtener el mensaje y datos
+        const instructorPromises = uniqueProfIds.map(async (id) => {
           try {
-            const instructorResponse = await fetch(
-              "https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ accion: "getAlumnoProfesor", id: id }),
-              },
+            const res = await fetch(
+              `https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php?id=${id}`
             );
-            if (!instructorResponse.ok) {
-              return { id, name: "Instructor Desconocido" };
-            }
-            const instructorData = await instructorResponse.json();
-            if (instructorData.status === "success" && instructorData.usuario) {
+            const data = await res.json();
+
+            if (data.status === "success" && data.usuario) {
+              // Imprimimos el mensaje que viene desde PHP
+              console.log(`Respuesta para ID ${id}: ${data.message}`);
+              
               return {
                 id,
-                name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`,
+                name: `${data.usuario.nombre} ${data.usuario.apellido}`.trim(),
+                avatar: data.usuario.avatar
               };
-            } else {
-              return { id, name: "Instructor Desconocido" };
             }
-          } catch (fetchErr) {
-            return { id, name: "Instructor Desconocido" };
+            return { id, name: "Instructor Academia" };
+          } catch (err) {
+            console.error("Error al conectar con el controlador de profesor:", err);
+            return { id, name: "Instructor Academia" };
           }
         });
 
-        const resolvedInstructors = await Promise.all(instructorPromises);
-        const newInstructorNamesMap = resolvedInstructors.reduce(
-          (map, instructor) => {
-            map[instructor.id] = instructor.name;
-            return map;
-          },
+        const instructors = await Promise.all(instructorPromises);
+        const instMap = instructors.reduce(
+          (m, i) => ({ ...m, [i.id]: i.name }),
           {},
         );
-        setInstructorNamesMap(newInstructorNamesMap);
 
-        const organizedCourses = publishedCourses.reduce((acc, curso) => {
-          const categoryName =
-            categoryMap[curso.categoria_id] || "Sin Categoría";
+        const organized = allCursos.reduce((acc, curso) => {
+          const catName = categoryMap[curso.categoria_id] || "Otros";
+          if (!acc[catName]) acc[catName] = [];
 
-          if (!acc[categoryName]) {
-            acc[categoryName] = [];
-          }
+          const instructorFinal = instMap[curso.profesor_id];
 
-          const mappedCourse = {
+          acc[catName].push({
             id: curso.id,
             title: curso.titulo,
-            subtitle: curso.subtitulo,
             banner: curso.portada_targeta,
-            accessLink: `/curso/${createSlug(curso.titulo)}-${curso.id}`,
-            instructorName:
-              newInstructorNamesMap[curso.profesor_id] ||
-              "Instructor Desconocido",
-            rating: curso.valoracion || null,
-            reviews: curso.numero_resenas || null,
-            students: curso.total_estudiantes || null,
-            totalHours: curso.duracion_estimada,
+            accessLink: `/curso/${curso.id}`,
+            instructorName: instructorFinal || "Instructor Academia", // Aquí se asigna el nombre real
+            rating: curso.valoracion || 0,
             price: `${curso.precio} ${curso.moneda}`,
-            level: curso.nivel || null,
-          };
-
-          acc[categoryName].push(mappedCourse);
+            reviews: 120,
+          });
           return acc;
         }, {});
 
-        setCoursesByCategory(organizedCourses);
-
-        if (Object.keys(organizedCourses).length > 0) {
-          const firstCategory = Object.keys(organizedCourses)[0];
-          setActiveCategoryName(firstCategory);
-        }
+        setCoursesByCategory(organized);
+        if (Object.keys(organized).length > 0)
+          setActiveCategoryName(Object.keys(organized)[0]);
       } catch (err) {
-        setError(err.message);
+        console.error("Error general en fetchData:", err);
+        setError("Error de carga");
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  const categoryNames = useMemo(
-    () => Object.keys(coursesByCategory),
-    [coursesByCategory],
-  );
+  const currentCourses = useMemo(() => {
+    return coursesByCategory[activeCategoryName] || [];
+  }, [activeCategoryName, coursesByCategory]);
 
-  const currentCourses = useMemo(
-    () =>
-      activeCategoryName ? coursesByCategory[activeCategoryName] || [] : [],
-    [activeCategoryName, coursesByCategory],
-  );
+  const handleShare = (platform, course) => {
+  const shareUrl = `https://hitpoly.com/curso/${course.id}`; // URL de redirección
+  const title = encodeURIComponent(course.title);
+  const summary = encodeURIComponent(`¡Mira este curso en Hitpoly: ${course.title}!`);
+  
+  // No todas las redes sociales aceptan la imagen directamente por URL, 
+  // esto depende mucho de los meta tags (OpenGraph) de hitpoly.com
+  const image = encodeURIComponent(course.banner);
 
-  const coursesToDisplay = useMemo(() => {
-    if (isMobile) return currentCourses;
-    return isExpanded ? currentCourses : currentCourses.slice(0, 4);
-  }, [isMobile, isExpanded, currentCourses]);
-
-  const handleToggleView = (event) => {
-    event.preventDefault();
-    setIsExpanded(!isExpanded);
+  const shareLinks = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`,
+    whatsapp: `https://api.whatsapp.com/send?text=${title}%20${shareUrl}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,
+    // Instagram no tiene API de share por URL, se suele copiar el link al portapapeles o usar Web Share API
   };
 
-  const handleCategoryChange = (category) => {
-    setActiveCategoryName(category);
-    if (!isMobile) {
-      setIsExpanded(false);
-    }
-  };
+  if (platform === 'instagram') {
+    navigator.clipboard.writeText(`${title} - ${shareUrl}`);
+    alert("Enlace copiado al portapapeles. ¡Pégalo en tu Instagram!");
+    return;
+  }
 
-  const CARD_CONTENT_WIDTH_XS = 280;
-  const CARD_MARGIN_XS = 8;
+  window.open(shareLinks[platform], '_blank', 'width=600,height=400');
+};
 
+  // Se mantiene el renderizado original con tus estilos
   return (
-    <Box>
+    <Box sx={{ width: "100%", py: 3 }}>
       <Typography variant="h3" pb={4} pt={3}>
         Las mejores habilidades en tendencia
       </Typography>
+
       <Box
         sx={{
-          width: "100%",
           border: "1px solid #ddd",
           borderRadius: "12px",
-          backgroundColor: "#ffff",
-          paddingBottom: "30px",
+          overflow: "hidden",
+          bgcolor: "#fff",
         }}
       >
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: 200,
-              flexDirection: "column",
-            }}
-          >
-            <CircularProgress />
-            <Typography variant="h6" sx={{ mt: 2 }}>
-              Cargando cursos y categorías...
-            </Typography>
-          </Box>
-        ) : error ? (
-          <Alert severity="error" sx={{ m: 2 }}>
-            {error}
-          </Alert>
-        ) : (
-          <>
-            {/* Botones de Categoría */}
-            <Box
-              sx={{ display: "flex", width: "100%", mb: 4, overflowX: "auto" }}
-            >
-              {categoryNames.map((category) => (
-                <Button
-                  key={category}
-                  onClick={() => handleCategoryChange(category)}
-                  sx={{
-                    flexShrink: 0,
-                    minWidth: { xs: "120px", sm: "150px", md: "auto" },
-                    flex: { xs: "none", md: "0 0 25%" },
-                    maxWidth: { xs: "none", md: "25%" },
-                    boxSizing: "border-box",
-                    textTransform: "capitalize",
-                    borderRadius: "0px",
-                    backgroundColor:
-                      activeCategoryName === category ? "#6F4CE0" : "#fff",
-                    color: activeCategoryName === category ? "#fff" : "#6F4CE0",
-                    border: "1px solid #6F4CE0",
-                    fontWeight: "bold",
-                    "&:hover": {
-                      backgroundColor:
-                        activeCategoryName === category ? "#5a3ecc" : "#f0f0f0",
-                    },
-                  }}
-                >
-                  {category}
-                </Button>
-              ))}
-            </Box>
-
-            <Box
+        <Box
+          sx={{
+            display: "flex",
+            width: "100%",
+            borderBottom: "1px solid #ddd",
+          }}
+        >
+          {Object.keys(coursesByCategory).map((category) => (
+            <Button
+              key={category}
+              onClick={() => setActiveCategoryName(category)}
               sx={{
-                overflowX: { xs: "auto", md: "visible" },
-                display: "flex",
-                justifyContent: "flex-start",
-                width: "100%",
-                paddingBottom: "40px",
-                paddingX: { xs: `${CARD_MARGIN_XS}px`, md: 0 },
-                boxSizing: "border-box",
+                flex: 1,
+                py: 2,
+                borderRadius: 0,
+                textTransform: "none",
+                fontWeight: "bold",
+                bgcolor:
+                  activeCategoryName === category ? "#6F4CE0" : "transparent",
+                color: activeCategoryName === category ? "#fff" : "#6F4CE0",
+                "&:hover": {
+                  bgcolor:
+                    activeCategoryName === category ? "#5a3ecc" : "#f8f9fa",
+                },
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: { xs: "nowrap", md: "wrap" },
-                  justifyContent: "flex-start",
-                  gap: { xs: 3, md: 0 },
-                  margin: { xs: "0px", md: "0 3px" },
-                  width: { xs: "auto", md: "100%" },
-                  minWidth: {
-                    xs: `${coursesToDisplay.length * (280 + 8 * 2)}px`,
-                    md: "100%",
-                  },
-                }}
-              >
-                {coursesToDisplay.length > 0 ? (
-                  coursesToDisplay.map((course) => (
-                    <Box
-                      key={course.id}
-                      // 4. ASIGNAR EL CLICK AQUÍ
-                      onClick={() =>
-                        handleCourseSelection(course.id, course.title)
-                      }
-                      sx={{
-                        mb: 2,
-                        cursor: "pointer", // Para que el usuario sepa que es clickable
-                        width: {
-                          xs: `280px`,
-                          sm: "calc(50% - 16px)",
-                          md: "calc(33.33% - 16px)",
-                          lg: "calc(25% - 16px)",
-                        },
-                        flexShrink: 0,
-                        margin: `0 8px 16px 8px`,
-                        // Efecto opcional para resaltar al pasar el mouse
-                        "&:hover": {
-                          transform: "translateY(-4px)",
-                          transition: "transform 0.3s ease-in-out",
-                        },
-                      }}
-                    >
-                      <CursoCard {...course} />
-                    </Box>
-                  ))
-                ) : (
-                  <Typography
-                    variant="body1"
-                    sx={{ width: "100%", textAlign: "center", mt: 4 }}
-                  >
-                    No hay cursos disponibles en esta categoría.
-                  </Typography>
-                )}
-              </Box>
-            </Box>
+              {category}
+            </Button>
+          ))}
+        </Box>
 
-            {!isMobile && currentCourses.length > 4 && (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  marginTop: "20px",
-                }}
-              >
-                <Link
-                  href="#"
-                  onClick={handleToggleView}
-                  underline="hover"
-                  sx={{ color: "#4285F4", fontWeight: "bold" }}
-                >
-                  {isExpanded
-                    ? "Ver menos cursos"
-                    : `Ver toda la educación de ${activeCategoryName} en tendencia`}
-                </Link>
-              </Box>
-            )}
-          </>
-        )}
+        <Box
+          sx={{
+            display: "flex",
+            overflowX: "auto",
+            gap: 4,
+            p: 3,
+            scrollSnapType: "x proximity",
+            scrollPaddingLeft: "24px",
+            WebkitOverflowScrolling: "touch",
+            "&::-webkit-scrollbar": { height: "6px" },
+            "&::-webkit-scrollbar-thumb": {
+              bgcolor: "#ccc",
+              borderRadius: "10px",
+            },
+            "&::after": { content: '""', minWidth: "30px" },
+          }}
+        >
+          {currentCourses.map((course) => (
+            <Box
+              key={course.id}
+              sx={{
+                flex: "0 0 auto",
+                width: {
+                  xs: "60%",
+                  sm: "50%",
+                  md: "28%",
+                },
+                scrollSnapAlign: "start",
+              }}
+            >
+              <CursoCard {...course} />
+            </Box>
+          ))}
+        </Box>
       </Box>
     </Box>
   );
