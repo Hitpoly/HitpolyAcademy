@@ -147,8 +147,8 @@ function Inicio() {
         sx={{
           paddingTop: { xs: "40px", md: "100px" },
           paddingBottom: { xs: "50px", md: "150px" },
-          paddingLeft: { xs: "10px", md: "120px" },
-          paddingRight: { xs: "10px", md: "120px" },
+          paddingLeft: { xs: "10px", md: "80px" },
+          paddingRight: { xs: "10px", md: "80px" },
           backgroundColor: "#f4f4f4",
         }}
       >
@@ -161,8 +161,8 @@ function Inicio() {
         sx={{
           paddingTop: { xs: "40px", md: "100px" },
           paddingBottom: { xs: "50px", md: "150px" },
-          paddingLeft: { xs: "10px", md: "120px" },
-          paddingRight: { xs: "10px", md: "120px" },
+          paddingLeft: { xs: "10px", md: "80px" },
+          paddingRight: { xs: "10px", md: "80px" },
           backgroundColor: "#f4f4f4",
         }}
       >

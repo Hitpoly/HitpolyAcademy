@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // Asegúrate de importar useEffect
+import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -15,7 +15,6 @@ const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-// Recibe la nueva prop 'onInputActivity'
 const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -28,30 +27,29 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
 
-  // Nuevo useEffect para monitorear los inputs y notificar al componente padre
+  // useEffect original con log para ver si detiene el carrusel
   useEffect(() => {
-    // Si la prop onInputActivity fue pasada (lo cual esperamos de PortadaOne)
     if (onInputActivity) {
-      // Determina si alguno de los campos de entrada tiene texto
       const hasText = emailInput.length > 0 || phoneInput.length > 0;
-      // Llama a la función pasada por la prop, enviando el estado actual de los inputs
+      console.log("[Activity] ¿Hay texto en inputs?", hasText);
       onInputActivity(hasText);
     }
-  }, [emailInput, phoneInput, onInputActivity]); // Se ejecuta cada vez que emailInput o phoneInput cambian
+  }, [emailInput, phoneInput, onInputActivity]);
 
   const handleSnackbarClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
+    console.log("[Snackbar] Solicitando cierre. Razón:", reason);
+    if (reason === "clickaway") return;
     setOpenSnackbar(false);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    console.log("[Submit] Click detectado. id_curso:", idCursoDestacado);
     setLoading(true);
     setOpenSnackbar(false);
 
     if (!emailInput) {
+      console.warn("[Validation] Falta email");
       setSnackbarMessage("Por favor, ingresa tu correo electrónico.");
       setSnackbarSeverity("warning");
       setOpenSnackbar(true);
@@ -97,34 +95,41 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
       correos: correosToSend,
     };
 
+    console.log("[API Payload] Enviando:", payload);
+
     try {
       const response = await fetch("https://apiacademy.hitpoly.com/ajax/cargarProspectosController.php", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      // Verificamos si la respuesta es JSON
+      const text = await response.text();
+      console.log("[API Raw Response]", text);
+      const data = JSON.parse(text);
 
       if (response.ok && data.status === "success") {
+        console.log("[Success] Seteando mensaje de éxito");
         setSnackbarMessage("¡Solicitud procesada con éxito! Se han añadido o actualizado tus datos.");
         setSnackbarSeverity("success");
-        setOpenSnackbar(true);
+        setOpenSnackbar(true); // <--- ESTO DEBE ACTIVAR EL POPUP
         setEmailInput("");
         setPhoneInput("");
       } else {
         if (data.message && data.message.includes("ya está registrado")) {
+            console.info("[Info] Usuario registrado, navegando...");
             navigate("/dashboard");
             return;
         } else {
+            console.error("[Error API]", data.message);
             setSnackbarMessage(data.message || "Error al procesar la solicitud. Inténtalo de nuevo.");
             setSnackbarSeverity("error");
             setOpenSnackbar(true);
         }
       }
     } catch (error) {
+      console.error("[Fatal Error]", error);
       setSnackbarMessage("Error de conexión. Por favor, verifica tu internet.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true); 
@@ -140,7 +145,7 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
         onSubmit={handleSubmit}
         sx={{
           display: "flex",
-          flexDirection: { xs: "column" },
+          flexDirection: "column",
           gap: 2,
           mt: 2,
           justifyContent: { xs: "center", sm: "flex-start" },
@@ -168,11 +173,11 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
         </Box>
         <Button
           variant="contained"
-          color="primary"
           type="submit"
           disabled={loading}
           sx={{
             backgroundColor: "#F21C63",
+            "&:hover": { backgroundColor: "#d11652" },
             minWidth: { xs: "100%", sm: "auto" },
           }}
         >
@@ -180,11 +185,13 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
         </Button>
       </Box>
 
+      {/* SNACKBAR - FIJATE EN EL Z-INDEX */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{ zIndex: 9999 }} 
       >
         <SnackbarAlert onClose={handleSnackbarClose} severity={snackbarSeverity}>
           {snackbarMessage}

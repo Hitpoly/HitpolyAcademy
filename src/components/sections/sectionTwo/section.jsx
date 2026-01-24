@@ -8,24 +8,28 @@ import {
 } from "@mui/material";
 import CursoCard from "../../../components/cards/CursoCard";
 
+// Función auxiliar para duración
 const parseDurationToDays = (durationString) => {
   if (!durationString) return null;
-  const parts = durationString.toLowerCase().match(/(\d+)\s*(dia|dias|mes|meses|hora|horas)/);
+  const parts = durationString
+    .toLowerCase()
+    .match(/(\d+)\s*(dia|dias|mes|meses|hora|horas)/);
   if (!parts) return null;
-
   const value = parseInt(parts[1], 10);
   const unit = parts[2];
-
   if (isNaN(value)) return null;
-
   switch (unit) {
-    case 'dia':
-    case 'dias': return value;
-    case 'hora':
-    case 'horas': return value / 24;
-    case 'mes':
-    case 'meses': return value * 30;
-    default: return null;
+    case "dia":
+    case "dias":
+      return value;
+    case "hora":
+    case "horas":
+      return value / 24;
+    case "mes":
+    case "meses":
+      return value * 30;
+    default:
+      return null;
   }
 };
 
@@ -41,16 +45,22 @@ const SectionTwo = () => {
       setError("");
       try {
         const [catRes, cursRes] = await Promise.all([
-          fetch("https://apiacademy.hitpoly.com/ajax/getCategoriasController.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ accion: "getcategorias" }),
-          }),
-          fetch("https://apiacademy.hitpoly.com/ajax/traerCursosController.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ accion: "getCursos" }),
-          }),
+          fetch(
+            "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accion: "getcategorias" }),
+            },
+          ),
+          fetch(
+            "https://apiacademy.hitpoly.com/ajax/traerCursosController.php",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accion: "getCursos" }),
+            },
+          ),
         ]);
 
         const categoriesData = await catRes.json();
@@ -61,33 +71,47 @@ const SectionTwo = () => {
           return map;
         }, {});
 
-        // Filtro lógico: Publicados y duración <= 30 días
-        const filteredCourses = (coursesData.cursos.cursos || []).filter((curso) => {
+        const allCursos = (coursesData.cursos.cursos || []).filter((curso) => {
           const isPublished = curso.estado === "Publicado";
           const durationInDays = parseDurationToDays(curso.duracion_estimada);
-          return isPublished && (durationInDays !== null && durationInDays <= 30);
+          return isPublished && durationInDays !== null && durationInDays <= 30;
         });
 
-        // Obtener nombres de instructores de forma única
-        const uniqueProfIds = [...new Set(filteredCourses.map(c => c.profesor_id))];
-        const instructorPromises = uniqueProfIds.map(async (id) => {
-          try {
-            const res = await fetch("https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ accion: "getAlumnoProfesor", id }),
-            });
-            const data = await res.json();
-            return { id, name: data.status === "success" ? `${data.usuario.nombre} ${data.usuario.apellido}` : "Instructor Academia" };
-          } catch {
-            return { id, name: "Instructor Academia" };
-          }
-        });
+        const coursesWithExtraData = await Promise.all(
+          allCursos.map(async (curso) => {
+            try {
+              const instRes = await fetch(
+                `https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php?id=${curso.profesor_id}`,
+              );
+              const instData = await instRes.json();
+              const instructorName =
+                instData.status === "success"
+                  ? `${instData.usuario.nombre} ${instData.usuario.apellido}`.trim()
+                  : "Instructor Academia";
 
-        const instructors = await Promise.all(instructorPromises);
-        const instMap = instructors.reduce((m, i) => ({ ...m, [i.id]: i.name }), {});
+              const valRes = await fetch(
+                `https://apiacademy.hitpoly.com/ajax/valoracionesController.php?accion=getResumen&curso_id=${curso.id}`,
+              );
+              const valData = await valRes.json();
 
-        const organized = filteredCourses.reduce((acc, curso) => {
+              return {
+                ...curso,
+                instructorName,
+                rating: valData.status === "success" ? valData.rating : 0,
+                reviews: valData.status === "success" ? valData.reviews : 0,
+              };
+            } catch (err) {
+              return {
+                ...curso,
+                instructorName: "Instructor Academia",
+                rating: 0,
+                reviews: 0,
+              };
+            }
+          }),
+        );
+
+        const organized = coursesWithExtraData.reduce((acc, curso) => {
           const catName = categoryMap[curso.categoria_id] || "Otros";
           if (!acc[catName]) acc[catName] = [];
           acc[catName].push({
@@ -95,20 +119,21 @@ const SectionTwo = () => {
             title: curso.titulo,
             subtitle: curso.subtitulo,
             banner: curso.portada_targeta,
-            accessLink: `/curso/${curso.id}`,
-            instructorName: instMap[curso.profesor_id] || "Instructor",
-            rating: curso.valoracion || 0,
+            videoUrl: curso.url_video_introductorio,
+            instructorName: curso.instructorName,
             price: `${curso.precio} ${curso.moneda}`,
-            reviews: curso.numero_resenas || 0,
-            level: curso.nivel
+            rating: curso.rating,
+            reviews: curso.reviews,
+            accessLink: `/curso/${curso.id}`,
           });
           return acc;
         }, {});
 
         setCoursesByCategory(organized);
-        if (Object.keys(organized).length > 0) setActiveCategoryName(Object.keys(organized)[0]);
+        if (Object.keys(organized).length > 0)
+          setActiveCategoryName(Object.keys(organized)[0]);
       } catch (err) {
-        setError("Error al cargar la sección de cursos cortos");
+        setError("Error al cargar cursos cortos");
       } finally {
         setLoading(false);
       }
@@ -116,7 +141,10 @@ const SectionTwo = () => {
     fetchData();
   }, []);
 
-  const currentCourses = useMemo(() => coursesByCategory[activeCategoryName] || [], [activeCategoryName, coursesByCategory]);
+  const currentCourses = useMemo(
+    () => coursesByCategory[activeCategoryName] || [],
+    [activeCategoryName, coursesByCategory],
+  );
 
   return (
     <Box sx={{ width: "100%", py: 3 }}>
@@ -124,18 +152,44 @@ const SectionTwo = () => {
         Los mejores cursos de un mes o menos
       </Typography>
 
-      <Box sx={{ border: "1px solid #ddd", borderRadius: "12px", overflow: "hidden", bgcolor: "#fff" }}>
-        {/* PESTAÑAS */}
-        <Box sx={{ display: "flex", width: "100%", borderBottom: "1px solid #ddd", overflowX: "auto" }}>
+      {/* CONTENEDOR PRINCIPAL CON BORDE REDONDEADO */}
+      <Box
+        sx={{
+          border: "1px solid #ddd",
+          borderRadius: "12px",
+          overflow: "hidden",
+          bgcolor: "#fff",
+        }}
+      >
+        {/* PESTAÑAS (ESTILO IMAGEN 1: FONDO MORADO) */}
+        <Box
+          sx={{
+            display: "flex",
+            width: "100%",
+            borderBottom: "1px solid #ddd",
+            overflowX: "auto",
+          }}
+        >
           {Object.keys(coursesByCategory).map((category) => (
             <Button
               key={category}
               onClick={() => setActiveCategoryName(category)}
               sx={{
-                flex: 1, minWidth: "fit-content", py: 2, borderRadius: 0, textTransform: "none", fontWeight: "bold",
-                bgcolor: activeCategoryName === category ? "#6F4CE0" : "transparent",
+                flex: 1,
+                minWidth: "fit-content",
+                py: 2,
+                borderRadius: 0,
+                textTransform: "none",
+                fontWeight: "bold",
+                // Fondo morado si está activo, transparente si no
+                bgcolor:
+                  activeCategoryName === category ? "#6F4CE0" : "transparent",
+                // Texto blanco si está activo, morado si no
                 color: activeCategoryName === category ? "#fff" : "#6F4CE0",
-                "&:hover": { bgcolor: activeCategoryName === category ? "#5a3ecc" : "#f8f9fa" }
+                "&:hover": {
+                  bgcolor:
+                    activeCategoryName === category ? "#5a3ecc" : "#f8f9fa",
+                },
               }}
             >
               {category}
@@ -143,42 +197,58 @@ const SectionTwo = () => {
           ))}
         </Box>
 
-        {/* CONTENEDOR DE SCROLL HORIZONTAL (IDÉNTICO A SECCIÓN 1) */}
-        <Box
-          sx={{
-            display: "flex",
-            overflowX: "auto",
-            gap: 4, 
-            p: 3,
-            scrollSnapType: "x proximity", 
-            scrollPaddingLeft: "24px", 
-            WebkitOverflowScrolling: "touch",
-            "&::-webkit-scrollbar": { height: "6px" },
-            "&::-webkit-scrollbar-thumb": { bgcolor: "#ccc", borderRadius: "10px" },
-            "&::after": { content: '""', minWidth: "30px" } 
-          }}
-        >
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", width: "100%", py: 5 }}><CircularProgress /></Box>
-          ) : error ? (
-            <Alert severity="error" sx={{ width: "100%" }}>{error}</Alert>
-          ) : currentCourses.length > 0 ? (
-            currentCourses.map((course) => (
-              <Box
-                key={course.id}
-                sx={{
-                  flex: "0 0 auto",
-                  width: { xs: "60%", sm: "50%", md: "28%" }, 
-                  scrollSnapAlign: "start",
-                }}
-              >
-                <CursoCard {...course} />
-              </Box>
-            ))
-          ) : (
-            <Typography sx={{ p: 4 }}>No hay cursos cortos en esta categoría.</Typography>
-          )}
-        </Box>
+        {/* CONTENEDOR DE SCROLL HORIZONTAL CON GAP RESPONSIVO */}
+<Box
+  sx={{
+    display: "flex",
+    overflowX: "auto",
+    // AJUSTE AQUÍ: gap 5 (40px) en móviles, gap 3 (24px) en pantallas sm en adelante
+    gap: { xs: 5, sm: 3 }, 
+    p: 3,
+    scrollPaddingLeft: "24px",
+    scrollSnapType: "x mandatory",
+    WebkitOverflowScrolling: "touch",
+    scrollBehavior: "smooth",
+    "&::-webkit-scrollbar": { height: "6px" },
+    "&::-webkit-scrollbar-thumb": {
+      bgcolor: "#ccc",
+      borderRadius: "10px",
+    },
+    margin: 0,
+    width: "100%",
+  }}
+>
+  {loading ? (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        width: "100%",
+        py: 5,
+      }}
+    >
+      <CircularProgress sx={{ color: "#6F4CE0" }} />
+    </Box>
+  ) : currentCourses.length > 0 ? (
+    currentCourses.map((course) => (
+      <Box
+        key={course.id}
+        sx={{
+          flex: "0 0 auto",
+          // Mantenemos tus anchos configurados
+          width: { xs: "280px", sm: "300px", md: "320px" },
+          scrollSnapAlign: "start",
+        }}
+      >
+        <CursoCard {...course} />
+      </Box>
+    ))
+  ) : (
+    <Typography sx={{ p: 4 }}>
+      No hay cursos cortos en esta categoría.
+    </Typography>
+  )}
+</Box>
       </Box>
     </Box>
   );
