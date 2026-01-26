@@ -201,4 +201,4 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
   );
 };
 
-export default EmailSubscriptionForm;
+export default EmailSubscriptionForm; 
