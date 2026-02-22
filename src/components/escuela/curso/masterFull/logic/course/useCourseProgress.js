@@ -9,11 +9,8 @@ export const useCourseProgress = (courseId, userId) => {
   });
 
   const registerOrUpdateProgress = useCallback(async (claseId, completada, tiempo = 0, accion = "progreso") => {
-    if (!userId) {
-      console.warn("⚠️ [PROGRESS] Intento de registro sin userId");
-      return false;
-    }
-    
+    if (!userId) return false;
+
     const url = accion === "progreso" 
       ? "https://apiacademy.hitpoly.com/ajax/registrarProgresoClaseController.php"
       : "https://apiacademy.hitpoly.com/ajax/actualizarProgresoController.php";
@@ -28,18 +25,14 @@ export const useCourseProgress = (courseId, userId) => {
         ultima_vez_visto: new Date().toISOString().slice(0, 19).replace("T", " "),
       });
 
-      console.log(`🚀 [PROGRESS] API Response (${accion}) para Clase ${claseId}:`, response.data);
       return response.data.status === "success";
     } catch (error) {
-      console.error("❌ [PROGRESS] Error en registro/actualización:", error);
       return false;
     }
   }, [userId]);
 
   useEffect(() => {
     if (userId && courseId) {
-      console.log(`%c🔄 [PROGRESS] Cargando datos para Curso: ${courseId} | Usuario: ${userId}`, "color: #3498db; font-weight: bold;");
-
       axios.post("https://apiacademy.hitpoly.com/ajax/getAllProgresoController.php", {
         accion: "getProgreso",
         usuario_id: userId,
@@ -48,13 +41,9 @@ export const useCourseProgress = (courseId, userId) => {
           const map = {};
           const ids = [];
           
-          // 🔥 FILTRADO CRÍTICO: Solo procesamos clases que pertenezcan a este curso
           const progresoFiltrado = res.data.progreso.filter(item => 
             String(item.curso_id) === String(courseId)
           );
-
-          console.log(`%c📥 [PROGRESS] Datos brutos del servidor (Total: ${res.data.progreso.length})`, "color: #95a5a6;");
-          console.log(`%c🎯 [PROGRESS] Datos filtrados para Curso ${courseId} (Total: ${progresoFiltrado.length})`, "color: #2ecc71; font-weight: bold;");
 
           progresoFiltrado.forEach(item => {
             const id = parseInt(item.clase_id, 10);
@@ -70,30 +59,15 @@ export const useCourseProgress = (courseId, userId) => {
 
           setUserProgressMap(map);
           setCompletedVideoIdsLocal(ids);
-
-          console.log(`%c✅ [PROGRESS] Mapeo finalizado para Curso ${courseId}`, "color: #f1c40f;", {
-            clasesEncontradas: ids.length,
-            idsCompletados: ids
-          });
-        } else {
-          console.error(`❌ [PROGRESS] Error en respuesta de API para curso ${courseId}:`, res.data.message);
         }
-      }).catch(err => {
-        console.error(`❌ [PROGRESS] Error de red para curso ${courseId}:`, err);
+      }).catch(() => {
+        // Silenciado según lo solicitado
       });
-    } else {
-      console.warn("⚠️ [PROGRESS] Faltan datos (courseId/userId) para sincronizar progreso.");
     }
   }, [courseId, userId]);
 
-  // Sincronización con LocalStorage individual por curso
   useEffect(() => {
     localStorage.setItem(`completedVideoIds_course_${courseId}`, JSON.stringify(completedVideoIdsLocal));
-    
-    // Log solo para depuración de guardado
-    if (completedVideoIdsLocal.length > 0) {
-        console.log(`💾 [PROGRESS] LocalStorage actualizado (Curso ${courseId}):`, completedVideoIdsLocal);
-    }
   }, [completedVideoIdsLocal, courseId]);
 
   return { 

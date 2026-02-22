@@ -1,11 +1,10 @@
 import React from "react";
-import { Box, Typography, Divider } from "@mui/material"; 
+import { Box, Typography } from "@mui/material"; 
 
 const FactsAndCertificate = ({
   certificateSubtitle,
   certificateLongDescription, 
-  facts,
-  brandingData
+  facts
 }) => {
   return (
     <>
@@ -22,6 +21,7 @@ const FactsAndCertificate = ({
           px: { xs: 2, sm: 4 },
         }}
       >
+        {/* Columna Izquierda: Certificado */}
         <Box
           sx={{
             flex: 1,
@@ -38,47 +38,9 @@ const FactsAndCertificate = ({
               {certificateLongDescription}
             </Typography>
           )}
-
-          {brandingData && brandingData.length > 0 ? (
-            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid #eee' }}>
-              <Typography variant="body2" fontWeight="bold" color="text.primary" sx={{ mb: 1 }}>
-                Reconocido por:
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: { xs: 2, sm: 3 },
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                }}
-              >
-                {brandingData.map((brand, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 0.5,
-                      minWidth: '60px',
-                      maxWidth: '100px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {brand.logoUrl && (
-                      <img src={brand.logoUrl} alt={brand.logoText} style={{ maxWidth: '60px', maxHeight: '40px', objectFit: 'contain' }} />
-                    )}
-                    <Typography variant="caption" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
-                      {brand.logoText || "Marca"}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          ) : (
-            null
-          )}
         </Box>
+
+        {/* Columna Derecha: Datos Clave (Facts) */}
         <Box
           sx={{
             flex: 1,
@@ -118,7 +80,7 @@ const FactsAndCertificate = ({
                   {fact.description === "Horas por semana" ? `${fact.value} horas` : fact.value}
                 </Typography>
                 {fact.source && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
                     Fuente: {fact.source}
                   </Typography>
                 )}

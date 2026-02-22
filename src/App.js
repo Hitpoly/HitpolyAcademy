@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import React, { useEffect } from "react";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -33,19 +33,31 @@ import CrearExamen from "./components/escuela/curso/masterFull/examenes/componen
 import EditarExamen from "./components/escuela/curso/masterFull/examenes/components/EditarExamen.jsx";
 import ExamenAlumno from "./components/escuela/curso/masterFull/examenes/ExamenAlumno.jsx";
 import ResultadosAlumno from "./components/escuela/curso/masterFull/examenes/ResultadosAlumno.jsx";
-import MigradorDirecto from "./migrar.jsx"
 
 /**
- * ProtectedRoute: Valida autenticación, roles y cargos específicos.
- * Se agregó 'loading' para evitar redirecciones fallidas antes de que la API responda.
+ * COMPONENTE NOTIFICADOR
+ * Este componente detecta cambios de ruta y avisa al padre (Dashboard)
  */
-/**
- * ProtectedRoute: Valida autenticación, roles y cargos específicos.
- */
+const NavigationNotifier = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Enviamos la ruta actual al padre para que la guarde en LocalStorage
+    const currentPath = location.pathname + location.search;
+    window.parent.postMessage(
+      {
+        type: "NAVIGATED",
+        path: currentPath,
+      },
+      "*" // Cambiar por el dominio del Dashboard en producción por seguridad
+    );
+  }, [location]);
+
+  return null;
+};
+
 const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = false }) => {
-  // Sincronizado con isLoading del AuthContext
   const { isAuthenticated, userRole, userCargo, isLoading, user } = useAuth();
-
   const currentRole = Number(userRole);
   const currentCargo = Number(userCargo);
 
@@ -53,8 +65,6 @@ const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = fal
     if (!isLoading && isAuthenticated) {
       console.group(`🔐 Control de Acceso: ${window.location.pathname}`);
       console.log("👤 Usuario:", user?.nombre || "Cargando...");
-      console.log("🆔 Tipo:", currentRole, "| 💼 Cargo:", currentCargo);
-      
       const isAdmin = currentRole === 1;
       const isEmpresario = currentRole === 2;
       const isProfesorAutorizado = currentRole === 3 && currentCargo === 159;
@@ -67,34 +77,30 @@ const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = fal
     }
   }, [isLoading, isAuthenticated, currentRole, currentCargo, requireCreatorPrivileges, user]);
 
-  // IMPORTANTE: Bloquea cualquier redirección mientras la API responde
   if (isLoading) return null; 
-
   if (!isAuthenticated) return <Navigate to="/login" />;
-
   if (currentRole === 1) return children;
 
   if (requireCreatorPrivileges) {
     const isEmpresario = currentRole === 2;
     const isProfesorAutorizado = currentRole === 3 && currentCargo === 159;
-
-    if (isEmpresario || isProfesorAutorizado) {
-      return children;
-    } else {
-      return <Navigate to="/" />;
-    }
+    if (isEmpresario || isProfesorAutorizado) return children;
+    return <Navigate to="/" />;
   }
 
   if (allowedRoles && !allowedRoles.includes(currentRole)) {
     return <Navigate to="/" />;
   }
-
   return children;
 };
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        {/* ESCUCHADOR DE RUTAS ACTIVO */}
+        <NavigationNotifier />
+
         <Routes>
           {/* Rutas Públicas */}
           <Route path="/ofertas" element={<SubscriptionPlans />} />

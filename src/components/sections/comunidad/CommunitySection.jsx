@@ -21,7 +21,8 @@ const CommunitySection = () => {
   return (
     <Box
       sx={{
-        padding: { xs: "50px 20px", md: "140px 150px" },
+        px: { xs: 2, sm: 4, md: 10 }, 
+        py: { xs: 6, md: 15 }, 
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
         justifyContent: "space-between",

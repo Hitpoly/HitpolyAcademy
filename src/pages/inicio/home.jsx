@@ -13,7 +13,8 @@ import Footer from "../../components/footer/pieDePagina";
 import InteractiveBoxes from "../../components/sections/seccionesEducativas/InteractiveBoxes";
 import axios from "axios";
 
-const ENDPOINT_GET_ALL_ANUNCIOS = "https://apiacademy.hitpoly.com/ajax/getAllAnunciosController.php";
+const ENDPOINT_GET_ALL_ANUNCIOS =
+  "https://apiacademy.hitpoly.com/ajax/getAllAnunciosController.php";
 
 function Inicio() {
   const [allPromoBanners, setAllPromoBanners] = useState([]);
@@ -24,7 +25,7 @@ function Inicio() {
     setErrorBanners(null);
     try {
       const response = await axios.post(ENDPOINT_GET_ALL_ANUNCIOS, {
-        accion: "getAll"
+        accion: "getAll",
       });
 
       let fetchedAnuncios = [];
@@ -37,12 +38,19 @@ function Inicio() {
       }
 
       const activeAndSortedAnuncios = fetchedAnuncios
-        .filter(anuncio => anuncio.estado === 'A' && anuncio.orden !== null && anuncio.orden !== undefined)
+        .filter(
+          (anuncio) =>
+            anuncio.estado === "A" &&
+            anuncio.orden !== null &&
+            anuncio.orden !== undefined,
+        )
         .sort((a, b) => a.orden - b.orden);
 
       setAllPromoBanners(activeAndSortedAnuncios);
     } catch (err) {
-      setErrorBanners("No se pudieron cargar los banners promocionales. Por favor, inténtalo de nuevo más tarde.");
+      setErrorBanners(
+        "No se pudieron cargar los banners promocionales. Por favor, inténtalo de nuevo más tarde.",
+      );
     } finally {
       setLoadingBanners(false);
     }
@@ -55,9 +63,18 @@ function Inicio() {
   const renderSpecificPromoBanner = (targetOrder) => {
     if (loadingBanners) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            py: 5,
+          }}
+        >
           <CircularProgress />
-          <Typography variant="h6" sx={{ ml: 2 }}>Cargando banner de orden {targetOrder}...</Typography>
+          <Typography variant="h6" sx={{ ml: 2 }}>
+            Cargando banner de orden {targetOrder}...
+          </Typography>
         </Box>
       );
     }
@@ -70,7 +87,9 @@ function Inicio() {
       );
     }
 
-    const anuncio = allPromoBanners.find(banner => banner.orden === targetOrder);
+    const anuncio = allPromoBanners.find(
+      (banner) => banner.orden === targetOrder,
+    );
 
     if (anuncio) {
       return (
@@ -85,7 +104,7 @@ function Inicio() {
       );
     } else {
       return (
-        <Box sx={{ py: 5, textAlign: 'center' }}>
+        <Box sx={{ py: 5, textAlign: "center" }}>
           <Typography variant="h6" color="text.secondary">
             No hay banner activo para el orden {targetOrder}.
           </Typography>
@@ -140,13 +159,13 @@ function Inicio() {
             paddingY: { xs: "20px", sm: 0 },
           }}
         >
-          <CarouselWithSwiper/>
+          <CarouselWithSwiper />
         </Box>
       </Box>
       <Box
         sx={{
-          paddingTop: { xs: "40px", md: "100px" },
-          paddingBottom: { xs: "50px", md: "150px" },
+          paddingTop: { xs: "40px", md: "50px" },
+          paddingBottom: { xs: "50px", md: "80px" },
           paddingLeft: { xs: "10px", md: "80px" },
           paddingRight: { xs: "10px", md: "80px" },
           backgroundColor: "#f4f4f4",
@@ -159,8 +178,8 @@ function Inicio() {
 
       <Box
         sx={{
-          paddingTop: { xs: "40px", md: "100px" },
-          paddingBottom: { xs: "50px", md: "150px" },
+          paddingTop: { xs: "40px", md: "50px" },
+          paddingBottom: { xs: "50px", md: "50px" },
           paddingLeft: { xs: "10px", md: "80px" },
           paddingRight: { xs: "10px", md: "80px" },
           backgroundColor: "#f4f4f4",
@@ -168,24 +187,10 @@ function Inicio() {
       >
         <SectionTwo />
       </Box>
-      <Box
-        sx={{
-          paddingTop: { xs: "20px", md: "50px" },
-          paddingBottom: { xs: "20px", md: "50px" },
-          paddingLeft: { xs: "10px", md: "150px" },
-          paddingRight: { xs: "10px", md: "150px" },
-        }}
-      >
+      <Box>
         <InteractiveBoxes />
       </Box>
-      <Box
-        sx={{
-          paddingTop: { xs: "60px", md: "50px" },
-          paddingBottom: { xs: "80px", md: "120px" },
-          paddingLeft: { xs: "10px", md: "150px" },
-          paddingRight: { xs: "10px", md: "150px" },
-        }}
-      >
+      <Box>
         <TestimoniosSection />
       </Box>
 

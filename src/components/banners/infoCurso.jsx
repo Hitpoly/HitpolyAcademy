@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Typography, Avatar, Divider } from "@mui/material";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; 
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; 
-import EventBusyIcon from '@mui/icons-material/EventBusy'; 
-import PsychologyIcon from '@mui/icons-material/Psychology'; 
-import LaptopChromebookIcon from '@mui/icons-material/LaptopChromebook'; 
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents"; 
-import DescriptionIcon from '@mui/icons-material/Description'; 
+import QueryBuilderIcon from "@mui/icons-material/QueryBuilder";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import LaptopChromebookIcon from "@mui/icons-material/LaptopChromebook";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const ProgrammeDetailsBanner = ({
   programmeName,
@@ -21,24 +21,37 @@ const ProgrammeDetailsBanner = ({
   credentialTitle,
   credentialDescription,
   instructorData,
-  brandingData, 
+  brandingData,
 }) => {
   const mainInfoItems = [
     { label: "Duración", value: duration, icon: AccessTimeIcon },
     { label: "Horas por semana", value: hoursPerWeek, icon: QueryBuilderIcon },
     { label: "Inicio de clases", value: startDate, icon: CalendarTodayIcon },
-    { label: "Fecha límite de inscripción", value: enrollmentDeadline, icon: EventBusyIcon, iconColor: "error.main" },
-    { label: "Ritmo de aprendizaje", value: learningPace, icon: PsychologyIcon },
+    {
+      label: "Fecha límite de inscripción",
+      value: enrollmentDeadline,
+      icon: EventBusyIcon,
+      iconColor: "error.main",
+    },
+    {
+      label: "Ritmo de aprendizaje",
+      value: learningPace,
+      icon: PsychologyIcon,
+    },
     { label: "Tipo de clase", value: classType, icon: LaptopChromebookIcon },
   ];
 
-
   const credentialInfoItems = [
     { label: "Credencial", value: credentialTitle, icon: EmojiEventsIcon },
-    { label: "Descripción de credencial", value: credentialDescription, hideLabel: true, hideIcon: true },
+    {
+      label: "Descripción de credencial",
+      value: credentialDescription,
+      hideLabel: true,
+      hideIcon: true,
+    },
   ];
 
-  const renderInfoItem = (item, index) => (
+  const renderInfoItem = (item, index) =>
     (item.value || item.value === 0) && (
       <Box
         key={index}
@@ -46,10 +59,22 @@ const ProgrammeDetailsBanner = ({
       >
         {item.icon && !item.hideIcon ? (
           <item.icon
-            sx={{ color: item.iconColor || "#007bff", fontSize: { xs: 24, md: 28 }, mt: 0.5 }}
+            sx={{
+              color: item.iconColor || "#007bff",
+              fontSize: { xs: 24, md: 28 },
+              mt: 0.5,
+            }}
           />
         ) : (
-          !item.hideLabel && <Box sx={{ width: { xs: 24, md: 28 }, height: { xs: 24, md: 28 }, flexShrink: 0 }} />
+          !item.hideLabel && (
+            <Box
+              sx={{
+                width: { xs: 24, md: 28 },
+                height: { xs: 24, md: 28 },
+                flexShrink: 0,
+              }}
+            />
+          )
         )}
         <Box>
           {!item.hideLabel && (
@@ -70,8 +95,7 @@ const ProgrammeDetailsBanner = ({
           </Typography>
         </Box>
       </Box>
-    )
-  );
+    );
 
   return (
     <Box
@@ -130,7 +154,7 @@ const ProgrammeDetailsBanner = ({
             variant="caption"
             color="text.secondary"
             sx={{
-              display: 'block',
+              display: "block",
               mb: 0.5,
               fontSize: { xs: "0.8rem", sm: "0.85rem" },
             }}
@@ -159,7 +183,7 @@ const ProgrammeDetailsBanner = ({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, 
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
           gap: { xs: 2.5, md: 3 },
           mb: 4,
           pt: 3,
@@ -167,13 +191,13 @@ const ProgrammeDetailsBanner = ({
       >
         {mainInfoItems.map(renderInfoItem)}
 
-        {(credentialTitle || credentialDescription) && ( 
+        {(credentialTitle || credentialDescription) && (
           <Box
             sx={{
-              gridColumn: { xs: "1 / -1", sm: "2 / 3" }, 
+              gridColumn: { xs: "1 / -1", sm: "2 / 3" },
               display: "flex",
-              flexDirection: "column", 
-              gap: { xs: 2.5, md: 3 }, 
+              flexDirection: "column",
+              gap: { xs: 2.5, md: 3 },
             }}
           >
             {credentialInfoItems.map(renderInfoItem)}
@@ -187,12 +211,12 @@ const ProgrammeDetailsBanner = ({
         sx={{
           pt: 2.5,
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start", // Cambiado de center a flex-start
           gap: 3,
-          flexWrap: 'wrap',
-          flexDirection: { xs: "column", sm: "row" },
-          textAlign: { xs: "center", sm: "left" },
-          justifyContent: { xs: "center", sm: "flex-start" },
+          flexWrap: "wrap",
+          flexDirection: "row", // Eliminado el cambio a column en xs
+          textAlign: "left", // Forzado a la izquierda siempre
+          justifyContent: "flex-start", // Forzado al inicio siempre
         }}
       >
         {brandingData && brandingData.length > 0 ? (
@@ -200,16 +224,31 @@ const ProgrammeDetailsBanner = ({
             <Typography
               variant="subtitle2"
               fontWeight="bold"
-              sx={{ width: '100%', textAlign: { xs: "center", sm: "left" }, mb: 1 }}
+              sx={{
+                width: "100%",
+                textAlign: "left", // Eliminado el center en xs
+                mb: 1,
+              }}
             >
               Marcas Asociadas:
             </Typography>
             {brandingData.map((brand, index) => (
-              <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box
+                key={index}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  justifyContent: "flex-start", // Asegura alineación interna
+                }}
+              >
                 <Typography
                   variant="body2"
                   fontWeight="bold"
-                  sx={{ color: "#333", fontSize: { xs: "0.9rem", md: "0.95rem" } }}
+                  sx={{
+                    color: "#333",
+                    fontSize: { xs: "0.9rem", md: "0.95rem" },
+                  }}
                 >
                   {brand.logoText}
                 </Typography>
@@ -224,7 +263,11 @@ const ProgrammeDetailsBanner = ({
             ))}
           </>
         ) : (
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ textAlign: "left", width: "100%" }}
+          >
             No hay marcas asociadas para mostrar.
           </Typography>
         )}

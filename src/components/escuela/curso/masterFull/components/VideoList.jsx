@@ -5,76 +5,49 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
-
 const VideoList = ({
   modules = [],
   onSelectVideo,
-  completedVideos,
+  completedVideos = [], // Aseguramos default para evitar errores de .includes
   toggleCompletedVideo,
   selectedVideoId, 
 }) => {
-  // Estado para controlar qué módulos están abiertos
   const [openModules, setOpenModules] = useState({});
 
-  // Efecto 1: Abrir el primer módulo por defecto al cargar
   useEffect(() => {
-    if (modules.length > 0) {
+  }, [modules, completedVideos, selectedVideoId]);
+
+  useEffect(() => {
+    if (modules.length > 0 && Object.keys(openModules).length === 0) {
       const firstModuleId = modules[0].id;
-      setOpenModules({
-        [firstModuleId]: true  
-      });
+      setOpenModules({ [firstModuleId]: true });
     }
   }, [modules]); 
   
   useEffect(() => {
     if (!selectedVideoId) return;
 
-    // 1. Buscamos a qué módulo pertenece esta clase seleccionada.
     const classModule = modules.find(module => 
-      module.classes?.some(clase => clase.id === selectedVideoId)
+      module.classes?.some(clase => Number(clase.id) === Number(selectedVideoId))
     );
     
-    if (!classModule) {
-        return;
+    if (classModule) {
+      setOpenModules({ [classModule.id]: true });
+
+      const scrollTimeout = setTimeout(() => {
+        const element = document.getElementById(`video-item-${selectedVideoId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 300); 
+      return () => clearTimeout(scrollTimeout);
     }
-
-    const newModuleId = classModule.id;
-    setOpenModules({
-      [newModuleId]: true
-    });
-
-    const scrollTimeout = setTimeout(() => {
-      const element = document.getElementById(`video-item-${selectedVideoId}`);
-      
-      if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            block: "center", 
-          });
-      } else {
-          }
-    }, 300); 
-    return () => clearTimeout(scrollTimeout);
-    
   }, [selectedVideoId, modules]); 
 
-
-  // ✅ handleModuleClick: Mantiene la lógica manual de un solo módulo abierto (o ninguno).
   const handleModuleClick = (moduleId) => {
-    setOpenModules(prev => {
-      const isOpen = !prev[moduleId];
-      if (isOpen) {
-        return {
-          [moduleId]: true
-        };
-      } else {
-        return {}; 
-      }
-    });
-  };
-
-  const handleChangeVideo = (clase) => {
-    onSelectVideo(clase);
+    setOpenModules(prev => ({
+      [moduleId]: !prev[moduleId]
+    }));
   };
 
   const handleToggleCompleted = (claseId, event) => {
@@ -113,26 +86,27 @@ const VideoList = ({
                   color: "#006064",
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center',
                   cursor: 'pointer', 
                 }}
               >
-                <ListItemText
-                  primary={`Módulo ${module.order || 'N/A'}: ${module.title}`}
-                />
-                <IconButton
-                  aria-label={openModules[module.id] ? "ocultar clases" : "mostrar clases"}
-                  sx={{ p: 0.5 }}
-                >
-                  {openModules[module.id] ? <ExpandLess /> : <ExpandMore />}
-                </IconButton>
+                <ListItemText primary={`Módulo: ${module.title}`} />
+                {openModules[module.id] ? <ExpandLess /> : <ExpandMore />}
               </ListItem>
 
               <Collapse in={openModules[module.id]} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {module.classes?.map((clase) => {
-                    const isSelected = selectedVideoId === clase.id;
-                    const isCompleted = completedVideos.includes(clase.id);
+                    const isSelected = Number(selectedVideoId) === Number(clase.id);
+                    
+                    // 🔴 LOG DE COMPARACIÓN: Aquí detectaremos si hay un fallo de tipos (String vs Number)
+                    const isCompleted = completedVideos.some(cvId => {
+                        const match = Number(cvId) === Number(clase.id);
+                        if (match) {
+                           // Solo loguear cuando encuentra una coincidencia para no saturar
+                           // console.log(`✅ Match encontrado: ${cvId} === ${clase.id}`);
+                        }
+                        return match;
+                    });
 
                     return (
                       <ListItem
@@ -141,40 +115,29 @@ const VideoList = ({
                         sx={{
                           cursor: "pointer",
                           padding: "8px 15px 8px 30px",
-                          "&:hover": { backgroundColor: isSelected ? "#5A3EB2" : "#80c8db" },
-                          backgroundColor: isSelected
-                            ? "#6C4DE2" 
-                            : isCompleted
-                              ? "#0B8DB5" 
-                              : "transparent",
+                          backgroundColor: isSelected ? "#6C4DE2" : isCompleted ? "#0B8DB5" : "transparent",
+                          color: isSelected || isCompleted ? "white" : "#211E26",
                           borderRadius: "4px",
                           marginBottom: "2px",
+                          "&:hover": { backgroundColor: isSelected ? "#5A3EB2" : "#80c8db" },
                         }}
-                        onClick={() => handleChangeVideo(clase)}
+                        onClick={() => onSelectVideo(clase)}
                       >
                         <ListItemText
                           primary={clase.title}
-                          sx={{
-                            textDecoration: isCompleted ? "line-through" : "none",
-                            color: isSelected || isCompleted ? "white" : "#211E26",
-                            flexGrow: 1,
-                          }}
+                          sx={{ textDecoration: isCompleted ? "line-through" : "none" }}
                         />
                         <Box
                           sx={{
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
-                            color: isSelected || isCompleted ? "white" : "#211E26",
-                            ml: 1,
+                            p: 1, // Área de clic más grande
+                            zIndex: 10
                           }}
                           onClick={(e) => handleToggleCompleted(clase.id, e)}
                         >
-                          {isCompleted ? (
-                            <CheckCircleIcon />
-                          ) : (
-                            <CheckCircleOutlineIcon />
-                          )}
+                          {isCompleted ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
                         </Box>
                       </ListItem>
                     );

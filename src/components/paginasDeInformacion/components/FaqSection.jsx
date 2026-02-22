@@ -104,8 +104,7 @@ const FaqSection = ({
         maxWidth: "1200px",
         mx: "auto",
         p: { xs: 2, md: 4 },
-        mt: 5,
-        mb: 8,
+        mt: 2,
       }}
     >
       <Typography

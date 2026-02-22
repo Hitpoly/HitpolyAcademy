@@ -7,7 +7,7 @@ const useCourseVideoLogic = (courseId) => {
   const { user } = useAuth();
   const userId = user?.id;
 
-  // 1. Datos y Progreso (Aquí ya recibimos los datos filtrados por el Hook de progreso)
+  // 1. Datos y Progreso
   const { modules, allResources, loading, error } = useCourseData(courseId);
   const { 
     userProgressMap, 
@@ -20,7 +20,8 @@ const useCourseVideoLogic = (courseId) => {
   // 2. Estado del Video Actual
   const [currentVideoId, setCurrentVideoId] = useState(() => {
     const saved = localStorage.getItem(`currentVideoId_course_${courseId}`);
-    return saved ? parseInt(saved, 10) : null;
+    // Normalizamos a número desde el inicio
+    return saved ? Number(saved) : null;
   });
 
   // 3. Lógica de Listado de Videos (Aplanado para navegación y cálculos)
@@ -31,16 +32,16 @@ const useCourseVideoLogic = (courseId) => {
   // Sincronización del video inicial si no hay ninguno guardado
   useEffect(() => {
     if (currentVideoId === null && allVideos.length > 0) {
-      setCurrentVideoId(allVideos[0].id);
+      setCurrentVideoId(Number(allVideos[0].id));
     }
     if (currentVideoId) {
       localStorage.setItem(`currentVideoId_course_${courseId}`, currentVideoId.toString());
     }
   }, [allVideos, currentVideoId, courseId]);
 
-  // 4. Lógica de Navegación
+  // 4. Lógica de Navegación (Normalizando IDs para evitar fallos de tipo)
   const currentVideoIndex = useMemo(() => 
-    allVideos.findIndex(v => v.id === currentVideoId), 
+    allVideos.findIndex(v => Number(v.id) === Number(currentVideoId)), 
   [allVideos, currentVideoId]);
   
   const currentClass = useMemo(() => 
@@ -51,7 +52,7 @@ const useCourseVideoLogic = (courseId) => {
   const isLastVideo = allVideos.length > 0 && currentVideoIndex === allVideos.length - 1;
 
   const handleVideoChange = useCallback((clase) => {
-    setCurrentVideoId(clase.id);
+    setCurrentVideoId(Number(clase.id));
   }, []);
 
   const navigateToPreviousClass = useCallback(() => {
@@ -64,32 +65,43 @@ const useCourseVideoLogic = (courseId) => {
 
   // 5. Handlers de completado (Actualización local y API)
   const toggleCompletedVideo = async (claseId) => {
-    const isComp = completedVideoIdsLocal.includes(claseId);
+    const idNum = Number(claseId);
     
-    // Determinamos si es un registro nuevo (progreso) o actualización (update)
-    const accion = userProgressMap[claseId] ? "update" : "progreso";
-    const tiempoActual = userProgressMap[claseId]?.tiempo_visto_segundos || 0;
+    // USAMOS .some() con Number() para asegurar detección
+    const isComp = completedVideoIdsLocal.some(id => Number(id) === idNum);
+    
+    // DETECCIÓN CRÍTICA DE ACCIÓN: 
+    // Si la clase ya existe en el mapa del servidor, usamos 'update'. Si no, 'progreso'.
+    const accion = userProgressMap[idNum] ? "update" : "progreso";
+    const tiempoActual = userProgressMap[idNum]?.tiempo_visto_segundos || 0;
 
-    const success = await registerOrUpdateProgress(claseId, !isComp, tiempoActual, accion);
+    console.log(`[LOGIC] Intentando ${accion} para clase ${idNum}. Estado actual completado: ${isComp}`);
+
+    const success = await registerOrUpdateProgress(idNum, !isComp, tiempoActual, accion);
     
     if (success) {
       // Actualizamos el array de IDs para la barra de progreso
       setCompletedVideoIdsLocal(prev => 
-        !isComp ? [...prev, claseId] : prev.filter(id => id !== claseId)
+        !isComp 
+          ? [...prev, idNum] 
+          : prev.filter(id => Number(id) !== idNum)
       );
-      // Actualizamos el mapa detallado
+      
+      // Actualizamos el mapa detallado para que la siguiente vez sepa que ya existe (y use 'update')
       setUserProgressMap(prev => ({ 
         ...prev, 
-        [claseId]: { ...prev[claseId], completada: !isComp } 
+        [idNum]: { ...prev[idNum], completada: !isComp } 
       }));
     }
   };
 
   // 6. Valores para la UI (ProgressBar y Sidebars)
-  // Filtramos los IDs completados para asegurarnos de que pertenecen a las clases cargadas del curso
+  // Blindaje: Aseguramos que los IDs completados realmente existen en este curso y son números
   const validatedCompletedIds = useMemo(() => {
-    const courseClassIds = allVideos.map(v => v.id);
-    return completedVideoIdsLocal.filter(id => courseClassIds.includes(id));
+    const courseClassIds = allVideos.map(v => Number(v.id));
+    return completedVideoIdsLocal
+      .filter(id => courseClassIds.includes(Number(id)))
+      .map(id => Number(id));
   }, [completedVideoIdsLocal, allVideos]);
 
   return {
@@ -97,13 +109,21 @@ const useCourseVideoLogic = (courseId) => {
     loading, 
     error, 
     currentVideoId, 
-    completedVideoIdsLocal: validatedCompletedIds, // Usamos la lista validada
+    completedVideoIdsLocal: validatedCompletedIds, 
     currentClass,
-    currentClassResources: allResources.filter(r => String(r.clase_id) === String(currentVideoId)),
+    currentClassResources: allResources.filter(r => Number(r.clase_id) === Number(currentVideoId)),
     totalCourseVideos: allVideos.length,
     completedVideosCount: validatedCompletedIds.length,
     handleVideoChange,
-    handleVideoEnd: () => currentClass && !completedVideoIdsLocal.includes(currentClass.id) && toggleCompletedVideo(currentClass.id),
+    handleVideoEnd: () => {
+      if (currentClass) {
+        const idNum = Number(currentClass.id);
+        const yaCompletado = validatedCompletedIds.includes(idNum);
+        if (!yaCompletado) {
+          toggleCompletedVideo(idNum);
+        }
+      }
+    },
     toggleCompletedVideo,
     navigateToPreviousClass,
     navigateToNextClass,

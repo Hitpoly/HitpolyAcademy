@@ -26,7 +26,6 @@ const Videopopup = ({ videoUrl, onPlayerReady, onYouTubeStateChange }) => {
 
   const handleReady = useCallback(
     (e) => {
-      console.log("🎯 [Videopopup] YouTube API lista");
       onPlayerReady?.(e.target);
     },
     [onPlayerReady]

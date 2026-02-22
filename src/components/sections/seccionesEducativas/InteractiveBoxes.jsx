@@ -103,7 +103,8 @@ const InteractiveBoxes = () => {
         backgroundColor: "#fff",
         display: "flex",
         flexDirection: "column",
-        p: { xs: 2, md: 4 }, // Añadido padding para que el contenido no esté pegado a los bordes
+        px: { xs: 2, md: 10 },
+        py: { xs: 4, md: 6 },
       }}
     >
       <Typography variant="h3" gutterBottom>

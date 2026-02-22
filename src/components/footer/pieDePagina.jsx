@@ -4,7 +4,7 @@ import { Box, Grid, Typography, Link, Divider } from "@mui/material";
 const Footer = () => {
   return (
     <>
-      <Divider sx={{ my: 4 }} />
+      <Divider />
       <Box
         sx={{
           display: "flex",

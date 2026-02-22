@@ -23,6 +23,24 @@ const VideoPlayerWithControls = forwardRef(
     const isDragging = useRef(false);
     const intervalRef = useRef(null);
 
+    /* ================= SOLUCIÓN: RESET SEGURO ================= */
+    useEffect(() => {
+      setIsCompleted(false);
+      setHasStarted(false);
+      setProgress(0);
+      setCurrentTime(0);
+      setIsPaused(true);
+      
+      // Verificamos que player exista y tenga el método antes de llamar
+      if (player && typeof player.stopVideo === 'function' && player.getIframe?.()) {
+        try {
+          player.stopVideo();
+        } catch (e) {
+          // Error silencioso si el iframe ya no existe
+        }
+      }
+    }, [videoUrl, player]);
+
     /* ================= UTILS ================= */
     const formatTime = (s) => {
       if (!s || isNaN(s)) return "00:00";
@@ -34,7 +52,8 @@ const VideoPlayerWithControls = forwardRef(
     const startGlobalTimer = useCallback((p) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
-        if (p && typeof p.getCurrentTime === 'function' && !isDragging.current) {
+        // Validación crítica de p.getCurrentTime
+        if (p && typeof p.getCurrentTime === 'function' && p.getIframe?.() && !isDragging.current) {
           const t = p.getCurrentTime();
           const d = p.getDuration();
           if (d > 0) {
@@ -49,20 +68,23 @@ const VideoPlayerWithControls = forwardRef(
     /* ================= PLAYER HANDLERS ================= */
     const handlePlayerReady = useCallback((p) => {
       setPlayer(p);
-      setDuration(p.getDuration?.() || 0);
-      p.setVolume(volume);
-      startGlobalTimer(p);
+      if (p && typeof p.getDuration === 'function') {
+        setDuration(p.getDuration() || 0);
+        p.setVolume(volume);
+        startGlobalTimer(p);
+      }
     }, [volume, startGlobalTimer]);
 
     const handleYTState = useCallback((state) => {
       if (!player) return;
-      if (state === 1) { // Playing
+      
+      if (state === 1) { 
         setIsPaused(false);
         setIsCompleted(false);
         setHasStarted(true);
-      } else if (state === 2 || state === -1) { // Paused / Unstarted
+      } else if (state === 2 || state === -1) { 
         setIsPaused(true);
-      } else if (state === 0) { // Ended
+      } else if (state === 0) { 
         setIsPaused(true);
         setIsCompleted(true);
         setProgress(100);
@@ -72,7 +94,7 @@ const VideoPlayerWithControls = forwardRef(
 
     /* ================= CONTROL ACTIONS ================= */
     const handlePlayPause = () => {
-      if (!player) return;
+      if (!player || typeof player.getPlayerState !== 'function') return;
       if (isCompleted) {
         player.seekTo(0);
         player.playVideo();
@@ -92,7 +114,7 @@ const VideoPlayerWithControls = forwardRef(
     };
 
     const handleSeekCommit = (_, v) => {
-      if (!player) return;
+      if (!player || typeof player.seekTo !== 'function') return;
       const t = (v / 100) * duration;
       player.seekTo(t, true);
       setTimeout(() => { isDragging.current = false; }, 600);
@@ -101,14 +123,16 @@ const VideoPlayerWithControls = forwardRef(
 
     const handleVolumeChange = (_, v) => {
       setVolume(v);
-      if (player) {
+      if (player && typeof player.setVolume === 'function') {
         player.setVolume(v);
-        if (v > 0 && player.isMuted()) player.unMute();
+        if (v > 0 && player.isMuted?.()) player.unMute();
       }
     };
 
     useEffect(() => {
-      return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+      return () => { 
+        if (intervalRef.current) clearInterval(intervalRef.current); 
+      };
     }, []);
 
     const showControls = hasStarted && (isPaused || hover || isCompleted);
@@ -133,22 +157,19 @@ const VideoPlayerWithControls = forwardRef(
             onYouTubeStateChange={handleYTState}
           />
 
-          {/* 🚫 CAPA PROTECTORA INFERIOR (Siempre presente) */}
-          {/* Esta capa bloquea los clics en el logo de YouTube y botones nativos */}
           <Box
             sx={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              height: "60px", // Altura suficiente para cubrir el logo de YouTube
-              zIndex: 18, // Superior al video, inferior a los controles
+              height: "60px",
+              zIndex: 18,
               backgroundColor: "transparent",
-              pointerEvents: "auto", // Captura los clics para que no lleguen al iframe
+              pointerEvents: "auto",
             }}
           />
 
-          {/* 🌑 CAPA FINAL */}
           {isCompleted && (
             <Box
               sx={{
@@ -170,14 +191,13 @@ const VideoPlayerWithControls = forwardRef(
             </Box>
           )}
 
-          {/* 🎛️ BARRA DE CONTROLES */}
           <Box
             sx={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              zIndex: 20, // Nivel más alto
+              zIndex: 20,
               p: 2,
               display: "flex",
               gap: 2,
@@ -212,6 +232,7 @@ const VideoPlayerWithControls = forwardRef(
             />
 
             <IconButton onClick={() => {
+               if (!player) return;
                if (player.isMuted()) { player.unMute(); setVolume(100); }
                else { player.mute(); setVolume(0); }
             }} color="inherit">

@@ -18,9 +18,9 @@ const CenteredCallToAction = ({
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        px: 2,
-        py: 20,
-        backgroundColor: backgroundColor,
+        px: {xs: 2, md: 20},
+        py: 7,
+        backgroundColor: "#ffff",
       }}
     >
       <Typography sx={{ mb: 2, fontSize: {xs: "2rem", md: "3rem"} }}>

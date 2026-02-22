@@ -60,7 +60,6 @@ const MenuDeNavegacion = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAffiliatePopupOpen, setIsAffiliatePopupOpen] = useState(false);
   
-  // Extraemos userRole y userCargo del contexto de autenticación
   const { user, userRole, userCargo } = useAuth(); 
   
   const navigate = useNavigate();
@@ -74,15 +73,13 @@ const MenuDeNavegacion = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
 
-  // --- Lógica de Permisos ---
   const role = Number(userRole);
   const cargo = Number(userCargo);
 
   const isAdmin = role === 1;
   const isEmpresario = role === 2;
-  const isProfesorAutorizado = role === 3 && cargo === 159; // Lógica para Pablo
+  const isProfesorAutorizado = role === 3 && cargo === 159;
 
-  // Variable maestra para mostrar botones de Creador (Crear curso / Mis cursos)
   const puedeGestionarCursos = isAdmin || isEmpresario || isProfesorAutorizado;
 
   const toggleDrawer = (open) => () => {
@@ -268,7 +265,6 @@ const MenuDeNavegacion = () => {
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {/* BOTONES PARA PABLO, ADMIN Y EMPRESARIO */}
           {puedeGestionarCursos && (
             <>
               <Tooltip title="Crear curso">
@@ -284,7 +280,6 @@ const MenuDeNavegacion = () => {
             </>
           )}
 
-          {/* SOLO ADMINISTRADOR */}
           {isAdmin && (
             <>
               <Tooltip title="Crear anuncios">
@@ -305,14 +300,15 @@ const MenuDeNavegacion = () => {
             </>
           )}
 
-          {/* AFILIADO (TODOS MENOS ADMIN) */}
+          {/* AFILIADO (TODOS MENOS ADMIN) - COMENTADO POR AHORA
           {!isAdmin && (
             <Tooltip title="Afiliado">
               <IconButton color="secondary" onClick={handleOpenAffiliatePopup} sx={{ border: '1px solid #9c27b0' }}>
                 <EmojiEventsIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          )}
+          )} 
+          */}
         </Box>
       </Box>
 

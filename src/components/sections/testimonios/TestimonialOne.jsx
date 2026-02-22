@@ -1,99 +1,71 @@
-// src/sections/testimonios/TestimonialOne.jsx
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Avatar,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button
-} from "@mui/material";
-
+import { Box, Typography, CircularProgress } from "@mui/material";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Autoplay } from "swiper/modules";
+
+// Estilos obligatorios de Swiper
 import "swiper/css";
 import "swiper/css/pagination";
-import { Pagination, Autoplay } from "swiper/modules";
+
+// Importación de sub-componentes (Asegúrate de tener estos archivos creados)
+import TestimonialCard from "./TestimonialCard";
+import TestimonialDialog from "./TestimonialDialog";
 
 const TestimoniosSection = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedReviewText, setSelectedReviewText] = useState("");
-  const [selectedReviewName, setSelectedReviewName] = useState("");
+  const [dialog, setDialog] = useState({ open: false, text: "", name: "" });
 
   useEffect(() => {
     const fetchTestimonials = async () => {
-      setLoading(true);
-      setError(null);
       try {
-        const commentsResponse = await fetch(
-          "https://apiacademy.hitpoly.com/ajax/traerComentariosDestacadosController.php",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ accion: "getAll" }),
-          }
-        );
-        const commentsData = await commentsResponse.json();
-
-        if (!commentsResponse.ok || commentsData.status !== "success") {
-          throw new Error(commentsData.message || "Error al cargar comentarios.");
-        }
-
-        const allUsersResponse = await fetch(
-          "https://apiacademy.hitpoly.com/ajax/getAllUserController.php",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ accion: "getAllUser" }),
-          }
-        );
-        const allUsersData = await allUsersResponse.json();
-
-        let mappedUsers = {};
-        if (allUsersData.status === "success" && Array.isArray(allUsersData.clases)) {
-          mappedUsers = allUsersData.clases.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-          }, {});
-        }
-
-        const uniqueClassIds = [...new Set(commentsData.comentarios.map(c => c.clase_id).filter(id => id))];
-        const fetchedCourseNames = {};
-
-        await Promise.all(
-          uniqueClassIds.map(async (classId) => {
-            try {
-              const res = await fetch("https://apiacademy.hitpoly.com/ajax/traerNombreCursoPorIdClaseController.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ accion: "getCursosPorIdClase", id: classId }),
-              });
-              const data = await res.json();
-              fetchedCourseNames[classId] = data.status === "success" ? data.cursos.titulo : "Programa Hitpoly";
-            } catch {
-              fetchedCourseNames[classId] = "Programa Hitpoly";
-            }
-          })
-        );
-
-        const finalReviews = commentsData.comentarios.map((comment) => {
-          const user = mappedUsers[comment.usuario_id];
-          const programName = fetchedCourseNames[comment.clase_id] || "Programa Hitpoly";
-          
-          return {
-            id: comment.id,
-            text: comment.contenido || "Excelente curso, muy recomendado.",
-            name: user ? `${user.nombre} ${user.apellido || ""}`.trim() : "Estudiante de Hitpoly",
-            program: programName,
-            image: user?.avatar || null, // Aquí extraemos la imagen
-          };
+        setLoading(true);
+        // 1. Obtener Comentarios
+        const commentsRes = await fetch("https://apiacademy.hitpoly.com/ajax/traerComentariosDestacadosController.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accion: "getAll" }),
         });
+        const commentsData = await commentsRes.json();
+        if (commentsData.status !== "success") throw new Error("Error al cargar comentarios.");
+
+        // 2. Obtener Usuarios
+        const usersRes = await fetch("https://apiacademy.hitpoly.com/ajax/getAllUserController.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accion: "getAllUser" }),
+        });
+        const usersData = await usersRes.json();
+        const mappedUsers = (usersData.clases || []).reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+
+        // 3. Obtener Nombres de Cursos
+        const uniqueIds = [...new Set(commentsData.comentarios.map(c => c.clase_id))];
+        const courseNames = {};
+        
+        await Promise.all(uniqueIds.map(async (id) => {
+          try {
+            const res = await fetch("https://apiacademy.hitpoly.com/ajax/traerNombreCursoPorIdClaseController.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accion: "getCursosPorIdClase", id }),
+            });
+            const d = await res.json();
+            courseNames[id] = d.status === "success" ? d.cursos.titulo : "Programa Hitpoly";
+          } catch {
+            courseNames[id] = "Programa Hitpoly";
+          }
+        }));
+
+        const finalReviews = commentsData.comentarios.map(comment => ({
+          id: comment.id,
+          text: comment.contenido || "Excelente curso.",
+          name: mappedUsers[comment.usuario_id] 
+            ? `${mappedUsers[comment.usuario_id].nombre} ${mappedUsers[comment.usuario_id].apellido || ""}`.trim() 
+            : "Estudiante de Hitpoly",
+          program: courseNames[comment.clase_id] || "Programa Hitpoly",
+          image: mappedUsers[comment.usuario_id]?.avatar || null,
+        }));
 
         setReviews(finalReviews);
       } catch (err) {
@@ -106,139 +78,80 @@ const TestimoniosSection = () => {
     fetchTestimonials();
   }, []);
 
-  const handleOpenDialog = (text, name) => {
-    setSelectedReviewText(text);
-    setSelectedReviewName(name);
-    setOpenDialog(true);
-  };
+  const handleOpenDialog = (text, name) => setDialog({ open: true, text, name });
+  const handleCloseDialog = () => setDialog({ ...dialog, open: false });
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
+  if (loading) return (
+    <Box sx={{ p: 10, textAlign: "center" }}>
+      <CircularProgress /><Typography sx={{ mt: 2 }}>Cargando experiencias...</Typography>
+    </Box>
+  );
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 10, textAlign: "center" }}>
-        <CircularProgress />
-        <Typography sx={{ mt: 2 }}>Cargando experiencias...</Typography>
-      </Box>
-    );
-  }
-
-  if (error || reviews.length === 0) {
-    return null;
-  }
+  if (error || reviews.length === 0) return null;
 
   return (
-    <Box sx={{ py: 8, backgroundColor: "#fff", px: { xs: 2, md: 4 }, overflow: "hidden" }}>
-      <Box sx={{ maxWidth: "1200px", margin: "0 auto", position: "relative" }}>
-        <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 'bold' }}>
+    <Box 
+      component="section"
+      sx={{ 
+        backgroundColor: "#fff", 
+        // Padding lateral responsivo (el que Swiper debe respetar)
+        px: { xs: 2, sm: 4, md: 10 }, 
+        py: { xs: 4, md: 6 }, 
+        width: "100%",
+        boxSizing: "border-box",
+        overflow: "hidden" // Evita el scroll horizontal en toda la página
+      }}
+    >
+      <Box sx={{ 
+        width: "100%", 
+        maxWidth: "1400px", 
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0 // <--- ESTO ES VITAL: impide que Swiper empuje los bordes
+      }}>
+        <Typography variant="overline" sx={{ color: "primary.main", fontWeight: "bold" }}>
           Testimonios
         </Typography>
-        <Typography variant="h3" pb={4} pt={3}>
+        <Typography variant="h3" pb={4} pt={3} sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
           Opiniones reales de nuestra comunidad
         </Typography>
 
-        <Swiper
-          modules={[Pagination, Autoplay]}
-          spaceBetween={30}
-          slidesPerView={1}
-          autoplay={{ delay: 6000, disableOnInteraction: false }}
-          pagination={{ clickable: true }}
-          breakpoints={{
-            640: { slidesPerView: 2 },
-            1024: { slidesPerView: 3 },
-          }}
-          style={{ 
-            paddingTop: '30px',    
-            paddingBottom: '60px', 
-            overflow: 'visible'    
-          }}
-        >
-          {reviews.map((review) => {
-
-            return (
-              <SwiperSlide key={review.id} style={{ overflow: 'visible' }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#F9FAFB",
-                    borderRadius: 4,
-                    p: 4,
-                    height: "100%",
-                    minHeight: "280px",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                    cursor: 'pointer',
-                    border: "1px solid #eee",
-                    "&:hover": { 
-                      transform: "translateY(-15px)", 
-                      boxShadow: "0px 15px 30px rgba(0,0,0,0.1)",
-                      borderColor: "primary.main",
-                      backgroundColor: "#fff"
-                    },
-                  }}
-                  onClick={() => handleOpenDialog(review.text, review.name)}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      mb: 3,
-                      fontStyle: "italic",
-                      color: "#374151",
-                      display: '-webkit-box',
-                      WebkitLineClamp: 5,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      lineHeight: 1.6
-                    }}
-                  >
-                    "{review.text}"
-                  </Typography>
-                  
-                  <Box sx={{ mt: "auto", display: "flex", alignItems: "center", gap: 2 }}>
-                    <Avatar
-                      src={review.image}
-                      alt={review.name}
-                      sx={{ 
-                        width: 55, 
-                        height: 55, 
-                        bgcolor: "secondary.main",
-                        border: "2px solid #fff",
-                        boxShadow: 1
-                      }}
-                    >
-                      {review.name.charAt(0)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                        {review.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {review.program}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
+        {/* Contenedor relativo para el Swiper */}
+        <Box sx={{ width: "100%", minWidth: 0 }}>
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1}
+            autoplay={{ delay: 6000, disableOnInteraction: false }}
+            pagination={{ clickable: true }}
+            breakpoints={{ 
+              640: { slidesPerView: 2 }, 
+              1024: { slidesPerView: 3 } 
+            }}
+            style={{ 
+              paddingTop: "20px", 
+              paddingBottom: "60px",
+              paddingLeft: "10px", // Espacio extra para sombras de tarjetas
+              paddingRight: "10px",
+              width: "100%",
+            }}
+          >
+            {reviews.map((review) => (
+              <SwiperSlide key={review.id} style={{ height: "auto", display: "flex" }}>
+                <TestimonialCard review={review} onClick={handleOpenDialog} />
               </SwiperSlide>
-            );
-          })}
-        </Swiper>
+            ))}
+          </Swiper>
+        </Box>
       </Box>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Testimonio de {selectedReviewName}</DialogTitle>
-        <DialogContent dividers>
-          <DialogContentText sx={{ color: "text.primary", whiteSpace: "pre-line" }}>
-            {selectedReviewText}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} variant="contained" sx={{ borderRadius: 2 }}>
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <TestimonialDialog 
+        open={dialog.open} 
+        onClose={handleCloseDialog} 
+        name={dialog.name} 
+        text={dialog.text} 
+      />
     </Box>
   );
 };
