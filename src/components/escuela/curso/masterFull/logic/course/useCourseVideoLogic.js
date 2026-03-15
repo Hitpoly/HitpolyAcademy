@@ -52,7 +52,11 @@ const useCourseVideoLogic = (courseId) => {
   const isLastVideo = allVideos.length > 0 && currentVideoIndex === allVideos.length - 1;
 
   const handleVideoChange = useCallback((clase) => {
-    setCurrentVideoId(Number(clase.id));
+    console.log(`[Logic] handleVideoChange llamado con clase:`, clase);
+    console.log(`[Logic] ID de clase antes de normalizar: ${clase.id} (tipo: ${typeof clase.id})`);
+    const idNormalizado = Number(clase.id);
+    console.log(`[Logic] ID de clase después de normalizar: ${idNormalizado} (tipo: ${typeof idNormalizado})`);
+    setCurrentVideoId(idNormalizado);
   }, []);
 
   const navigateToPreviousClass = useCallback(() => {

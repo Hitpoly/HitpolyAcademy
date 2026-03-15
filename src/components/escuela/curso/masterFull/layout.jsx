@@ -53,28 +53,33 @@ const VideoLayout = ({ courseId, finalExamId }) => {
 
   // Función para la selección manual de la lista
   const handleVideoChangeAndScroll = (clase) => {
+    console.log(`[Layout] handleVideoChangeAndScroll llamado con clase:`, clase);
     originalHandleVideoChange(clase);
-    if (videoPlayerRef.current) {
-      videoPlayerRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
+    
+    // Simplemente desplazamos al inicio de la página
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log(`[Layout] Desplazamiento al inicio completado`);
+    }, 700);
   };
 
   // ✅ CORRECCIÓN CON LOGS: Navegación de botones
   const handlePreviousClick = () => {
     navigateToPreviousClass();
-    if (videoPlayerRef.current) {
-        videoPlayerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    // Simplemente desplazamos al inicio de la página
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log(`[Layout] Desplazamiento al inicio completado`);
+    }, 300);
   };
 
   const handleNextClick = () => {
     navigateToNextClass();
-    if (videoPlayerRef.current) {
-        videoPlayerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    // Simplemente desplazamos al inicio de la página
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log(`[Layout] Desplazamiento al inicio completado`);
+    }, 300);
   };
   // FIN CORRECCIÓN CON LOGS
 
@@ -306,10 +311,10 @@ const VideoLayout = ({ courseId, finalExamId }) => {
           gap: "20px",
         }}
       >
-        <Box sx={{ flex: 7, display: { xs: "none", md: "block" } }}>
+        <Box sx={{ flex: { xs: 12, md: 7 }, display: { xs: "none", md: "block" } }}>
           <CommentSection claseId={currentVideoId} />
         </Box>
-        <Box sx={{ flex: 3 }}>
+        <Box sx={{ flex: { xs: 12, md: 5 } }}>
           <Resources resources={currentClassResources} />
         </Box>
       </Box>

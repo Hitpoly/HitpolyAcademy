@@ -27,22 +27,25 @@ const VideoList = ({
   useEffect(() => {
     if (!selectedVideoId) return;
 
+    console.log(`[VideoList] useEffect selectedVideoId: ${selectedVideoId}`);
+    console.log(`[VideoList] modules:`, modules);
+
     const classModule = modules.find(module => 
       module.classes?.some(clase => Number(clase.id) === Number(selectedVideoId))
     );
     
-    if (classModule) {
-      setOpenModules({ [classModule.id]: true });
+    console.log(`[VideoList] classModule encontrado:`, classModule);
 
-      const scrollTimeout = setTimeout(() => {
-        const element = document.getElementById(`video-item-${selectedVideoId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 300); 
-      return () => clearTimeout(scrollTimeout);
+    if (classModule) {
+      console.log(`[VideoList] Abriendo módulo: ${classModule.id}`);
+      setOpenModules({ [classModule.id]: true });
+      
+      // Eliminamos el scrollIntoView para evitar conflictos
+      // El scroll al reproductor de video será manejado por layout.jsx
+    } else {
+      console.log(`[VideoList] No se encontró el módulo para el video ${selectedVideoId}`);
     }
-  }, [selectedVideoId, modules]); 
+  }, [selectedVideoId, modules]);
 
   const handleModuleClick = (moduleId) => {
     setOpenModules(prev => ({
