@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import React, { useEffect } from "react";
+import NavigationNotifier from "./components/NavigationNotifier.jsx";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -35,27 +36,6 @@ import EditarExamen from "./components/escuela/curso/masterFull/examenes/compone
 import ExamenAlumno from "./components/escuela/curso/masterFull/examenes/ExamenAlumno.jsx";
 import ResultadosAlumno from "./components/escuela/curso/masterFull/examenes/ResultadosAlumno.jsx";
 
-/**
- * COMPONENTE NOTIFICADOR
- * Este componente detecta cambios de ruta y avisa al padre (Dashboard)
- */
-const NavigationNotifier = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Enviamos la ruta actual al padre para que la guarde en LocalStorage
-    const currentPath = location.pathname + location.search;
-    window.parent.postMessage(
-      {
-        type: "NAVIGATED",
-        path: currentPath,
-      },
-      "*" // Cambiar por el dominio del Dashboard en producción por seguridad
-    );
-  }, [location]);
-
-  return null;
-};
 
 const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = false }) => {
   const { isAuthenticated, userRole, userCargo, isLoading, user } = useAuth();
