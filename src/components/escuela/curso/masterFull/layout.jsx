@@ -53,13 +53,12 @@ const VideoLayout = ({ courseId, finalExamId }) => {
 
   // Función para la selección manual de la lista
   const handleVideoChangeAndScroll = (clase) => {
-    console.log(`[Layout] handleVideoChangeAndScroll llamado con clase:`, clase);
+
     originalHandleVideoChange(clase);
     
     // Simplemente desplazamos al inicio de la página
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      console.log(`[Layout] Desplazamiento al inicio completado`);
     }, 700);
   };
 
@@ -69,7 +68,6 @@ const VideoLayout = ({ courseId, finalExamId }) => {
     // Simplemente desplazamos al inicio de la página
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      console.log(`[Layout] Desplazamiento al inicio completado`);
     }, 300);
   };
 
@@ -78,7 +76,6 @@ const VideoLayout = ({ courseId, finalExamId }) => {
     // Simplemente desplazamos al inicio de la página
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      console.log(`[Layout] Desplazamiento al inicio completado`);
     }, 300);
   };
   // FIN CORRECCIÓN CON LOGS

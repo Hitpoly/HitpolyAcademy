@@ -52,10 +52,7 @@ const useCourseVideoLogic = (courseId) => {
   const isLastVideo = allVideos.length > 0 && currentVideoIndex === allVideos.length - 1;
 
   const handleVideoChange = useCallback((clase) => {
-    console.log(`[Logic] handleVideoChange llamado con clase:`, clase);
-    console.log(`[Logic] ID de clase antes de normalizar: ${clase.id} (tipo: ${typeof clase.id})`);
     const idNormalizado = Number(clase.id);
-    console.log(`[Logic] ID de clase después de normalizar: ${idNormalizado} (tipo: ${typeof idNormalizado})`);
     setCurrentVideoId(idNormalizado);
   }, []);
 
@@ -79,7 +76,7 @@ const useCourseVideoLogic = (courseId) => {
     const accion = userProgressMap[idNum] ? "update" : "progreso";
     const tiempoActual = userProgressMap[idNum]?.tiempo_visto_segundos || 0;
 
-    console.log(`[LOGIC] Intentando ${accion} para clase ${idNum}. Estado actual completado: ${isComp}`);
+
 
     const success = await registerOrUpdateProgress(idNum, !isComp, tiempoActual, accion);
     

@@ -38,7 +38,7 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
   const [editingIndex, setEditingIndex] = useState(null);
 
   const resetCurrentQuestion = () => {
-    console.log("Restableciendo la pregunta actual.");
+
     setCurrentQuestion({
       texto_pregunta: "",
       opciones: [{ opcion: "A", texto: "" }],
@@ -56,14 +56,14 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
   };
 
   const handleOptionChange = (index, e) => {
-    console.log(`Editando opción ${index}: ${e.target.value}`);
+
     const newOptions = [...currentQuestion.opciones];
     newOptions[index].texto = e.target.value;
     setCurrentQuestion((prev) => ({ ...prev, opciones: newOptions }));
   };
 
   const handleCorrectAnswerChange = (e) => {
-    console.log(`Seleccionando respuesta correcta: ${e.target.value}`);
+
     setCurrentQuestion((prev) => ({
       ...prev,
       respuesta_correcta: e.target.value,
@@ -83,11 +83,11 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
       },
     ];
     setCurrentQuestion((prev) => ({ ...prev, opciones: newOptions }));
-    console.log("Nueva opción agregada:", newOptions);
+
   };
 
   const removeOption = (index) => {
-    console.log(`Eliminando opción en el índice: ${index}`);
+
     const newOptions = currentQuestion.opciones.filter((_, i) => i !== index);
     const reindexedOptions = newOptions.map((opt, i) => ({
       ...opt,
@@ -120,7 +120,7 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
     }
 
     if (editingIndex !== null) {
-      console.log(`Actualizando pregunta en el índice: ${editingIndex}`, currentQuestion);
+
       const updatedQuestions = [...questions];
       updatedQuestions[editingIndex] = currentQuestion;
       setQuestions(updatedQuestions);
@@ -129,7 +129,7 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
         setError("Solo se pueden agregar 5 preguntas por examen.");
         return;
       }
-      console.log("Agregando nueva pregunta:", currentQuestion);
+
       setQuestions((prev) => [...prev, { ...currentQuestion, id: null }]);
     }
     resetCurrentQuestion();
@@ -138,7 +138,7 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
   const editQuestion = (index) => {
     const questionToEdit = questions[index];
     if (!questionToEdit) return;
-    console.log(`Preparando para editar la pregunta en el índice: ${index}`, questionToEdit);
+
 
     setCurrentQuestion({
       ...questionToEdit,
@@ -154,7 +154,7 @@ const EditarPreguntas = ({ questions, setQuestions, saving, setError }) => {
   };
 
   const deleteQuestion = (index) => {
-    console.log(`Eliminando pregunta en el índice: ${index}`);
+
     const newQuestions = questions.filter((_, i) => i !== index);
     setQuestions(newQuestions);
     if (editingIndex === index) {

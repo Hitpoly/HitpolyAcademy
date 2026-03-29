@@ -31,25 +31,25 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
   useEffect(() => {
     if (onInputActivity) {
       const hasText = emailInput.length > 0 || phoneInput.length > 0;
-      console.log("[Activity] ¿Hay texto en inputs?", hasText);
+
       onInputActivity(hasText);
     }
   }, [emailInput, phoneInput, onInputActivity]);
 
   const handleSnackbarClose = (event, reason) => {
-    console.log("[Snackbar] Solicitando cierre. Razón:", reason);
+
     if (reason === "clickaway") return;
     setOpenSnackbar(false);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("[Submit] Click detectado. id_curso:", idCursoDestacado);
+
     setLoading(true);
     setOpenSnackbar(false);
 
     if (!emailInput) {
-      console.warn("[Validation] Falta email");
+
       setSnackbarMessage("Por favor, ingresa tu correo electrónico.");
       setSnackbarSeverity("warning");
       setOpenSnackbar(true);
@@ -95,7 +95,7 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
       correos: correosToSend,
     };
 
-    console.log("[API Payload] Enviando:", payload);
+
 
     try {
       const response = await fetch("https://apiacademy.hitpoly.com/ajax/cargarProspectosController.php", {
@@ -106,11 +106,11 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
 
       // Verificamos si la respuesta es JSON
       const text = await response.text();
-      console.log("[API Raw Response]", text);
+
       const data = JSON.parse(text);
 
       if (response.ok && data.status === "success") {
-        console.log("[Success] Seteando mensaje de éxito");
+
         setSnackbarMessage("¡Solicitud procesada con éxito! Se han añadido o actualizado tus datos.");
         setSnackbarSeverity("success");
         setOpenSnackbar(true); // <--- ESTO DEBE ACTIVAR EL POPUP
@@ -118,18 +118,18 @@ const EmailSubscriptionForm = ({ idCursoDestacado, onInputActivity }) => {
         setPhoneInput("");
       } else {
         if (data.message && data.message.includes("ya está registrado")) {
-            console.info("[Info] Usuario registrado, navegando...");
+
             navigate("/dashboard");
             return;
         } else {
-            console.error("[Error API]", data.message);
+
             setSnackbarMessage(data.message || "Error al procesar la solicitud. Inténtalo de nuevo.");
             setSnackbarSeverity("error");
             setOpenSnackbar(true);
         }
       }
     } catch (error) {
-      console.error("[Fatal Error]", error);
+
       setSnackbarMessage("Error de conexión. Por favor, verifica tu internet.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true); 

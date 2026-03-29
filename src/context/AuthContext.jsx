@@ -8,7 +8,7 @@ export const useAuth = () => useContext(AuthContext);
 const getUserIdFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("user_id");
-    if (id) console.log("🔗 [Bridge] ID recibido del sistema externo:", id);
+
     return id;
 };
 
@@ -24,14 +24,14 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const logout = useCallback(() => {
-        console.log("🚪 [Auth] Cerrando sesión...");
+
         setIsAuthenticated(false);
         setUser(null);
         localStorage.removeItem("userId");
     }, []);
 
     const loadUserData = useCallback(async (id) => {
-        console.log(`📡 [API] Validando ID ${id} contra la Base de Datos Maestra...`);
+
         setIsLoading(true);
         try {
             const res = await fetch(API_URL, {
@@ -48,9 +48,9 @@ export const AuthProvider = ({ children }) => {
             
             try {
                 data = JSON.parse(text);
-                console.log("📥 [API] Datos recuperados para auditoría:", data);
+
             } catch (e) {
-                console.error("❌ [Error] Error al parsear JSON.");
+
                 throw new Error("JSON inválido");
             }
 
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(userData);
                 setIsAuthenticated(true);
                 localStorage.setItem("userId", id);
-                console.log(`✅ [Auth] Acceso concedido: ${userData.nombre} (Tipo: ${userData.id_tipo}, Cargo: ${userData.id_cargo})`);
+
 
                 if (window.location.href.includes("user_id=")) {
                     const clean = window.location.pathname;
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
                 logout();
             }
         } catch (error) {
-            console.error("🔥 [Error] Fallo en la conexión:", error);
+
             logout();
         } finally {
             setIsLoading(false);

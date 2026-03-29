@@ -86,8 +86,7 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
                 offset: currentOffset
             };
 
-            console.log('[CommentsLogic] Fetching from:', COMMENTS_GET_URL);
-            console.log('[CommentsLogic] Payload sent:', payload);
+
 
             const response = await fetch(COMMENTS_GET_URL, {
                 method: 'POST',
@@ -100,7 +99,7 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
                 throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
             }
             const data = await response.json();
-            console.log('[CommentsLogic] Full response data:', data);
+
 
             if (data.status === 'success' && Array.isArray(data.comentarios)) {
                 const newComments = data.comentarios;

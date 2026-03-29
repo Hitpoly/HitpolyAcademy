@@ -52,7 +52,7 @@ const CourseCard = ({ course, categoryName }) => {
         }, 1500); // 1.5 segundos
       })
       .catch((err) => {
-        console.error("Error al copiar el enlace: ", err);
+
         setShareTooltipText("Error al copiar"); // Muestra un mensaje de error si falla
         setTimeout(() => {
           setShareTooltipText("Copiar enlace del curso");

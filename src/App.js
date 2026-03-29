@@ -44,17 +44,13 @@ const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = fal
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      console.group(`🔐 Control de Acceso: ${window.location.pathname}`);
-      console.log("👤 Usuario:", user?.nombre || "Cargando...");
       const isAdmin = currentRole === 1;
       const isEmpresario = currentRole === 2;
       const isProfesorAutorizado = currentRole === 3 && currentCargo === 159;
       
       if (requireCreatorPrivileges) {
         const hasAccess = isAdmin || isEmpresario || isProfesorAutorizado;
-        console.log(hasAccess ? "✅ Acceso Creador: CONCEDIDO" : "❌ Acceso Creador: DENEGADO");
       }
-      console.groupEnd();
     }
   }, [isLoading, isAuthenticated, currentRole, currentCargo, requireCreatorPrivileges, user]);
 

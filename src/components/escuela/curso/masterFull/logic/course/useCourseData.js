@@ -78,7 +78,7 @@ export const useCourseData = (courseId) => {
         })));
 
       } catch (err) {
-        console.error("Error en useCourseData:", err);
+
         setError(`Error: ${err.message}`);
       } finally {
         setLoading(false);

@@ -8,7 +8,7 @@ export const useFetchCourses = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("--- Iniciando Fetch de Cursos y Categorías ---");
+
         const [catRes, cursRes] = await Promise.all([
           fetch(
             "https://apiacademy.hitpoly.com/ajax/getCategoriasController.php",
@@ -32,7 +32,7 @@ export const useFetchCourses = () => {
         const coursesData = await cursRes.json();
 
         // LOG 1: Verificar qué llega exactamente de la API de cursos
-        console.log("DATA CRUDA DE CURSOS (PHP):", coursesData.cursos.cursos);
+
 
         const categoryMap = categoriesData.categorias.reduce((map, cat) => {
           map[cat.id] = cat.nombre;
@@ -47,7 +47,7 @@ export const useFetchCourses = () => {
           allCursos.map(async (curso) => {
             try {
               // LOG 2: Verificar si la propiedad existe en el objeto individual antes de los fecths extra
-              console.log(`Verificando video en curso ${curso.id}:`, curso.url_video_introductorio);
+
 
               const instRes = await fetch(
                 `https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php?id=${curso.profesor_id}`,
@@ -70,7 +70,7 @@ export const useFetchCourses = () => {
                 reviews: valData.status === "success" ? valData.reviews : 0,
               };
             } catch (err) {
-              console.error(`Error procesando data extra del curso ${curso.id}:`, err);
+
               return {
                 ...curso,
                 instructorName: "Instructor Academia",
@@ -86,7 +86,7 @@ export const useFetchCourses = () => {
           if (!acc[catName]) acc[catName] = [];
 
           // LOG 3: Verificar el mapeo final
-          console.log(`Mapeando a objeto final -> Curso: ${curso.titulo} | Video:`, curso.url_video_introductorio);
+
 
           acc[catName].push({
             id: curso.id,
@@ -103,10 +103,10 @@ export const useFetchCourses = () => {
           return acc;
         }, {});
 
-        console.log("OBJETO ORGANIZADO FINAL:", organized);
+
         setCoursesByCategory(organized);
       } catch (err) {
-        console.error("Error global en useFetchCourses:", err);
+
         setError("Error al cargar los cursos");
       } finally {
         setLoading(false);

@@ -27,23 +27,11 @@ const VideoList = ({
   useEffect(() => {
     if (!selectedVideoId) return;
 
-    console.log(`[VideoList] useEffect selectedVideoId: ${selectedVideoId}`);
-    console.log(`[VideoList] modules:`, modules);
-
-    const classModule = modules.find(module => 
-      module.classes?.some(clase => Number(clase.id) === Number(selectedVideoId))
-    );
-    
-    console.log(`[VideoList] classModule encontrado:`, classModule);
-
     if (classModule) {
-      console.log(`[VideoList] Abriendo módulo: ${classModule.id}`);
       setOpenModules({ [classModule.id]: true });
       
       // Eliminamos el scrollIntoView para evitar conflictos
       // El scroll al reproductor de video será manejado por layout.jsx
-    } else {
-      console.log(`[VideoList] No se encontró el módulo para el video ${selectedVideoId}`);
     }
   }, [selectedVideoId, modules]);
 
@@ -106,7 +94,7 @@ const VideoList = ({
                         const match = Number(cvId) === Number(clase.id);
                         if (match) {
                            // Solo loguear cuando encuentra una coincidencia para no saturar
-                           // console.log(`✅ Match encontrado: ${cvId} === ${clase.id}`);
+
                         }
                         return match;
                     });

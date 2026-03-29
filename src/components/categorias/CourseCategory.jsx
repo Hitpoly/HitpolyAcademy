@@ -120,9 +120,7 @@ const CourseCategory = () => {
               }
             );
             if (!instructorResponse.ok) {
-              console.error(
-                `Error al cargar el instructor ${id}: ${instructorResponse.statusText}`
-              );
+
               return { id, name: "Instructor Desconocido" };
             }
             const instructorData = await instructorResponse.json();
@@ -132,14 +130,11 @@ const CourseCategory = () => {
                 name: `${instructorData.usuario.nombre} ${instructorData.usuario.apellido}`,
               };
             } else {
-              console.warn(
-                `Datos de instructor ${id} inválidos:`,
-                instructorData.message
-              );
+
               return { id, name: "Instructor Desconocido" };
             }
           } catch (fetchErr) {
-            console.error(`Excepción al cargar el instructor ${id}:`, fetchErr);
+
             return { id, name: "Instructor Desconocido" };
           }
         });

@@ -41,7 +41,7 @@ const MigradorDirecto = () => {
           setIsWorking(false);
         }
       } catch (e) {
-        console.error("Error al procesar mensaje:", e);
+
       }
     };
 

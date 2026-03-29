@@ -150,7 +150,7 @@ const EditarExamen = () => {
           setError("Error al cargar la información del curso.");
         }
       } catch (err) {
-        console.error("Error en la llamada a la API:", err);
+
         setError("Error de red al obtener el nombre del curso.");
       } finally {
         setIsLoadingCourse(false);

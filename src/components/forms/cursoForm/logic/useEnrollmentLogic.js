@@ -140,7 +140,7 @@ export const useEnrollmentLogic = (urlSlugFromParams) => {
 
     try {
       await registerUser(dataToRegisterUser);
-      console.log("🎉 Usuario registrado con éxito.");
+
 
       const loginData = {
         funcion: "login",

@@ -73,7 +73,7 @@ function CategoryListManager({ refreshCategoriesTrigger }) {
 
     } catch (error) {
       setMensajeCarga('Error al cargar las categorías: ' + error.message);
-      console.error('Error al obtener categorías:', error);
+
       setCategorias([]);
     } finally {
       setCargadoLista(true);

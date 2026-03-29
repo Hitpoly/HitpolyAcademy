@@ -188,7 +188,7 @@ const CursoCard = ({
               <VideoPlayerWithControls 
                 ref={videoRef} 
                 videoUrl={videoUrl} 
-                onVideoCompleted={() => console.log("Video finalizado")}
+                onVideoCompleted={() => {}}
               />
             ) : (
               <Box sx={{ py: 10, textAlign: 'center', color: 'white' }}>
