@@ -27,11 +27,12 @@ const VideoList = ({
   useEffect(() => {
     if (!selectedVideoId) return;
 
+    const classModule = modules.find(module => 
+      module.classes?.some(clase => Number(clase.id) === Number(selectedVideoId))
+    );
+
     if (classModule) {
       setOpenModules({ [classModule.id]: true });
-      
-      // Eliminamos el scrollIntoView para evitar conflictos
-      // El scroll al reproductor de video será manejado por layout.jsx
     }
   }, [selectedVideoId, modules]);
 
