@@ -20,6 +20,7 @@ import SendIcon from '@mui/icons-material/Send';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useCommentsLogic } from './logic/useCommentsLogic'; 
+import { useAlerts } from '../../../../../../context/AlertContext';
 
 // =====================================================================
 // 🚀 FUNCIÓN DE CÁLCULO DE TIEMPO RELATIVO LIMPIA (Asume fecha UTC correcta) 🚀
@@ -180,10 +181,9 @@ const EditableCommentContent = ({
         );
     }
 
-    // Esta parte en realidad nunca se alcanzará si la lógica de renderizado principal es correcta
     return (
         <Box sx={{ background: getBackgroundColorForLevel(level), p: 1.5, borderRadius: 2 }}>
-            <Typography fontWeight="bold">{comment.commenterName}</Typography>
+            <Typography fontWeight="bold">{`${comment.nombre} ${comment.apellido}`}</Typography>
             <Typography>{comment.contenido}</Typography>
         </Box>
     );
@@ -206,19 +206,22 @@ const CommentSection = ({ claseId }) => {
         setNewCommentContent,
         replyingTo,
         editingComment,
-        usersNamesMap,
-        usersPhotosMap, 
-        usersLoading, 
-        isAuthenticated,
-        currentUser,
+        setEditingComment,
         handlePostComment,
         handleEditComment,
         handleDeleteComment,
+        handleCancelEditOrReply,
         handleReplyClick,
         handleEditButtonClick,
-        handleCancelEditOrReply,
-        setSortOrder, 
+        isAuthenticated,
+        currentUser,
+        sortOrder, 
+        setSortOrder,
+        loadMore,
+        hasMore,
     } = useCommentsLogic(claseId); 
+
+    const { showAlert } = useAlerts();
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedComment, setSelectedComment] = useState(null);
@@ -226,7 +229,6 @@ const CommentSection = ({ claseId }) => {
     const [visibleReplies, setVisibleReplies] = useState({});
     const [expandedReplies, setExpandedReplies] = useState({});
     const [localSortOrder, setLocalSortOrder] = useState('recent'); 
-    const [visibleCount, setVisibleCount] = useState(INITIAL_COMMENTS_COUNT); 
     
     // ESTADO CLAVE PARA EL MÓVIL: Controla si la sección de comentarios está abierta
     const [isCommentsOpen, setIsCommentsOpen] = useState(false); 
@@ -254,12 +256,10 @@ const CommentSection = ({ claseId }) => {
         setIsCommentsOpen(prev => !prev);
     };
 
-    // Reinicia la paginación al cambiar el orden
     const handleSortOrderChange = (event, newSortOrder) => {
         if (newSortOrder) {
             setLocalSortOrder(newSortOrder);
             setSortOrder(newSortOrder); 
-            setVisibleCount(INITIAL_COMMENTS_COUNT);
         }
     };
 
@@ -283,18 +283,8 @@ const CommentSection = ({ claseId }) => {
         }));
     };
 
-    const loadMoreComments = () => {
-        setVisibleCount(prev => Math.min(prev + COMMENTS_BATCH_SIZE, comments.length));
-    };
-    
-    const hideExtraComments = () => {
-        setVisibleCount(INITIAL_COMMENTS_COUNT);
-    };
-    
-    // Comentarios a renderizar (solo los principales)
-    const commentsToRender = useMemo(() => {
-        return comments.slice(0, visibleCount);
-    }, [comments, visibleCount]);
+    // Comentarios a renderizar (principales)
+    const commentsToRender = comments;
 
     const getBackgroundColorForLevel = (level) => {
         const colors = [
@@ -307,8 +297,10 @@ const CommentSection = ({ claseId }) => {
     };
 
     const renderComment = (comment, level = 0) => {
-        const commenterName = usersNamesMap.get(comment.usuario_id) || (usersLoading ? '...' : 'Usuario desconocido');
-        const commenterPhotoUrl = usersPhotosMap.get(comment.usuario_id); 
+        // Robustez: Comparamos como string para evitar errores si uno llega como número y otro como texto
+        const isOwner = isAuthenticated && String(currentUser?.id) === String(comment.usuario_id); 
+        const commenterName = comment.nombre ? `${comment.nombre} ${comment.apellido}` : 'Usuario desconocido';
+        const commenterPhotoUrl = comment.avatar || (isOwner ? (currentUser?.avatar || currentUser?.url_foto_perfil) : null);
         const liked = likedComments.has(comment.id);
 
         const replies = comment.replies || [];
@@ -318,7 +310,6 @@ const CommentSection = ({ claseId }) => {
         const menuCommentId = comment.id;
 
         const isEditingThisComment = editingComment && editingComment.id === comment.id;
-        const isOwner = isAuthenticated && currentUser?.id === comment.usuario_id; 
 
         const showEditableInput = replyingTo === comment.id;
 
@@ -329,7 +320,7 @@ const CommentSection = ({ claseId }) => {
                     <Avatar src={commenterPhotoUrl}>
                         {commenterName ? commenterName[0] : ''}
                     </Avatar>
-                    <Box flex={1}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
                         {/* CONTENIDO DEL COMENTARIO / FORMULARIO DE EDICIÓN */}
                         {isEditingThisComment ? (
                             <EditableCommentContent
@@ -346,7 +337,7 @@ const CommentSection = ({ claseId }) => {
                         ) : (
                             <Box sx={{ background: getBackgroundColorForLevel(level), p: 1.5, borderRadius: 2 }}>
                                 <Typography fontWeight="bold">{commenterName}</Typography>
-                                <Typography>{comment.contenido}</Typography>
+                                <Typography sx={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{comment.contenido}</Typography>
                             </Box>
                         )}
 
@@ -388,7 +379,19 @@ const CommentSection = ({ claseId }) => {
                             onClose={handleCloseMenu}
                         >
                             {isOwner && <MenuItem onClick={() => { handleEditButtonClick(comment); handleCloseMenu(); }}>Editar</MenuItem>}
-                            {(isOwner || currentUser?.id_tipo_usuario === 1) && <MenuItem onClick={() => { handleDeleteComment(comment.id); handleCloseMenu(); }}>Eliminar</MenuItem>}
+                            <MenuItem onClick={() => { 
+                                handleCloseMenu();
+                                showAlert({
+                                    type: 'confirm',
+                                    title: '¿Eliminar comentario?',
+                                    message: 'Esta acción no se puede deshacer. El comentario desaparecerá para siempre.',
+                                    confirmText: 'Sí, eliminar',
+                                    cancelText: 'Cancelar',
+                                    onConfirm: () => handleDeleteComment(comment.id)
+                                });
+                            }}>
+                                Eliminar
+                            </MenuItem>
                         </Menu>
 
                         {/* RESPUESTAS ANIDADAS */}
@@ -402,8 +405,7 @@ const CommentSection = ({ claseId }) => {
                                 {isVisible && (
                                     <>
                                         <Collapse in={isVisible}>
-                                            {/* Aquí se le pasa el nombre del usuario al sub-renderizado */}
-                                            {replies.slice(0, currentVisibleRepliesCount).map(r => renderComment({ ...r, commenterName: usersNamesMap.get(r.usuario_id) || 'Usuario desconocido' }, level + 1))} 
+                                            {replies.slice(0, currentVisibleRepliesCount).map(r => renderComment(r, level + 1))} 
                                         </Collapse>
                                         <Box display="flex" justifyContent="flex-end">
                                             {currentVisibleRepliesCount < replies.length ? (
@@ -426,7 +428,7 @@ const CommentSection = ({ claseId }) => {
                             <Box mt={1} display="flex" gap={1}>
                                 {/* AVATAR DE RESPUESTA */}
                                 <Avatar 
-                                    src={usersPhotosMap.get(currentUser?.id)} 
+                                    src={currentUser?.avatar || currentUser?.url_foto_perfil} 
                                     sx={{ width: 24, height: 24, flexShrink: 0 }} 
                                 >
                                     {currentUser?.nombre ? currentUser.nombre[0] : ''}
@@ -475,9 +477,11 @@ const CommentSection = ({ claseId }) => {
             {/* ======================================================= */}
             {isAuthenticated && !editingComment && !replyingTo && (
                 <Box mt={3} mb={3} display="flex" gap={1} alignItems="flex-end">
-                    {/* AVATAR DE PUBLICACIÓN PRINCIPAL */}
-                    {/* El mb: 1.5 en el avatar ayuda a alinearlo verticalmente con el inicio del texto del input multilínea */}
-                    <Avatar src={usersPhotosMap.get(currentUser?.id)} sx={{ mb: 1.5 }}> 
+                    {/* AVATAR DE PUBLICACIÓN PRINCIPAL: Buscamos en el mapa y en los metadatos de la sesión */}
+                    <Avatar 
+                        src={currentUser?.avatar || currentUser?.url_foto_perfil} 
+                        sx={{ mb: 1.5 }}
+                    > 
                         {currentUser?.nombre ? currentUser.nombre[0] : ''}
                     </Avatar>
                     
@@ -551,9 +555,9 @@ const CommentSection = ({ claseId }) => {
                 {/* Muestra el primer comentario cuando está colapsado y si hay comentarios */}
                 {!isCommentsOpen && comments.length > 0 && (
                     <Stack direction="row" spacing={1} mt={1} alignItems="center">
-                        <Avatar src={usersPhotosMap.get(comments[0].usuario_id)} sx={{ width: 24, height: 24 }} />
-                        <Typography variant="body2" noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            <span style={{ fontWeight: 'bold' }}>{usersNamesMap.get(comments[0].usuario_id) || 'Usuario'}:</span> {comments[0].contenido}
+                        <Avatar src={comments[0].avatar} sx={{ width: 24, height: 24 }} />
+                        <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                            <span style={{ fontWeight: 'bold' }}>{comments[0].nombre || 'Usuario'}:</span> {comments[0].contenido}
                         </Typography>
                     </Stack>
                 )}
@@ -585,23 +589,14 @@ const CommentSection = ({ claseId }) => {
                     ) : (
                         <>
                             {/* Renderizado de comentarios principales visibles */}
-                            {commentsToRender.map(comment => renderComment(comment))} 
+                            {comments.map(comment => renderComment(comment))} 
 
-                            {/* Botones de paginación para la lista expandida */}
-                            {(comments.length > INITIAL_COMMENTS_COUNT) && (
-                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                                    {/* Mostrar Ver menos si hay más que los iniciales */}
-                                    {visibleCount > INITIAL_COMMENTS_COUNT && (
-                                        <Button onClick={hideExtraComments} variant="text" color="secondary">
-                                            Ver menos
-                                        </Button>
-                                    )}
-                                    {/* Mostrar Ver más si la cuenta visible es menor al total */}
-                                    {visibleCount < comments.length && (
-                                        <Button onClick={loadMoreComments} variant="text" disabled={usersLoading}>
-                                            Ver más ({comments.length - visibleCount} restantes)
-                                        </Button>
-                                    )}
+                            {/* Botón de paginación del servidor */}
+                            {hasMore && (
+                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                                    <Button onClick={loadMore} variant="outlined" disabled={loading}>
+                                        {loading ? 'Cargando...' : 'Cargar más comentarios'}
+                                    </Button>
                                 </Box>
                             )}
                             

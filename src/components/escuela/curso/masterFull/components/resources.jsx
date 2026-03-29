@@ -26,9 +26,6 @@ const Resources = ({ resources }) => {
             }}
           >
             <Box sx={{ flex: 1 }}>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {resource.nombre}
-              </Typography>
               <Typography variant="body2" sx={{ color: 'gray' }}>
                 Tipo: {resource.tipo}
               </Typography>

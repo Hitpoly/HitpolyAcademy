@@ -1,15 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '.././../../../../../../context/AuthContext';
+import { useAlerts } from '.././../../../../../../context/AlertContext';
 
 const API_BASE_URL = 'https://apiacademy.hitpoly.com/ajax/';
 const COMMENTS_GET_URL = `${API_BASE_URL}getComentariosController.php`;
 const COMMENT_POST_URL = `${API_BASE_URL}comentarioController.php`;
-const COMMENT_EDIT_URL = `${API_BASE_URL}editarComentariosController.php`;
-const COMMENT_DELETE_URL = `${API_BASE_URL}eliminarComentarioController.php`;
-const GET_USER_INFO_URL = 'https://apiacademy.hitpoly.com/ajax/traerAlumnoProfesorController.php';
+const COMMENT_ACTION_URL = `${API_BASE_URL}getComentariosController.php`; // Unificado
+const GET_USER_INFO_URL = 'https://apiweb.hitpoly.com/ajax/usuarioMasterController.php';
 
 export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
     const { user, isAuthenticated } = useAuth(); 
+    const { showAlert } = useAlerts();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState(null);
@@ -17,43 +18,13 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
     const [replyingTo, setReplyingTo] = useState(null); 
     const [editingComment, setEditingComment] = useState(null); 
     const [sortOrder, setSortOrder] = useState(initialSortOrder);
-    const [usersNamesMap, setUsersNamesMap] = useState(new Map()); 
-    const [usersPhotosMap, setUsersPhotosMap] = useState(new Map()); 
-    const [usersLoading, setUsersLoading] = useState(false);
+    
+    // Estados para paginación
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const LIMIT = 20;
 
-    const fetchUserName = useCallback(async (userId) => {
-        if (!userId) return 'Usuario Desconocido';
-        if (usersNamesMap.has(userId) && usersPhotosMap.has(userId)) {
-            return usersNamesMap.get(userId);
-        }
-
-        try {
-            const response = await fetch(GET_USER_INFO_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'getAlumnoProfesor', id: userId }),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            
-            if (data.status === 'success' && data.usuario) {
-                const fullName = `${data.usuario.nombre} ${data.usuario.apellido}`;
-                const photoUrl = data.usuario.url_foto_perfil || null; 
-                
-                setUsersNamesMap(prevMap => new Map(prevMap).set(userId, fullName));
-                setUsersPhotosMap(prevMap => new Map(prevMap).set(userId, photoUrl));
-                
-                return fullName;
-            } else {
-                return 'Usuario Desconocido';
-            }
-        } catch (err) {
-            console.error(`Error al cargar la info del usuario ${userId}:`, err);
-            return 'Error al cargar usuario';
-        }
-    }, [usersNamesMap, usersPhotosMap]); 
+    // Ya no necesitamos fetchUserName porque los datos vienen del JOIN en SQL.
 
     const organizeComments = useCallback((rawComments, currentSortOrder) => {
         const processedComments = rawComments.map(c => ({
@@ -99,61 +70,77 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         return finalOrganizedComments;
     }, []);
 
-    const fetchComments = useCallback(async () => {
-        setLoading(true);
+    const fetchComments = useCallback(async (isLoadMore = false) => {
+        if (!isLoadMore) {
+            setLoading(true);
+            setOffset(0);
+        }
         setError(null);
+
         try {
+            const currentOffset = isLoadMore ? offset : 0;
+            const payload = { 
+                accion: 'getComentarios',
+                clase_id: claseId,
+                limit: LIMIT,
+                offset: currentOffset
+            };
+
+            console.log('[CommentsLogic] Fetching from:', COMMENTS_GET_URL);
+            console.log('[CommentsLogic] Payload sent:', payload);
+
             const response = await fetch(COMMENTS_GET_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'getComentarios' }),
+                body: JSON.stringify(payload),
             });
+
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
             }
             const data = await response.json();
+            console.log('[CommentsLogic] Full response data:', data);
 
             if (data.status === 'success' && Array.isArray(data.comentarios)) {
-                const filteredComments = data.comentarios.filter(comment => String(comment.clase_id) === String(claseId));
-                const organizedCommentsResult = organizeComments(filteredComments, sortOrder);
-                setComments(organizedCommentsResult);
+                const newComments = data.comentarios;
+                
+                if (newComments.length < LIMIT) {
+                    setHasMore(false);
+                } else {
+                    setHasMore(true);
+                }
+
+                setComments(prev => {
+                    const combinedRaw = isLoadMore ? [...prev.flatMap(c => [c, ...(c.replies||[])]), ...newComments] : newComments;
+                    return organizeComments(combinedRaw, sortOrder);
+                });
+                
+                if (isLoadMore) {
+                    setOffset(prev => prev + LIMIT);
+                } else {
+                    setOffset(LIMIT);
+                }
             } else {
-                setComments([]);
+                if (!isLoadMore) setComments([]);
+                setHasMore(false);
             }
         } catch (err) {
             setError('No se pudieron cargar los comentarios. Intenta de nuevo más tarde.');
         } finally {
             setLoading(false);
         }
-    }, [claseId, sortOrder, organizeComments]);
+    }, [claseId, sortOrder, organizeComments, offset]);
+
+    const loadMore = () => {
+        if (!loading && hasMore) {
+            fetchComments(true);
+        }
+    };
 
     useEffect(() => {
-        fetchComments();
-    }, [fetchComments]); 
-    useEffect(() => {
-        if (loading || comments.length === 0) return;
-
-        const userIds = new Set();
-        comments.forEach(c => {
-            userIds.add(c.usuario_id);
-            c.replies?.forEach(r => userIds.add(r.usuario_id));
-        });
-        if (isAuthenticated && user?.id) {
-            userIds.add(user.id); 
-        }
-
-        const userIdsToFetch = Array.from(userIds).filter(id => id && (!usersNamesMap.has(id) || !usersPhotosMap.has(id)));
-
-        if (userIdsToFetch.length > 0) {
-            setUsersLoading(true);
-            
-            Promise.all(userIdsToFetch.map(id => fetchUserName(id)))
-                .finally(() => {
-                    setUsersLoading(false);
-                });
-        }
-    }, [comments, isAuthenticated, user, usersNamesMap, usersPhotosMap, fetchUserName, loading]);
+        fetchComments(false);
+    }, [claseId, sortOrder]);
 
     const handlePostComment = async () => {
         if (!isAuthenticated || !user?.id) {
@@ -211,12 +198,12 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         const editData = {
             accion: 'update',
             id: editingComment.id,
+            usuario_id: user.id, // Enviar ID para verificar dueño
             contenido: newCommentContent.trim(),
-            editado: 1, 
         };
 
         try {
-            const response = await fetch(COMMENT_EDIT_URL, {
+            const response = await fetch(COMMENT_ACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editData),
@@ -230,12 +217,18 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
             if (data.status === 'success') {
                 setNewCommentContent('');
                 setEditingComment(null);
-                fetchComments(); 
+                fetchComments(false); // Recargar
+                showAlert({
+                    type: 'success',
+                    title: '¡Publicado!',
+                    message: 'Tu comentario se ha compartido correctamente.'
+                });
             } else {
-                throw new Error(data.message || 'Error desconocido al editar comentario.');
+                throw new Error(data.message || 'Error al publicar comentario');
             }
         } catch (err) {
             setError(`Error al editar comentario: ${err.message}`);
+            showAlert({ type: 'error', title: 'Error', message: 'No se pudo editar el comentario.' });
         } finally {
             setLoading(false);
         }
@@ -250,10 +243,14 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         setError(null);
 
         try {
-            const response = await fetch(COMMENT_DELETE_URL, {
+            const response = await fetch(COMMENT_ACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'delete', id: commentId }),
+                body: JSON.stringify({ 
+                    accion: 'delete', 
+                    id: commentId,
+                    usuario_id: user.id // Enviar ID para verificar dueño
+                }),
             });
 
             if (!response.ok) {
@@ -262,12 +259,18 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
             }
             const data = await response.json();
             if (data.status === 'success') {
-                fetchComments(); 
+                fetchComments(false);
+                showAlert({
+                    type: 'success',
+                    title: 'Eliminado',
+                    message: 'El comentario ha sido borrado correctamente.'
+                });
             } else {
-                throw new Error(data.message || 'Error desconocido al eliminar comentario.');
+                throw new Error(data.message || 'Error al eliminar');
             }
         } catch (err) {
             setError(`Error al eliminar comentario: ${err.message}`);
+            showAlert({ type: 'error', title: 'Error', message: 'No se pudo eliminar el comentario.' });
         } finally {
             setLoading(false);
         }
@@ -292,12 +295,12 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         }
 
         if (targetComment) {
-            const userName = usersNamesMap.get(targetComment.usuario_id);
-            setNewCommentContent(`@${userName || 'Usuario cargando...'} `);
+            const userName = targetComment.nombre || 'Usuario';
+            setNewCommentContent(`@${userName} `);
         } else {
             setNewCommentContent(`@un comentario `);
         }
-    }, [comments, usersNamesMap]); 
+    }, [comments]); 
 
     const handleEditButtonClick = (comment) => {
         setEditingComment(comment);
@@ -321,9 +324,6 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         editingComment,
         sortOrder,
         setSortOrder, 
-        usersNamesMap,
-        usersPhotosMap, 
-        usersLoading,
         isAuthenticated,
         currentUser: user, 
         handlePostComment,
@@ -332,5 +332,7 @@ export const useCommentsLogic = (claseId, initialSortOrder = 'recent') => {
         handleReplyClick,
         handleEditButtonClick,
         handleCancelEditOrReply,
+        loadMore,
+        hasMore,
     };
 };

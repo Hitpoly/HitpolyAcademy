@@ -11,6 +11,7 @@ import PasosIniciales from "./components/escuela/curso/masterFull/primerosPasos.
 import Login from "./components/login/page.jsx";
 import Register from "./components/register/page.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+import { AlertProvider } from "./context/AlertContext.jsx";
 import UserProfile from "./components/Profile/UserProfile.jsx";
 
 // Gestión de Cursos y Admin
@@ -94,83 +95,86 @@ const ProtectedRoute = ({ children, allowedRoles, requireCreatorPrivileges = fal
   return children;
 };
 
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        {/* ESCUCHADOR DE RUTAS ACTIVO */}
-        <NavigationNotifier />
+      <AlertProvider>
+        <BrowserRouter>
+          {/* ESCUCHADOR DE RUTAS ACTIVO */}
+          <NavigationNotifier />
 
-        <Routes>
-          {/* Rutas Públicas */}
-          <Route path="/ofertas" element={<SubscriptionPlans />} />
-          
-          <Route element={<LayoutConMenu title="General" />}>
-            <Route path="/" element={<Inicio />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/curso/:id" element={<PaginaDeInformacion />} />
-            <Route path="/cursos/:categoryName" element={<CourseCategory />} />
-            <Route path="/oferta-del-mes" element={<AllCategoriesCourses />} />
+          <Routes>
+            {/* Rutas Públicas */}
+            <Route path="/ofertas" element={<SubscriptionPlans />} />
+            
+            <Route element={<LayoutConMenu title="General" />}>
+              <Route path="/" element={<Inicio />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/curso/:id" element={<PaginaDeInformacion />} />
+              <Route path="/cursos/:categoryName" element={<CourseCategory />} />
+              <Route path="/oferta-del-mes" element={<AllCategoriesCourses />} />
 
-            {/* --- RUTAS EXCLUSIVAS ADMIN (Tipo 1) --- */}
-            <Route path="/crear-anuncios" element={
-              <ProtectedRoute allowedRoles={[1]}><AnunciosPage /></ProtectedRoute>
-            } />
-            <Route path="/admin-testimonios" element={
-              <ProtectedRoute allowedRoles={[1]}><AppTestimonios /></ProtectedRoute>
-            } />
-            <Route path="/editar-perfiles" element={
-              <ProtectedRoute allowedRoles={[1]}><UserManagementPanel /></ProtectedRoute>
-            } />
-            <Route path="/dashboard-admin-cursos" element={
-              <ProtectedRoute allowedRoles={[1]}><CursosDestacados /></ProtectedRoute>
-            } />
-            <Route path="/categorias" element={
-              <ProtectedRoute allowedRoles={[1]}><CategoryManager /></ProtectedRoute>
-            } />
+              {/* --- RUTAS EXCLUSIVAS ADMIN (Tipo 1) --- */}
+              <Route path="/crear-anuncios" element={
+                <ProtectedRoute allowedRoles={[1]}><AnunciosPage /></ProtectedRoute>
+              } />
+              <Route path="/admin-testimonios" element={
+                <ProtectedRoute allowedRoles={[1]}><AppTestimonios /></ProtectedRoute>
+              } />
+              <Route path="/editar-perfiles" element={
+                <ProtectedRoute allowedRoles={[1]}><UserManagementPanel /></ProtectedRoute>
+              } />
+              <Route path="/dashboard-admin-cursos" element={
+                <ProtectedRoute allowedRoles={[1]}><CursosDestacados /></ProtectedRoute>
+              } />
+              <Route path="/categorias" element={
+                <ProtectedRoute allowedRoles={[1]}><CategoryManager /></ProtectedRoute>
+              } />
 
-            {/* --- RUTAS GENERALES (Admin, Empresario, Profesional) --- */}
-            <Route path="/perfil" element={
-              <ProtectedRoute allowedRoles={[1, 2, 3]}><UserProfile /></ProtectedRoute>
-            } />
-            <Route path="/master-full/:courseId" element={
-              <ProtectedRoute allowedRoles={[1, 2, 3]}><PasosIniciales /></ProtectedRoute>
-            } />
-            <Route path="/cursos/:courseId/examen/:examId" element={
-              <ProtectedRoute allowedRoles={[1, 2, 3]}><ExamenAlumno /></ProtectedRoute>
-            } />
-            <Route path="/cursos/:courseId/examen/:examId/resultados" element={
-              <ProtectedRoute allowedRoles={[1, 2, 3]}><ResultadosAlumno /></ProtectedRoute>
-            } />
+              {/* --- RUTAS GENERALES (Admin, Empresario, Profesional) --- */}
+              <Route path="/perfil" element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}><UserProfile /></ProtectedRoute>
+              } />
+              <Route path="/master-full/:courseId" element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}><PasosIniciales /></ProtectedRoute>
+              } />
+              <Route path="/cursos/:courseId/examen/:examId" element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}><ExamenAlumno /></ProtectedRoute>
+              } />
+              <Route path="/cursos/:courseId/examen/:examId/resultados" element={
+                <ProtectedRoute allowedRoles={[1, 2, 3]}><ResultadosAlumno /></ProtectedRoute>
+              } />
 
-            {/* --- RUTAS DE GESTIÓN (Admin, Empresario Tipo 2, Profesor Tipo 3 + Cargo 155) --- */}
-            <Route path="/datos-de-curso" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><CourseForm /></ProtectedRoute>
-            } />
-            <Route path="/mis-cursos" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><CourseListManager /></ProtectedRoute>
-            } />
-            <Route path="/preguntas-frecuentes/:courseId" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><FAQSection /></ProtectedRoute>
-            } />
-            <Route path="/cursos/:courseId/modulos" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><CourseModulesManager /></ProtectedRoute>
-            } />
-            <Route path="/cursos/:courseId/crear-examen" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><CrearExamen /></ProtectedRoute>
-            } />
-            <Route path="/cursos/:courseId/editar-examen/:examId" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><EditarExamen /></ProtectedRoute>
-            } />
-            <Route path="/datos-de-curso/:courseId/modulos/:moduleId/clases" element={
-              <ProtectedRoute requireCreatorPrivileges={true}><ModuleClassesManager /></ProtectedRoute>
-            } />
-          </Route>
+              {/* --- RUTAS DE GESTIÓN (Admin, Empresario Tipo 2, Profesor Tipo 3 + Cargo 155) --- */}
+              <Route path="/datos-de-curso" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><CourseForm /></ProtectedRoute>
+              } />
+              <Route path="/mis-cursos" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><CourseListManager /></ProtectedRoute>
+              } />
+              <Route path="/preguntas-frecuentes/:courseId" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><FAQSection /></ProtectedRoute>
+              } />
+              <Route path="/cursos/:courseId/modulos" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><CourseModulesManager /></ProtectedRoute>
+              } />
+              <Route path="/cursos/:courseId/crear-examen" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><CrearExamen /></ProtectedRoute>
+              } />
+              <Route path="/cursos/:courseId/editar-examen/:examId" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><EditarExamen /></ProtectedRoute>
+              } />
+              <Route path="/datos-de-curso/:courseId/modulos/:moduleId/clases" element={
+                <ProtectedRoute requireCreatorPrivileges={true}><ModuleClassesManager /></ProtectedRoute>
+              } />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </BrowserRouter>
+      </AlertProvider>
     </AuthProvider>
   );
 }

@@ -178,6 +178,7 @@ const VideoLayout = ({ courseId, finalExamId }) => {
         )}
       </Box>
 
+      {/* FILA SUPERIOR: VIDEO Y LISTA */}
       <Box
         sx={{
           display: "flex",
@@ -186,7 +187,8 @@ const VideoLayout = ({ courseId, finalExamId }) => {
           gap: "20px",
         }}
       >
-        <Box sx={{ flex: 7, padding: "0px" }}>
+        {/* COLUMNA IZQUIERDA (7): VIDEO Y DESCRIPCIÓN */}
+        <Box sx={{ flex: 7, minWidth: 0 }}>
           <Box
             sx={{
               display: { xs: "flex", md: "none" },
@@ -267,6 +269,8 @@ const VideoLayout = ({ courseId, finalExamId }) => {
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
                 }}
               >
                 {descriptionText}
@@ -284,14 +288,16 @@ const VideoLayout = ({ courseId, finalExamId }) => {
             </Box>
           )}
 
+          {/* Comentarios en móvil (solo visible en xs) */}
           <Box
-            sx={{ display: { xs: "block", md: "none" }, mt: { xs: 4, md: 0 } }}
+            sx={{ display: { xs: "block", md: "none" }, mt: 4 }}
           >
             <CommentSection claseId={currentVideoId} />
           </Box>
         </Box>
 
-        <Box sx={{ flex: 3, marginTop: { xs: "30px", md: "0px" } }}>
+        {/* COLUMNA DERECHA (3): LISTA DE VIDEOS */}
+        <Box sx={{ flex: 3, marginTop: { xs: "30px", md: "0px" }, minWidth: 0 }}>
           <VideoList
             modules={modules}
             onSelectVideo={handleVideoChangeAndScroll}
@@ -302,6 +308,7 @@ const VideoLayout = ({ courseId, finalExamId }) => {
         </Box>
       </Box>
 
+      {/* FILA INFERIOR: COMENTARIOS Y RECURSOS (Desktop) */}
       <Box
         sx={{
           display: "flex",
@@ -311,13 +318,17 @@ const VideoLayout = ({ courseId, finalExamId }) => {
           gap: "20px",
         }}
       >
-        <Box sx={{ flex: { xs: 12, md: 7 }, display: { xs: "none", md: "block" } }}>
+        {/* COMENTARIOS (7): Alineado con la descripción */}
+        <Box sx={{ flex: 7, display: { xs: "none", md: "block" }, minWidth: 0 }}>
           <CommentSection claseId={currentVideoId} />
         </Box>
-        <Box sx={{ flex: { xs: 12, md: 5 } }}>
+        
+        {/* RECURSOS (3): Alineado con la lista de videos */}
+        <Box sx={{ flex: 3, minWidth: 0 }}>
           <Resources resources={currentClassResources} />
         </Box>
       </Box>
+      
       <Footer />
     </>
   );
